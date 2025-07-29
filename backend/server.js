@@ -4,11 +4,13 @@ const dotenv = require('dotenv');
 const db = require('./config/db');
 
 const userRoutes = require('./routes/userRoutes');
+const locationsRoutes = require('./routes/locationRoutes');
 
 dotenv.config(); // Load environment variables
 
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/api/users', userRoutes);
+app.use('/api/locations', locationsRoutes);
 
 // Rotta di prova
 app.get('/', (req, res) => {
