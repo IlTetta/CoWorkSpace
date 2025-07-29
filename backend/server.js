@@ -5,12 +5,15 @@ const db = require('./config/db');
 
 const userRoutes = require('./routes/userRoutes');
 const locationsRoutes = require('./routes/locationRoutes');
+const spaceTypeRoutes = require('./routes/spaceTypeRoutes');
 
 dotenv.config(); // Load environment variables
 
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/api/users', userRoutes);
 app.use('/api/locations', locationsRoutes);
+app.use('/api/space-types', spaceTypeRoutes);
+
 
 // Rotta di prova
 app.get('/', (req, res) => {
