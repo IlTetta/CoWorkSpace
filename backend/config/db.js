@@ -2,8 +2,20 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+});
+
+// Test connessione
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Errore di connessione al database:', err.stack);
+  } else {
+    console.log('Connessione al database avvenuta con successo:', res.rows[0].now);
+  }
 });
 
 module.exports = pool;
