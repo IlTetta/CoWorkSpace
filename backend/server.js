@@ -6,6 +6,7 @@ const db = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const locationsRoutes = require('./routes/locationRoutes');
 const spaceTypeRoutes = require('./routes/spaceTypeRoutes');
+const spaceController = require('./controllers/spaceController');
 
 dotenv.config(); // Load environment variables
 
@@ -13,6 +14,7 @@ app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/api/users', userRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/space-types', spaceTypeRoutes);
+app.use('/api/spaces', spaceController);
 
 
 // Rotta di prova
