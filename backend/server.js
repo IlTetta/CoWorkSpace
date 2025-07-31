@@ -9,6 +9,8 @@ const spaceTypeRoutes = require('./routes/spaceTypeRoutes');
 const spaceRoutes = require('./routes/spaceRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const additionalServiceRoutes  = require('./routes/additionalServiceRoutes');
 
 dotenv.config(); // Carica le variabili d'ambiente
 
@@ -19,6 +21,8 @@ app.use('/api/space-types', spaceTypeRoutes);
 app.use('/api/spaces', spaceRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/additional-services', additionalServiceRoutes);
 
 // Rotta di prova
 app.get('/', (req, res) => {
