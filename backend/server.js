@@ -6,8 +6,9 @@ const db = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const locationsRoutes = require('./routes/locationRoutes');
 const spaceTypeRoutes = require('./routes/spaceTypeRoutes');
-const spaceController = require('./controllers/spaceController');
-const availabilityController = require('./controllers/availabilityController');
+const spaceRoutes = require('./routes/spaceRoutes');
+const availabilityRoutes = require('./routes/availabilityRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
 
 dotenv.config(); // Carica le variabili d'ambiente
 
@@ -15,8 +16,9 @@ app.use(express.json()); // Per gestire il JSON nel corpo delle richieste
 app.use('/api/users', userRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/space-types', spaceTypeRoutes);
-app.use('/api/spaces', spaceController);
-app.use('/api/availability', availabilityController);
+app.use('/api/spaces', spaceRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Rotta di prova
 app.get('/', (req, res) => {
