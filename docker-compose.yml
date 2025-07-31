@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: coworkspace_db
+      POSTGRES_USER: coworkspace_user
+      POSTGRES_PASSWORD: cachemeifyoucan
+    volumes:
+      - db-data:/var/lib/postgresql/data # Persistenza dei dati
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Script di inizializzazione
+    ports:
+      - "5432:5432"
+    restart: always
+
+volumes:
+  db-data:

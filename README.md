@@ -1,16 +1,51 @@
 # CoWorkSpace
 
-## Descrizione
+## Sezione Database
 
-## Requisiti
+Questa sezione fornisce le istruzioni per configurare e gestire il database PostgreSQL utilizzato dal progetto **CoWorkSpace**.
 
-## Config e Avvio DB
+### 1. Requisiti:
+* **Docker Desktop**: Assicurati di avere Docker Desktop installato sul tuo sistema.
 
-## Eventuali link ai doc
+### 2. Configurazione e Avvio del Database:
+Il database viene avviato tramite Docker Compose, che gestirà un container PostgreSQL.
+* **File necessari**: Assicurati che i seguenti file siano presenti nella directory radice del progetto:
+    *  <code>docker-compose.yml</code>
+    * <code>init.sql</code> (contiene lo schema del database)
+    * <code>seed.sql</code> (contiene dei dati di esempio iniziali)
+* **Avvio iniziale (creazione dello schem e popolamento):**<br>
+Per avviare il database per la prima volte, creare lo schema e popolarlo con i dati iniziali, segui questi passaggi:
+    1. **Naviga alla directory radice del progetto** nel tuo terminale:<br>
+    <code>cd path/to/root/project </code>
+    2. **Ferma e rimuovi eventuali container Docker preesistenti** (questo è cruciale per garantire una configurazione pulita ad ogni avvio, specialmente dopo modifiche allo schema):<br>
+    <code>docker-compose down -v</code>
+    3. **Avvia il container del database:**<br>
+    <code> docker-compose up -d</code><br>
+    Questo comando avvierà il container PostgreSQL in background. Il file <code>init.sql</code> verrà automaticamente eseguito all'avvio del container per creare lo schema del database.
+    Successivamente, potrai eseguire <code>seed.sql</code> per popolare i dati.
+* **Avvio successivo (se il database è già configurato):**
+Se il database è già stato inizializzato e vuoi semplicemente avviarlo, puoi usare:<br>
+<code>docker-compose up -d</code>
 
-## Istruzioni generali per l'avvio dell'app
+* **Arresto del database:**
+Per arrestare il container del database:<br>
+<code>docker-compose down</code>
 
-# TODO Backend
+### 3. Connessione al Database (es. con DBeaver):
+Puoi connetteri al database utilizzando un client SQL come DBeaver per ispezionare lo schema e i dati.
+* **Dettagli connessione**:
+    * **Host:** <code>localhost</code>
+    * **Porta:** <code>5432</code> (controllare che non sia già usata da qualche altro servizio)
+    * **Nome Database:** <code>coworkspace_db</code>
+    * **Utente:** <code>coworkspace_user</code>
+    * **Password:**<code>a_strong_password</code> (deve essere la stessa che è configurata nel <code>docker-compose.yml</code>)
+* **Popolamento dati iniziali (<code>seed.sql</code>):**
+Dopo il primo avvio, se il database è vuoto, puoi eseguire il file <code>seed.sql</code> per inserire dati di esempio.
+    1. Connettiti al database tramite DBeaver.
+    2. Apri il file <code>seed.sql</code> nel tuo client SQL.
+    3. Esegui lo script SQL.
+
+    # TODO Backend
 1. Notifiche E-mail Lore
 2. Test unitari e integrazione Andrea
 3. Notifiche push (telefono?) Lore
@@ -19,4 +54,3 @@
 # TDOD Frontend
 1. Adattabilità finestre per != dispositivi
 2. Comunicazione backend
-3.
