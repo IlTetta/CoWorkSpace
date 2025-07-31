@@ -51,4 +51,4 @@ INSERT INTO bookings (user_id, space_id, booking_date, start_time, end_time, tot
 -- Inserimento dati nella tabella payments (esempi)
 INSERT INTO payments (booking_id, amount, payment_method, status, transaction_id) VALUES
 ((SELECT booking_id FROM bookings WHERE user_id = (SELECT user_id FROM users WHERE email = 'mario.rossi@example.com') AND space_id = (SELECT space_id FROM spaces WHERE space_name = 'Stanza Milano 1')), 30.00, 'Credit Card', 'completed', 'txn_12345abc'),
-((SELECT booking_id FROM bookings WHERE user_id = (SELECT user_id FROM users WHERE email = 'luigi.verdi@example.com') AND space_id = (SELECT space_id FROM spaces WHERE space_name = 'Sala Riunioni Alpha')), 25.00, 'PayPal', 'pending', 'txn_67890def');
+((SELECT booking_id FROM bookings WHERE user_id = (SELECT user_id FROM users WHERE email = 'luigi.verdi@example.com') AND space_id = (SELECT space_id FROM spaces WHERE space_name = 'Sala Riunioni Alpha')), 25.00, 'PayPal', 'failed', 'txn_67890def');

@@ -22,6 +22,8 @@ exports.getAllLocations = catchAsync(async (req, res, next) => {
     });
 });
 
+exports.getAllLocationsAlphabetically...
+
 // Funzione per ottenere una singola sede per ID
 exports.getLocationById = catchAsync(async (req, res, next) => {
     const { id } = req.params;
