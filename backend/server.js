@@ -7,15 +7,16 @@ const userRoutes = require('./routes/userRoutes');
 const locationsRoutes = require('./routes/locationRoutes');
 const spaceTypeRoutes = require('./routes/spaceTypeRoutes');
 const spaceController = require('./controllers/spaceController');
+const availabilityController = require('./controllers/availabilityController');
 
-dotenv.config(); // Load environment variables
+dotenv.config(); // Carica le variabili d'ambiente
 
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json()); // Per gestire il JSON nel corpo delle richieste
 app.use('/api/users', userRoutes);
 app.use('/api/locations', locationsRoutes);
 app.use('/api/space-types', spaceTypeRoutes);
 app.use('/api/spaces', spaceController);
-
+app.use('/api/availability', availabilityController);
 
 // Rotta di prova
 app.get('/', (req, res) => {
