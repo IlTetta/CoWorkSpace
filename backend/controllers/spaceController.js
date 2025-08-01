@@ -1,28 +1,40 @@
 const pool = require('../config/db');
 const catchAsync = require('../utils/catchAsync');
 
-// Ottieni tutti gli spazi (con possibilità di filtro per location_id e space_type_id)
+// Middleware per ottenere tutti gli spazi, con filtri opzionali.
 exports.getAllSpaces = catchAsync(async (req, res, next) => {
-    const { location_id, space_type_id } = req.query; // Filtri per tipologia di spazio 
+    // Estrae i parametri di filtro 'location_id' e 'space_type_id' dalla query string (es. ?location_id=1).
+    const { location_id, space_type_id } = req.query;
+    
+    // Query di base per recuperare gli spazi, unendoli con le tabelle `locations` e `space_types`
+    // per ottenere nomi descrittivi invece dei soli ID.
     let query = 'SELECT s.*, l.location_name, st.type_name FROM spaces s JOIN locations l ON s.location_id = l.location_id JOIN space_types st ON s.space_type_id = st.space_type_id';
+    
+    // Array per costruire dinamicamente la clausola `WHERE` e i parametri della query.
     const queryParams = [];
     const conditions = [];
     let queryIndex = 1;
 
+    // Se `location_id` è presente, aggiunge una condizione e il parametro.
     if (location_id) {
         conditions.push(`s.location_id = $${queryIndex++}`);
         queryParams.push(location_id);
     }
+    // Se `space_type_id` è presente, aggiunge una condizione e il parametro.
     if (space_type_id) {
         conditions.push(`s.space_type_id = $${queryIndex++}`);
         queryParams.push(space_type_id);
     }
 
+    // Costruisce la query finale aggiungendo la clausola `WHERE` se ci sono condizioni.
     if (conditions.length > 0) {
         query += ' WHERE ' + conditions.join(' AND ');
     }
 
+    // Esegue la query.
     const result = await pool.query(query, queryParams);
+    
+    // Invia una risposta di successo con lo stato 200, il numero di risultati e i dati degli spazi.
     res.status(200).json({
         status: 'success',
         results: result.rows.length,
@@ -32,9 +44,12 @@ exports.getAllSpaces = catchAsync(async (req, res, next) => {
     });
 });
 
-// Ottieni un singolo spazio per ID
+// Middleware per ottenere i dettagli di un singolo spazio tramite il suo ID.
 exports.getSpaceById = catchAsync(async (req, res, next) => {
+    // Estrae l'ID dai parametri della URL.
     const { id } = req.params;
+    
+    // Query per recuperare lo spazio, unendo le tabelle per avere tutti i dettagli.
     const query = `
         SELECT s.*, l.location_name, st.type_name
         FROM spaces s
@@ -44,6 +59,7 @@ exports.getSpaceById = catchAsync(async (req, res, next) => {
     `;
     const result = await pool.query(query, [id]);
 
+    // Se non viene trovata nessuna riga, lo spazio non esiste.
     if (result.rows.length === 0) {
         return res.status(404).json({
             status: 'fail',
@@ -51,6 +67,7 @@ exports.getSpaceById = catchAsync(async (req, res, next) => {
         });
     }
 
+    // Invia una risposta di successo con i dati dello spazio.
     res.status(200).json({
         status: 'success',
         data: {
@@ -59,30 +76,37 @@ exports.getSpaceById = catchAsync(async (req, res, next) => {
     });
 });
 
-// Crea un nuovo spazio
+// Middleware per creare un nuovo spazio.
 exports.createSpace = catchAsync(async (req, res, next) => {
+    // Estrae i dati del nuovo spazio dal corpo della richiesta.
     const { location_id, space_type_id, space_name, description, capacity, price_per_hour, price_per_day } = req.body;
 
+    // --- Validazione dei campi obbligatori ---
     if (!location_id || !space_type_id || !space_name || !capacity || price_per_hour === undefined || price_per_day === undefined) {
         return res.status(400).json({ message: 'Location ID, Space Type ID, nome, capacità, prezzo orario e prezzo giornaliero sono obbligatori.' });
     }
 
+    // --- Validazione delle chiavi esterne ---
+    // Verifica che l'ID della sede (`location_id`) esista.
     const locationExists = await pool.query('SELECT 1 FROM locations WHERE location_id = $1', [location_id]);
     if (locationExists.rows.length === 0) {
         return res.status(400).json({ message: 'Location ID non valida.' });
     }
 
+    // Verifica che l'ID del tipo di spazio (`space_type_id`) esista.
     const spaceTypeExists = await pool.query('SELECT 1 FROM space_types WHERE space_type_id = $1', [space_type_id]);
     if (spaceTypeExists.rows.length === 0) {
         return res.status(400).json({ message: 'Space Type ID non valido.' });
     }
 
+    // Esegue la query di inserimento.
     const result = await pool.query(
         `INSERT INTO spaces (location_id, space_type_id, space_name, description, capacity, price_per_hour, price_per_day)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
         [location_id, space_type_id, space_name, description, capacity, price_per_hour, price_per_day]
     );
 
+    // Invia una risposta con stato 201 (Created) e i dati del nuovo spazio.
     res.status(201).json({
         status: 'success',
         data: {
@@ -91,14 +115,19 @@ exports.createSpace = catchAsync(async (req, res, next) => {
     });
 });
 
-// Aggiorna uno spazio esistente
+// Middleware per aggiornare i dati di uno spazio esistente.
 exports.updateSpace = catchAsync(async (req, res, next) => {
+    // Estrae l'ID dai parametri della URL e i campi da aggiornare dal corpo della richiesta.
     const { id } = req.params;
     const { location_id, space_type_id, space_name, description, capacity, price_per_hour, price_per_day } = req.body;
+    
+    // Array per costruire la query di aggiornamento dinamicamente.
     const updateFields = [];
-    const queryParams = [id];
-    let queryIndex = 2;
+    const queryParams = [id]; // L'ID dello spazio è sempre il primo parametro.
+    let queryIndex = 2; // Inizia l'indice per i placeholder dei parametri da $2.
 
+    // Aggiunge i campi da aggiornare solo se sono forniti nel corpo della richiesta.
+    // Per ogni campo che è una chiave esterna, viene eseguita una validazione prima di aggiungerlo alla query.
     if (location_id) {
         const locationExists = await pool.query('SELECT 1 FROM locations WHERE location_id = $1', [location_id]);
         if (locationExists.rows.length === 0) {
@@ -136,13 +165,16 @@ exports.updateSpace = catchAsync(async (req, res, next) => {
         queryParams.push(price_per_day);
     }
 
+    // Se non sono stati forniti campi da aggiornare, invia un errore 400.
     if (updateFields.length === 0) {
         return res.status(400).json({ message: 'Nessun campo valido fornito per l\'aggiornamento.' });
     }
 
+    // Costruisce ed esegue la query di aggiornamento.
     const query = `UPDATE spaces SET ${updateFields.join(', ')} WHERE space_id = $1 RETURNING *`;
     const result = await pool.query(query, queryParams);
 
+    // Se nessuna riga è stata aggiornata, lo spazio non è stato trovato.
     if (result.rows.length === 0) {
         return res.status(404).json({
             status: 'fail',
@@ -150,6 +182,7 @@ exports.updateSpace = catchAsync(async (req, res, next) => {
         });
     }
 
+    // Invia una risposta di successo con i dati aggiornati.
     res.status(200).json({
         status: 'success',
         data: {
@@ -158,11 +191,15 @@ exports.updateSpace = catchAsync(async (req, res, next) => {
     });
 });
 
-// Elimina uno spazio
+// Middleware per eliminare uno spazio esistente.
 exports.deleteSpace = catchAsync(async (req, res, next) => {
+    // Estrae l'ID dai parametri della URL.
     const { id } = req.params;
+    
+    // Esegue la query DELETE.
     const result = await pool.query('DELETE FROM spaces WHERE space_id = $1 RETURNING *', [id]);
 
+    // Se non viene eliminata alcuna riga, lo spazio non è stato trovato.
     if (result.rows.length === 0) {
         return res.status(404).json({
             status: 'fail',
@@ -170,6 +207,7 @@ exports.deleteSpace = catchAsync(async (req, res, next) => {
         });
     }
 
+    // Invia una risposta con stato 204 (No Content), poiché non c'è un corpo da restituire.
     res.status(204).json({
         status: 'success',
         data: null
