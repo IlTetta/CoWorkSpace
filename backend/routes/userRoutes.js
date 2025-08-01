@@ -3,11 +3,11 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middlewares/auth');
 
-// Routg for user registration
+// Router per la registrazione degli utenti
 router.post('/register', userController.register);
-// Route for user login
+// Router per il login degli utenti
 router.post('/login', userController.login);
-// Route to get user profile, protected by auth middleware
+// Router per ottenere il profilo utente, protetto da middleware di autenticazione
 router.get('/profile', authMiddleware.protect, userController.getProfile);
 
 module.exports = router;
