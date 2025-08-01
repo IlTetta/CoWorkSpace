@@ -1,3 +1,5 @@
 npm i -D vitest --> Test runner
 
 npm run dev --> rilancia il server ad ogni modifica dei file
+
+npm install jsonwebtoken bcryptjs cors express dotenv pg
