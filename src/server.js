@@ -1,6 +1,8 @@
 const dotenv = require('dotenv'); // Importa il modulo dotenv per caricare le variabili d'ambiente
 dotenv.config(); // Carica le variabili d'ambiente
 
+const cors = require('cors'); // Importa il middleware CORS per gestire le richieste cross-origin
+
 const express = require('express'); // Importa il framework Express per costruire il server web
 const  app = express(); // Crea un'applicazione Express
 const db = require('./backend/config/db'); // Importa la configurazione del database
@@ -15,7 +17,7 @@ const bookingRoutes = require('./backend/routes/bookingRoutes');
 const paymentRoutes = require('./backend/routes/paymentRoutes');
 const additionalServiceRoutes  = require('./backend/routes/additionalServiceRoutes');
 
-
+app.use(cors()); // Abilita CORS per tutte le rotte
 app.use(express.json()); // Per gestire il JSON nel corpo delle richieste
 
 // --- Definizione delle rotte API ---
