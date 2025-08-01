@@ -2,7 +2,7 @@
 async function getAllLocations(city = null) {
     try {
         // Costruisci l'URL dell'endpoint API, non del file del controller
-        let url = 'postgresql://postgres:admin@localhost:5432/postgresPORT=3000'; // Cambia la porta se diversa
+        let url = 'http://localhost:3000/api/locations'; // Cambia la porta se diversa
         if (city) {
             url += `?city=${encodeURIComponent(city)}`;
         }
