@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateBookingPrice } from '../../src/backend/utils/bookingCalculator'; // adatta il path se necessario
+import { calculateBookingPrice } from '../backend/utils/bookingCalculator'; // adatta il path se necessario
 
 describe('calculateBookingPrice', () => {
   

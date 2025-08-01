@@ -1,19 +1,20 @@
+const dotenv = require('dotenv'); // Importa il modulo dotenv per caricare le variabili d'ambiente
+dotenv.config(); // Carica le variabili d'ambiente
+
 const express = require('express'); // Importa il framework Express per costruire il server web
 const  app = express(); // Crea un'applicazione Express
-const dotenv = require('dotenv'); // Importa il modulo dotenv per caricare le variabili d'ambiente
-const db = require('./config/db'); // Importa la configurazione del database
+const db = require('./backend/config/db'); // Importa la configurazione del database
 
 // --- Importazione dei moduli delle rotte ---
-const userRoutes = require('./routes/userRoutes');
-const locationsRoutes = require('./routes/locationRoutes');
-const spaceTypeRoutes = require('./routes/spaceTypeRoutes');
-const spaceRoutes = require('./routes/spaceRoutes');
-const availabilityRoutes = require('./routes/availabilityRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const additionalServiceRoutes  = require('./routes/additionalServiceRoutes');
+const userRoutes = require('./backend/routes/userRoutes');
+const locationsRoutes = require('./backend/routes/locationRoutes');
+const spaceTypeRoutes = require('./backend/routes/spaceTypeRoutes');
+const spaceRoutes = require('./backend/routes/spaceRoutes');
+const availabilityRoutes = require('./backend/routes/availabilityRoutes');
+const bookingRoutes = require('./backend/routes/bookingRoutes');
+const paymentRoutes = require('./backend/routes/paymentRoutes');
+const additionalServiceRoutes  = require('./backend/routes/additionalServiceRoutes');
 
-dotenv.config(); // Carica le variabili d'ambiente
 
 app.use(express.json()); // Per gestire il JSON nel corpo delle richieste
 

@@ -13,6 +13,8 @@ const pool = new Pool({
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('Errore di connessione al database:', err.stack);
+    console.log("DB_USER:", process.env.DB_USER);
+    console.log("DB_PASSWORD:", typeof process.env.DB_PASSWORD);
   } else {
     console.log('Connessione al database avvenuta con successo:', res.rows[0].now);
   }
