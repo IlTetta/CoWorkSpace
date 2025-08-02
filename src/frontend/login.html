@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=person" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock" />
 </head>
+
 <body>
     <div class="header">
         <div class="middle-section">
@@ -22,20 +23,35 @@
     </div>
 
     <div class="panel">
-        <label for="username" class="label">Username</label>
-        <div class="input-container">
-            <input class="username-bar" type="text" id="username">
-            <span class="material-symbols-outlined input-icon">
-                person
-            </span>
+        <div>
+            <label for="username">Username</label>
+            <div class="input-container">
+                <input class="username-bar" type="text" id="username">
+                <span class="material-symbols-outlined input-icon">
+                    person
+                </span>
+            </div>
         </div>
-    </div>
 
-    <div class="remember-me-container">
-        <input type="checkbox" id="remember-me" class="remember-me-checkbox">
-        <label for="remember-me" class="remember-me-label">Remember Me</label>
-    </div>
+        <div>
+            <label for="password">Password</label>
+            <div class="input-container">
+                <input class="password-bar" id="password" type="password">
+                <span class="material-symbols-outlined input-icon">
+                    lock
+                </span>
+            </div>
+        </div>
 
-    <button class="login-button2">Login</button>
+        <div class="remember-me-container">
+            <input type="checkbox" id="remember-me" class="remember-me-checkbox">
+            <label for="remember-me" class="remember-me-label">
+                Remember Me
+            </label>
+        </div>
+
+        <button class="login-button2">Login</button>
+    </div>
+    
 </body>
 </html>
