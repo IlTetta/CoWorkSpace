@@ -15,7 +15,6 @@ async function getAllLocations(city = null) {
         }
         
         const data = await response.json();
-        console.log(data);
         
         if (data.status === 'success') {
             console.log('Locations trovate:', data.results);
