@@ -1,23 +1,23 @@
 /**
  * @function catchAsync
- * @param {Function} fn - Una funzione async Express middleware (req, res, next).
- * @returns {Function} Un wrapper che gestisce gli errori per la funzione middleware.
- *
- * Questa funzione è un "wrapper" per i middleware asincroni.
- * Cattura qualsiasi errore che si verifica all'interno del middleware asincrono
- * e lo passa al prossimo middleware di gestione degli errori di Express,
- * senza che sia necessario un blocco try/catch in ogni funzione.
- * * Esempio:
- * exports.getUsers = catchAsync(async (req, res, next) => {
- * // La Promise verrà gestita da questo wrapper.
- * const users = await pool.query('SELECT * FROM users');
- * res.status(200).json({ users: users.rows });
+ * @param {Function} fn - Un middleware Express ASINCRONO (async/await o che ritorna Promise).
+ * @returns {Function} Un wrapper che gestisce errori di Promise/reiezioni async.
+ * @throws {TypeError} Se fn non è una funzione asincrona.
+ * 
+ * ESEMPIO CORRETTO (async):
+ * ```exports.getUser = catchAsync(async (req, res, next) => {
+ *   const user = await User.find(id);
+ *   res.json(user);
  * });
+ * ```
+ * ESEMPIO NON SUPPORTATO (sync):
+ * ```exports.getUser = catchAsync((req, res, next) => {
+ *   throw new Error('Non funzionerà!'); // Non catturato
+ * });
+ * ```
  */
 const catchAsync = (fn) => {
   return (req, res, next) => {
-    // Esegue la funzione `fn` e, se restituisce una Promise,
-    // cattura qualsiasi errore e lo passa al middleware successivo (`next`).
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
