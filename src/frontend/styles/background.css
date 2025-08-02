@@ -1,0 +1,28 @@
+body {
+    background: radial-gradient(circle at top left, rgba(60, 52, 200, 0.5), rgba(40, 35, 150, 0.9));
+    position: relative;
+    overflow: hidden;
+}
+
+body::before,
+body::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 0;
+}
+
+body::before {
+    width: 500px;
+    height: 500px;
+    top: -100px;
+    left: -100px;
+}
+
+body::after {
+    width: 400px;
+    height: 400px;
+    bottom: -120px;
+    right: -80px;
+}
