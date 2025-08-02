@@ -9,6 +9,16 @@
 exports.calculateBookingPrice = (totalHours, pricePerHour, pricePerDay) => {
     // Preferiamo il prezzo giornaliero se si superano le 8 ore
     const hoursInDay = 8;
+
+    // Validazione degli input
+    if (
+        typeof totalHours !== 'number' || isNaN(totalHours) || totalHours < 0 ||
+        typeof pricePerHour !== 'number' || isNaN(pricePerHour) || pricePerHour < 0 ||
+        typeof pricePerDay !== 'number' || isNaN(pricePerDay) || pricePerDay < 0
+    ) {
+        return 0;
+    }
+
     let totalPrice;
 
     if (totalHours >= hoursInDay) {
