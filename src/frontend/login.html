@@ -3,11 +3,13 @@
 
 <head>
     <title>CoWorkSpace - Login</title>
-    <link rel="stylesheet" href="styles/home.css">
+    <link rel="stylesheet" href="styles/login.css">
     <link rel="stylesheet" href="styles/login-header.css">
+    <link rel="stylesheet" href="styles/background.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=person" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=account_circle" />
 </head>
 
 <body>
@@ -15,11 +17,16 @@
         <div class="middle-section">
             <div class="logo">CoWorkSpace</div>
         </div>
+
+        <div class="right-section">
+            <button class="signup-button">Sign Up</button>
+        </div>
     </div>
 
-    <div class="buttons-container">
-        <button class="login-button">Login</button>
-        <button class="signup-button">Sign Up</button>
+    <div class="people-icon">
+        <span class="material-symbols-outlined account-icon">
+            account_circle
+        </span>
     </div>
 
     <div class="panel">
@@ -27,9 +34,7 @@
             <label for="username">Username</label>
             <div class="input-container">
                 <input class="username-bar" type="text" id="username">
-                <span class="material-symbols-outlined input-icon">
-                    person
-                </span>
+                <span class="material-symbols-outlined input-icon">person</span>
             </div>
         </div>
 
@@ -44,13 +49,15 @@
         </div>
 
         <div class="remember-me-container">
-            <input type="checkbox" id="remember-me" class="remember-me-checkbox">
-            <label for="remember-me" class="remember-me-label">
-                Remember Me
-            </label>
+            <div>
+                <input type="checkbox" id="remember-me" class="remember-me-checkbox">
+                <label for="remember-me" class="remember-me-label">Remember Me</label>
+            </div>
+            
+            <a href="#" class="forgot-password-link">Forgot the password?</a>
         </div>
 
-        <button class="login-button2">Login</button>
+        <button class="login-button">Login</button>
     </div>
     
 </body>

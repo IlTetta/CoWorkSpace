@@ -1,16 +1,10 @@
-body {
-    margin: 0;
-    font-family: sans-serif, Arial;
-    background-color: #f4f4f4;
-    height: 3000px;
-    padding-top: 100px;
-}
-
 .header {
     height: 100px;
     background-color: white;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 50px;
     position: fixed;
     top: 0;
     left: 0;
@@ -19,9 +13,20 @@ body {
     z-index: 1001;
 }
 
+.left-section {
+    width: 90px;
+}
+
 .middle-section {
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.right-section {
+    display: flex;
+    justify-content: flex-end;
     align-items: center;
 }
 
@@ -31,44 +36,26 @@ body {
     font-weight: 900;
     font-size: 40px;
     cursor: pointer;
+    margin-left: 75px;
 }
 
-.buttons-container {
-    display: flex;
+.people-icon {
     position: absolute;
     top: 155px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1001;
-}
-
-.login-button {
-    width: 90px;
-    height: 40px;
-    margin-right: 0px;
-    border: 2px solid rgb(79, 70, 229);
-    border-top-left-radius: 20px;
-    border-bottom-left-radius: 20px;
-    background-color: rgb(79, 70, 229);
-    color: white;
-    font-family: sans-serif, Arial;
-    font-weight: bold;
-    font-size: 15px;
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-    transition: all 0.15s ease-in-out;
-    cursor: pointer;
-}
-
-.login-button:hover {
+    z-index: 1002;
     background-color: white;
-    color: rgb(79, 70, 229);
-    border: 2px solid rgb(79, 70, 229);
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.login-button:active {
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
-    transition: all 0.01s ease-out;
+.account-icon {
+    font-size: 80px !important;
+    color: rgb(79, 70, 229);
+    font-variation-settings: 'FILL' 1;
 }
 
 .signup-button {
@@ -77,15 +64,15 @@ body {
     margin-right: 5%;
     border: none;
     border-left: 2px solid transparent;
-    border-bottom-right-radius: 20px;
-    border-top-right-radius: 20px;
-    background-color: white;
-    color: rgb(79, 70, 229);
+    border-radius: 20px;
+    background-color: rgb(79, 70, 229);
+    color: white;
     font-family: sans-serif, Arial;
     font-weight: bold;
     font-size: 15px;
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
     
 .signup-button:hover {
@@ -97,7 +84,8 @@ body {
 }
 
 .signup-button:active {
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(255, 255, 255, 0.5) inset;
+    transform: scale(0.95);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
     transition: all 0.01s ease-out;
 }
 
@@ -109,7 +97,7 @@ body {
     top: 205px;
     left: 50%;
     transform: translateX(-50%);
-    width: 300px;
+    width: 330px;
     padding: 20px;
     background-color: white;
     border-radius: 10px;
@@ -135,7 +123,7 @@ label {
     top: 50%;
     right: 15px;
     transform: translateY(-50%);
-    color: #555;
+    color: rgb(79, 70, 229);
     pointer-events: none;
     font-variation-settings: 'FILL' 1;
 }
@@ -149,9 +137,9 @@ label {
     border-style: solid;
     border-color: rgb(79, 70, 229);
     border-radius: 5px;
-    font-family: sans-serif, Arial;
     box-sizing: border-box;
     font-size: 18px;
+    font-family: sans-serif, Arial;
     color: #000;
 }
 
@@ -161,10 +149,10 @@ label {
     outline: none;
 }
 
-.remenber-me-container {
+.remember-me-container {
     display: flex;
     align-items: center;
-    gap: 10px; 
+    justify-content: space-between;
     margin-top: 10px;
 }
 
@@ -209,7 +197,22 @@ label {
     align-items: center;
 }
 
-.login-button2 {
+.forgot-password-link {
+    font-size: 15.50px;
+    color: #555;
+    text-emphasis: none;
+    font-family: sans-serif, Arial;
+    transition: color 0.15s ease-in-out;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.forgot-password-link:hover {
+    color: #4b42b9;
+    text-decoration: underline;
+}
+
+.login-button {
     width: 100%;
     height: 40px;
     background-color: rgb(79, 70, 229);
@@ -222,14 +225,15 @@ label {
     transition: background-color 0.3s ease;
 }
 
-.login-button2:hover {
+.login-button:hover {
     background-color: white;
     color: rgb(79, 70, 229);
     border: 2px solid rgb(79, 70, 229);
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.login-button2:active {
+.login-button:active {
+    transform: scale(0.95);
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
     transition: all 0.01s ease-out;
 }
