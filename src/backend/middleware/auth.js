@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const catchAsync = require('../utils/catchAsync');
 
-const cathAsync = fn => (req, res, next) => {
+const catchAsync = fn => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 

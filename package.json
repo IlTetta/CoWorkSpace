@@ -1,7 +1,28 @@
-{"scripts": {
-    "test": "vitest"
+{
+  "name": "coworkspace",
+  "version": "1.0.0",
+  "description": "Questa sezione fornisce le istruzioni per configurare e gestire il database PostgreSQL utilizzato dal progetto **CoWorkSpace**.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
   },
-  "dependencies": {
-    "vitest": "^3.2.4"
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Masce02/CoWorkSpace.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Masce02/CoWorkSpace/issues"
+  },
+  "homepage": "https://github.com/Masce02/CoWorkSpace#readme",
+  "devDependencies": {
+    "jest": "^30.0.5"
   }
 }
