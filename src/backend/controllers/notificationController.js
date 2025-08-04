@@ -1,10 +1,12 @@
 const nodemailer = require('nodemailer');
+const admin = require('../firebase'); // inizializza admin SDK
 const dotenv = require('dotenv');
-const fs = require('fs').promises; // Importare il modulo fs per leggere i file
-const path = require('path'); // Importare il modulo path per gestire i percorsi
+const fs = require('fs').promises;
+const path = require('path');
 
 dotenv.config();
 
+// Trasportatore email
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE || 'gmail',
   auth: {
@@ -14,40 +16,73 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
+ * Legge un template HTML e sostituisce i placeholder {{chiave}} con i dati forniti.
+ */
+async function renderTemplate(templateName, templateData, baseFolder) {
+  const templatePath = path.join(__dirname, '..', baseFolder, `${templateName}.html`);
+  let template = await fs.readFile(templatePath, 'utf-8');
+  for (const key in templateData) {
+    const placeholder = new RegExp(`{{${key}}}`, 'g');
+    template = template.replace(placeholder, templateData[key]);
+  }
+  return template;
+}
+
+/**
  * Invia una notifica email usando un modello HTML.
  * @param {string} recipient - L'indirizzo email del destinatario.
  * @param {string} subject - L'oggetto dell'email.
  * @param {string} templateName - Il nome del file del modello HTML (es. 'bookingConfirmation').
  * @param {object} templateData - Un oggetto con i dati da sostituire nei placeholder (es. { userName: 'Mario', ... }).
  */
-exports.sendEmailNotification = async (recipient, subject, templateName, templateData) => {
+async function sendEmailNotification(recipient, subject, templateName, templateData) {
   try {
-    // 1. Costruisce il percorso completo del file modello
-    const templatePath = path.join(__dirname, '..', 'email_templates', `${templateName}.html`);
-    
-    // 2. Legge il contenuto del file in modo asincrono
-    let htmlTemplate = await fs.readFile(templatePath, 'utf-8');
-
-    // 3. Sostituisce i placeholder nel modello con i dati forniti
-    for (const key in templateData) {
-      const placeholder = new RegExp(`{{${key}}}`, 'g'); // Crea una regex globale
-      const value = templateData[key];
-      htmlTemplate = htmlTemplate.replace(placeholder, value);
-    }
-
-    // 4. Configura e invia l'email
+    const htmlTemplate = await renderTemplate(templateName, templateData, 'templates');
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: recipient,
-      subject: subject,
+      subject,
       html: htmlTemplate,
     };
-
     const info = await transporter.sendMail(mailOptions);
-    console.log('Notifica email inviata con successo:', info.messageId);
+    console.log('Email inviata:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Errore durante l\'invio della notifica email:', error);
+    console.error('Errore invio email:', error);
     return { success: false, error: error.message };
   }
+}
+
+
+/**
+ * Invia una notifica push FCM usando un modello HTML per il messaggio.
+ * @param {string} fcmToken - Il token del dispositivo a cui inviare la notifica.
+ * @param {string} title - Titolo della notifica.
+ * @param {string} templateName - Nome del file modello HTML (es. 'bookingConfirmation').
+ * @param {object} templateData - Dati da sostituire nei placeholder (es. { userName: 'Mario' }).
+ * @param {object} dataPayload - (Opzionale) payload extra per navigazione in-app ecc.
+ */
+async function sendPushNotification(fcmToken, title, templateName, templateData, dataPayload = {}) {
+  try {
+    const textBody = await renderTemplate(templateName, templateData, 'templates');
+    const message = {
+      token: fcmToken,
+      notification: {
+        title,
+        body: textBody,
+      },
+      data: dataPayload,
+    };
+    const response = await admin.messaging().send(message);
+    console.log('Push inviata:', response);
+    return { success: true, messageId: response };
+  } catch (error) {
+    console.error('Errore invio push:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+module.exports = {
+  sendEmail,
+  sendPush,
 };
