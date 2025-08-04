@@ -4,3 +4,9 @@ body {
     height: 100vh;
     padding-top: 100px;
 }
+
+@media (max-width: 1000px) {
+    body {
+        padding-top: 150px;
+    }
+}
