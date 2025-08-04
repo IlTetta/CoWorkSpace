@@ -1,6 +1,8 @@
 const pool = require('../config/db');
 const catchAsync = require('../utils/catchAsync');
 const { calculateBookingPrice } = require('../utils/bookingCalculator');
+const { sendEmailNotification } = require('../controllers/emailService');
+
 
 // Questa funzione calcola la differenza in ore tra due orari.
 function calculateHours(startTime, endTime) {
@@ -99,9 +101,25 @@ exports.createBooking = catchAsync(async (req, res, next) => {
         );
         const newBooking = bookingResult.rows[0];
 
+        // Invia email di notifica all'utente (in modo asincrono ma senza bloccare il flusso)
+        sendEmailNotification(
+            req.user.email, // destinatario: email dell’utente loggato
+            'Prenotazione ricevuta',
+            'bookingConfirmation', // nome del file HTML nel folder email
+            {
+                userName: req.user.name, // o name + surname
+                date: booking_date,
+                startTime: start_time,
+                endTime: end_time,
+                totalPrice: total_price.toFixed(2)
+            }
+        ).catch((err) => {
+            console.error('Errore invio email:', err.message);
+        });
+
         // Conferma la transazione, salvando le modifiche nel database.
         await client.query('COMMIT');
-        
+
         // Risposta di successo con stato 201 (Created).
         res.status(201).json({
             status: 'success',
@@ -166,7 +184,7 @@ exports.getAllBookings = catchAsync(async (req, res, next) => {
 
     // Esegue la query costruita in base al ruolo.
     const result = await pool.query(query, queryParams);
-    
+
     // Invia la risposta con le prenotazioni trovate.
     res.status(200).json({
         status: 'success',
@@ -210,7 +228,7 @@ exports.getBookingById = catchAsync(async (req, res, next) => {
             // Se è un manager, verifica che gestisca la sede a cui appartiene la prenotazione.
             const managerLocationCheck = await pool.query('SELECT 1 FROM locations WHERE location_id = $1 AND manager_id = $2', [booking.location_id, user_id]);
             if (managerLocationCheck.rows.length === 0) {
-                 return res.status(403).json({ message: 'Non autorizzato a visualizzare questa prenotazione.' });
+                return res.status(403).json({ message: 'Non autorizzato a visualizzare questa prenotazione.' });
             }
         } else {
             return res.status(403).json({ message: 'Non autorizzato a visualizzare questa prenotazione.' });
