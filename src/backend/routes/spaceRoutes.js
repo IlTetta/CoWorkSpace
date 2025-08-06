@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const spaceController = require('../controllers/spaceController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', spaceController.getAllSpaces); // Permette di filtrare per location_id, space_type_id 
 router.get('/:id', spaceController.getSpaceById);

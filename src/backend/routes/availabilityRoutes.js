@@ -1,7 +1,7 @@
 const exrpess = require('express');
 const router = exrpess.Router();
 const availabilityController = require('../controllers/availabilityController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Rotta pubblica: ottenere la disponibilità di uno spazio per data
 router.get('/', availabilityController.getSpaceAvailability);

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Rotta per creare un pagamento (avviata dal frontend dopo la creazione della prenotazione)
 router.post('/', authMiddleware.protect, authMiddleware.authorize('user'), paymentController.createPayment);

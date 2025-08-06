@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const catchAsync = require('../utils/catchAsync');
 const { calculateBookingPrice } = require('../utils/bookingCalculator');
-const { sendEmailNotification } = require('../controllers/emailService');
+//const { sendEmailNotification } = require('../controllers/emailService');
 
 
 // Questa funzione calcola la differenza in ore tra due orari.
