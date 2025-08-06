@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const spaceTypeController = require('../controllers/spaceTypeController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', spaceTypeController.getAllSpaceTypes);
 router.get('/:id', spaceTypeController.getSpaceTypeById);

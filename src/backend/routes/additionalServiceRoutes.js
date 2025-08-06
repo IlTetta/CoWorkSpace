@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const additionalServiceController = require('../controllers/additionalServiceController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Rotte pubbliche per vedere i servizi disponibili
 router.get('/', additionalServiceController.getAllAdditionalServices);
