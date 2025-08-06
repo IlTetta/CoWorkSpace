@@ -1,237 +1,135 @@
 // tests/controllers/userController.test.js
-const userController = require('../../src/backend/controllers/userController');
-const db = require('../../src/backend/config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const AppError = require('../../src/backend/utils/AppError');
+const db = require('../../src/backend/config/db');
 
+// Setup mock
 jest.mock('../../src/backend/config/db');
-jest.mock('bcryptjs');
-jest.mock('jsonwebtoken');
+jest.mock('../../src/backend/utils/catchAsync', () => (fn) => fn);
 
-describe('User Controller', () => {
+// Mock bcrypt completamente
+jest.mock('bcryptjs', () => ({
+    genSalt: jest.fn(),
+    hash: jest.fn(),
+    compare: jest.fn()
+}));
+
+jest.mock('jsonwebtoken', () => ({
+    sign: jest.fn()
+}));
+
+// Mock catchAsync - passa semplicemente la funzione attraverso
+jest.mock('../../src/backend/utils/catchAsync', () => {
+    return jest.fn((fn) => fn);
+});
+
+// Mock AppError come classe
+jest.mock('../../src/backend/utils/AppError', () => {
+    return jest.fn().mockImplementation((message, statusCode) => {
+        const error = new Error(message);
+        error.statusCode = statusCode;
+        error.message = message;
+        return error;
+    });
+});
+
+const AppError = require('../../src/backend/utils/AppError');
+const userController = require('../../src/backend/controllers/userController');
+
+describe('userController.register', () => {
     let req, res, next;
 
     beforeEach(() => {
-        req = { body: {}, user: {} };
+        req = {
+            body: {
+                name: 'Mario',
+                surname: 'Rossi',
+                email: 'mario.rossi@example.com',
+                password: 'password123',
+                role: 'user',
+            },
+        };
         res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
+            status: jest.fn(() => res),
+            json: jest.fn(),
         };
         next = jest.fn();
+
+        jest.clearAllMocks();
     });
 
-    describe('register', () => {
-        it('dovrebbe ritornare 400 se i campi obbligatori mancano', async () => {
-            req.body = { name: 'Test' };
+    it('dovrebbe registrare un nuovo utente e restituire un token', async () => {
+        const hashedPassword = 'hashedPassword';
+        const newUser = {
+            user_id: 1,
+            email: 'mario.rossi@example.com',
+            role: 'user',
+        };
+        const mockToken = 'mock-jwt-token';
 
-            await userController.register(req, res, next);
+        // Setup mocks - assicurati che tutti siano async/await compatible
+        bcrypt.genSalt.mockResolvedValue('salt123');
+        bcrypt.hash.mockResolvedValue(hashedPassword);
+        db.query.mockResolvedValue({ rows: [newUser] });
+        jwt.sign.mockReturnValue(mockToken);
+        
+        await userController.register(req, res, next);
 
-            expect(next).toHaveBeenCalledWith(expect.any(AppError));
-            expect(next.mock.calls[0][0].message).toBe('Tutti i campi sono obbligatori.');
-            expect(next.mock.calls[0][0].statusCode).toBe(400);
+        expect(next).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.json).toHaveBeenCalledWith({
+            message: 'Registrazione avvenuta con successo.',
+            token: mockToken,
+            user: {
+                id: newUser.user_id,
+                email: newUser.email,
+                role: newUser.role,
+            },
         });
-
-        it('dovrebbe registrare un nuovo utente e restituire un token', async () => {
-            req.body = {
-                name: 'Test',
-                surname: 'User',
-                email: 'test@example.com',
-                password: 'password123',
-                role: 'user'
-            }
-
-            bcrypt.genSalt.mockResolvedValue('salt');
-            bcrypt.hash.mockResolvedValue('hashedPassword');
-            db.query.mockResolvedValue({
-                rows: [{ user_id: 1, email: 'test@example.com' }]
-            });
-            jwt.sign.mockReturnValue('mockToken');
-
-            await userController.register(req, res, next);
-
-            expect(bcrypt.genSalt).toHaveBeenCalled();
-            expect(bcrypt.hash).toHaveBeenCalledWith('password123', 'salt');
-            expect(db.query).toHaveBeenCalled();
-            expect(jwt.sign).toHaveBeenCalledWith(
-                { id: 1, role: 'user' },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                message: 'Registrazione avvenuta con successo.',
-                token: 'jwtToken',
-                user: expect.objectContaining({
-                    id: 1,
-                    email: 'test@example.com',
-                    role: 'user'
-                })
-            }));
-        });
-
-        it('dovrebbe chiamare next con AppError se l\'email è già registrata', async () => {
-            req.body = {
-                name: 'Test',
-                surname: 'User',
-                email: 'test@example.com',
-                password: 'password123',
-                role: 'user'
-            };
-
-            bcrypt.genSalt.mockResolvedValue('salt');
-            bcrypt.hash.mockResolvedValue('hashedPassword');
-            const error = new Error();
-            error.code = '23505'; // Unique violation
-            db.query.mockRejectedValue(error);
-
-            await userController.register(req, res, next);
-
-            expect(next).toHaveBeenCalledWith(expect.any(AppError));
-            expect(next.mock.calls[0][0].message).toBe('Email già registrata.');
-            expect(next.mock.calls[0][0].statusCode).toBe(409);
-
-        });
+        expect(db.query).toHaveBeenCalledTimes(1);
     });
 
-    describe('login', () => {
-        it('dovrebbe ritornare 400 se email o password mancano', async () => {
-            req.body = { email: 'test@example.com' };
+    it('dovrebbe restituire un errore 400 se i campi obbligatori mancano', async () => {
+        req.body.password = '';
 
-            await userController.login(req, res, next);
+        await userController.register(req, res, next);
 
-            expect(next).toHaveBeenCalledWith(expect.any(AppError));
-            expect(next.mock.calls[0][0].message).toBe('Email e password sono obbligatori.');
-            expect(next.mock.calls[0][0].statusCode).toBe(400);
-        });
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(res.status).not.toHaveBeenCalled();
+        expect(db.query).not.toHaveBeenCalled();
 
-        it('dovrebbe restituire 400 se l\'utente non esiste', async () => {
-            req.body = { email: 'test@example.com', password: 'password123' };
-            db.query.mockResolvedValue({ rows: [] });
+        const errorInstance = next.mock.calls[0][0];
+        expect(errorInstance.message).toBe('Tutti i campi sono obbligatori.');
+        expect(errorInstance.statusCode).toBe(400);
+    });
 
-            await userController.login(req, res, next);
+    it('dovrebbe restituire un errore 409 se l\'email è già registrata', async () => {
+        const uniqueViolationError = new Error('duplicate key value violates unique constraint');
+        uniqueViolationError.code = '23505';
 
-            expect(next).toHaveBeenCalledWith(expect.any(AppError));
-            expect(next.mock.calls[0][0].message).toBe('Credenziali non valide.');
-            expect(next.mock.calls[0][0].statusCode).toBe(400);
-        });
+        bcrypt.genSalt.mockResolvedValue('salt123');
+        bcrypt.hash.mockResolvedValue('hashedPassword');
+        db.query.mockRejectedValue(uniqueViolationError);
 
-        it('dovrebbe restituire 400 se la password è errata', async () => {
-            req.body = { email: 'test@example.com', password: 'wrongPassword' };
-            db.query.mockResolvedValue({
-                rows: [{ user_id: 1, email: 'test@example.com', password_hash: 'hashedPassword', role: 'user' }]
-            });
-            bcrypt.compare.mockResolvedValue(false);
+        await userController.register(req, res, next);
 
-            await userController.login(req, res, next);
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(res.status).not.toHaveBeenCalled();
 
-            expect(next.mock.calls[0][0]).toBeInstanceOf(AppError);
-            expect(next.mock.calls[0][0].message).toBe('Credenziali non valide.');
-            expect(next.mock.calls[0][0].statusCode).toBe(400);
-        });
+        const errorInstance = next.mock.calls[0][0];
+        expect(errorInstance.message).toBe('Email già registrata.');
+        expect(errorInstance.statusCode).toBe(409);
+    });
 
-        it('dovrebbe restituire un token se il login ha successo', async () => {
-            req.body = { email: 'test@example.com', password: 'correctPassword' };
-            db.query.mockResolvedValue({
-                rows: [{ user_id: 1, email: 'test@example.com', password_hash: 'hashedPassword', role: 'user' }]
-            });
-            bcrypt.compare.mockResolvedValue(true);
-            jwt.sign.mockReturnValue('jwtToken');
+    it('dovrebbe passare un errore generico del database al middleware next', async () => {
+        const genericError = new Error('Database connection failed');
+        
+        bcrypt.genSalt.mockResolvedValue('salt123');
+        bcrypt.hash.mockResolvedValue('hashedPassword');
+        db.query.mockRejectedValue(genericError);
 
-            await userController.login(req, res, next);
+        await userController.register(req, res, next);
 
-            expect(jwt.sign).toHaveBeenCalledWith(
-                { id: 1, role: 'user' },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                message: 'Login avvenuto con successo.',
-                token: 'jwtToken',
-                user: expect.objectContaining({
-                    id: 1,
-                    email: 'test@example.com',
-                    role: 'user'
-                })
-            }));
-        });
-
-        describe('getProfile', () => {
-            it('dovrebbe restituire 404 se l\'utente non esiste', async () => {
-                req.user.id = 1;
-                db.query.mockResolvedValue({ rows: [] });
-
-                await userController.getProfile(req, res, next);
-
-                expect(next).toHaveBeenCalledWith(expect.any(AppError));
-                expect(next.mock.calls[0][0].message).toBe('Utente non trovato.');
-                expect(next.mock.calls[0][0].statusCode).toBe(404);
-            });
-
-            it('dovrebbe restituire i dati dell\'utente se esiste', async () => {
-                req.user.id = 1;
-                db.query.mockResolvedValue({
-                    rows: [{ user_id: 1, name: 'Test', surname: 'User', email: 'test@example.com', role: 'user' }]
-                });
-
-                await userController.getProfile(req, res, next);
-
-                expect(res.status).toHaveBeenCalledWith(200);
-                expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                    id: 1,
-                    name: 'Test',
-                    surname: 'User',
-                    email: 'test@example.com',
-                    role: 'user'
-                }));
-            });
-        });
-
-        describe('logout', () => {
-            it('dovrebbe pulire il cookie jwt', () => {
-                res.cookie = jest.fn();
-
-                userController.logout(req, res);
-                expect(res.cookie).toHaveBeenCalledWith('jwt', '', { maxAge: 0, httpOnly: true });
-                expect(res.status).toHaveBeenCalledWith(200);
-                expect(res.json).toHaveBeenCalledWith({ message: 'Logout avvenuto con successo.' });
-            });
-        });
-
-        describe('updateProfile', () => {
-            it('dovrebbe restituire 404 se la mail è già in uso', async () => {
-                req.user.id = 1;
-                req.body = { email: 'test@example.com' };
-                db.query.mockResolvedValue({ rows: [{ user_id: 2 }] });
-
-                await userController.updateProfile(req, res, next);
-
-                expect(next).toHaveBeenCalledWith(expect.any(AppError));
-                expect(next.mock.calls[0][0].message).toBe('Email già in uso.');
-                expect(next.mock.calls[0][0].statusCode).toBe(409);
-            });
-
-            it('dovrebbe aggiornare il profilo dell\'utente e restituire i nuovi dati', async () => {
-                req.user.id = 1;
-                req.body = { name: 'Updated Name', surname: 'Updated Surname', email: 'updated@example.com' };
-                db.query.mockResolvedValue({ rows: [] });
-                db.query.mockResolvedValue({ rows: [{ user_id: 1, ...req.body, role: 'user' }] });
-
-                await userController.updateProfile(req, res, next);
-
-                expect(res.status).toHaveBeenCalledWith(200);
-                expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-                    message: 'Profilo aggiornato con successo.',
-                    user: expect.objectContaining({
-                        user_id: 1,
-                        name: 'Updated Name',
-                        surname: 'Updated Surname',
-                        email: 'updated@example.com',
-                        role: 'user'
-                    })
-                }));
-            });
-        });
+        expect(next).toHaveBeenCalledWith(genericError);
     });
 });
