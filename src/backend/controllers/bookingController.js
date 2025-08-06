@@ -326,3 +326,30 @@ exports.deleteBooking = catchAsync(async (req, res, next) => {
         data: null
     });
 });
+
+exports.getBookingsBySpaceId = catchAsync(async (req, res, next) => {
+    const spaceId = req.params.id;
+
+    const query = `
+        SELECT
+            b.booking_id,
+            u.name || ' ' || u.surname AS user,
+            b.booking_date,
+            b.start_time,
+            b.end_time,
+            b.total_hours,
+            b.total_price,
+            b.status
+        FROM bookings b
+        JOIN users u ON b.user_id = u.user_id
+        WHERE b.space_id = $1
+        ORDER BY b.booking_date DESC, b.start_time DESC;
+    `;
+
+    try {
+        const result = await pool.query(query, [spaceId]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
