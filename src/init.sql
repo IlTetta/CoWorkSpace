@@ -2,6 +2,7 @@
 CREATE TYPE user_role_enum AS ENUM ('user', 'manager', 'admin');
 CREATE TYPE booking_status_enum AS ENUM ('confirmed', 'pending', 'cancelled', 'completed');
 CREATE TYPE payment_status_enum AS ENUM ('completed', 'failed', 'refunded');
+CREATE TYPE payment_method_enum AS ENUM ('credit_card', 'paypal', 'bank_transfer', 'cash');
 
 
 -- Tabella Utenti
@@ -9,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   user_id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   surname VARCHAR(100) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
   password_hash VARCHAR(255) NOT NULL,
   role user_role_enum NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS payments (
   booking_id INT UNIQUE NOT NULL, -- Ogni prenotazioni ha un solo pagamento associato
   amount DECIMAL(10, 2) NOT NULL,
   payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  payment_method VARCHAR(50) NOT NULL, --! Da vedere se ENUM o VARCHAR !
+  payment_method payment_method_enum NOT NULL,
   status payment_status_enum NOT NULL DEFAULT 'completed',
   transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gataway di pagamento (es. Stripe, PayPal, ecc.)
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE CASCADE

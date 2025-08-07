@@ -8,3 +8,13 @@ npm install -D jest supertest
 
 
 server.js non richiede test unitari
+
+controller si occupano solo di HTTP, modelli solo dei dati/SQL
+
+TODO:
+1. Separare Model da Controller (vedere esempio)
+2. Migliorare la sicurezza in app.js, server.js (vedere altri file)
+3. Sistemare catchAsync e AppError + usarli nei controller
+4. Aggiornare errorCode amn mano che si usa AppError
+5. Creare schema SQL per notifiche
+6. Usare un logger? 
