@@ -8,12 +8,13 @@ dotenv.config();
 
 // Trasportatore email
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
+
 
 /**
  * Legge un template HTML e sostituisce i placeholder {{chiave}} con i dati forniti.
@@ -83,6 +84,6 @@ async function sendPushNotification(fcmToken, title, templateName, templateData,
 }
 
 module.exports = {
-  sendEmail,
-  sendPush,
+  sendEmailNotification,
+  sendPushNotification,
 };
