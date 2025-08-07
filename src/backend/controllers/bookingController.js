@@ -101,18 +101,42 @@ exports.createBooking = catchAsync(async (req, res, next) => {
         );
         const newBooking = bookingResult.rows[0];
 
-        // Invia email di notifica all'utente (in modo asincrono ma senza bloccare il flusso)
+   const fullSpaceDetails = await client.query(
+            `SELECT 
+                s.space_name, 
+                l.location_name,
+                l.address AS location_address
+             FROM spaces s
+             JOIN locations l ON s.location_id = l.location_id
+             WHERE s.id = $1`,
+            [space_id]
+        );
+        const { space_name, location_name, location_address } = fullSpaceDetails.rows[0];
+
+       
+        const templateData = {
+            OggettoEmail: `Conferma Prenotazione #${newBooking.booking_id} - ${space_name}`,
+            NomeCliente: `${req.user.name} ${req.user.surname}`, 
+            NomeAzienda: location_name,
+            NumeroPrenotazione: newBooking.booking_id,
+            ServizioPrenotato: space_name,
+            DataInizio: newBooking.booking_date,
+            DataFine: newBooking.booking_date, // Per ora, si assume prenotazione di un solo giorno
+            Orario: `${newBooking.start_time} - ${newBooking.end_time}`,
+            NumeroPersone: 'Non specificato', // TODO: Aggiungi un campo nel body per il numero di persone
+            Importo: newBooking.total_price.toFixed(2),
+            StatoPagamento: 'In attesa di conferma', // Basato sullo stato iniziale
+            Indirizzo: location_address,
+            NumeroTelefono: '031 2389988',
+            EmailAzienda: 'xxx',
+            SitoWeb: 'xxx'
+        };
+
+        // Invia l'email di notifica all'utente.
         sendEmailNotification(
-            req.user.email, // destinatario: email dell’utente loggato
-            'Prenotazione ricevuta',
-            'bookingConfirmation', // nome del file HTML nel folder email
-            {
-                userName: req.user.name, // o name + surname
-                date: booking_date,
-                startTime: start_time,
-                endTime: end_time,
-                totalPrice: total_price.toFixed(2)
-            }
+            req.user.email,
+            templateData.OggettoEmail,
+            'bookingConfirmation', 
         ).catch((err) => {
             console.error('Errore invio email:', err.message);
         });
@@ -337,7 +361,26 @@ exports.deleteBooking = catchAsync(async (req, res, next) => {
 
     // Esegue la query DELETE.
     const result = await pool.query('DELETE FROM bookings WHERE booking_id = $1 RETURNING *', [id]);
+    const deletedBooking = result.rows[0];
 
+    // Recupera l'email e il nome dell'utente
+    const userResult = await pool.query('SELECT email, full_name FROM users WHERE user_id = $1', [deletedBooking.user_id]);
+    const user = userResult.rows[0];
+
+    // Invia email di notifica cancellazione
+    
+        sendEmailNotification(
+            user.email,
+            'Cancellazione Prenotazione',
+            'bookingCancellation',
+            {
+                userName: user.full_name || 'Utente',
+                bookingId: deletedBooking.booking_id,
+                bookingDate: new Date(deletedBooking.booking_date).toLocaleDateString(),
+                companyName: 'CoWorkSpace'
+            }
+        );
+    
     // Risposta di successo con stato 204 (No Content).
     res.status(204).json({
         status: 'success',

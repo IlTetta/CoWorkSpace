@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{OggettoEmail}}</title>
+  <title>Cancellazione prenotazione</title>
   <style>
     body {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -23,7 +23,7 @@
       overflow: hidden;
     }
     .header {
-      background-color: #007bff;
+      background-color: #dc3545;
       color: #ffffff;
       padding: 30px;
       text-align: center;
@@ -41,18 +41,20 @@
       color: #2c3e50;
       margin-top: 0;
     }
-    .button-container {
-      text-align: center;
-      margin: 30px 0;
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
     }
-    .button {
-      background-color: #007bff;
-      color: #ffffff !important;
-      padding: 12px 24px;
-      text-decoration: none;
-      border-radius: 5px;
+    .details-table th, .details-table td {
+      text-align: left;
+      padding: 12px 0;
+      border-bottom: 1px solid #eeeeee;
+    }
+    .details-table th {
       font-weight: bold;
-      display: inline-block;
+      color: #555555;
+      width: 40%;
     }
     .footer {
       background-color: #f0f0f0;
@@ -62,7 +64,7 @@
       font-size: 12px;
     }
     .footer a {
-      color: #007bff;
+      color: #dc3545;
       text-decoration: none;
     }
     @media only screen and (max-width: 480px) {
@@ -78,27 +80,41 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>Reset della password</h1>
+      <h1>Cancellazione prenotazione</h1>
     </div>
     <div class="content">
-      <h2>Ciao {{userName}},</h2>
+      <h2>Ciao {{NomeCliente}},</h2>
       <p>
-        Abbiamo ricevuto una richiesta di reset della password per il tuo account CoWorkSpace.
+        Ti confermiamo che la tua prenotazione n. <strong>{{NumeroPrenotazione}}</strong> è stata cancellata con successo.
       </p>
       <p>
-        Per procedere, clicca sul pulsante qui sotto:
+        Di seguito i dettagli della prenotazione annullata:
       </p>
-      <div class="button-container">
-        <a href="{{resetLink}}" class="button">Resetta la tua password</a>
-      </div>
+      <table class="details-table">
+        <tr>
+          <th>Servizio:</th>
+          <td>{{Servizio}}</td>
+        </tr>
+        <tr>
+          <th>Data:</th>
+          <td>{{DataPrenotazione}}</td>
+        </tr>
+        <tr>
+          <th>Orario:</th>
+          <td>{{Orario}}</td>
+        </tr>
+        <tr>
+          <th>Numero di persone:</th>
+          <td>{{NumeroPersone}}</td>
+        </tr>
+      </table>
       <p>
-        Se non hai richiesto il reset della password, puoi semplicemente ignorare questa email.
-        Il tuo account rimarrà sicuro.
+        Se desideri effettuare una nuova prenotazione o hai bisogno di assistenza, il nostro team è a tua disposizione.
       </p>
       <p>
-        Il link per il reset è valido per un periodo di tempo limitato per motivi di sicurezza.
+        Cordiali saluti,<br />
+        Il team di {{NomeAzienda}}
       </p>
-      <p>Grazie,<br />Il team di {{NomeAzienda}}</p>
     </div>
     <div class="footer">
       <p>{{NomeAzienda}} | {{IndirizzoAzienda}}<br />

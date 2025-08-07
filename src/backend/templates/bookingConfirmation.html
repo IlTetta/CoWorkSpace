@@ -1,19 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-    <title>Conferma di prenotazione CoWorkSpace</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conferma Prenotazione #{{NumeroPrenotazione}}</title>
+  <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            line-height: 1.6;
+            color: #333333;
+        }
+        .booking-details {
+            margin-top: 20px;
+            border-top: 1px solid #eeeeee;
+            padding-top: 20px;
+        }
+        .booking-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .booking-details th, .booking-details td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eeeeee;
+        }
+        .booking-details th {
+            width: 30%;
+            font-weight: bold;
+            color: #555555;
+        }
+        .footer {
+            background-color: #f4f4f4;
+            color: #888888;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Conferma di prenotazione</h1>
-    <p>Ciao {{userName}},</p>
-    <p>La tua prenotazione per lo spazio <strong>{{spaceName}}</strong> è stata creata con successo ed è in attesa di conferma.</p>
-    <p><strong>Dettagli della prenotazione:</strong></p>
-    <ul>
-      <li><strong>Data:</strong> {{bookingDate}}</li>
-      <li><strong>Orario:</strong> dalle {{startTime}} alle {{endTime}}</li>
-      <li><strong>Prezzo totale:</strong> {{totalPrice}} €</li>
-    </ul>
-    <p>Ti aggiorneremo non appena lo stato della tua prenotazione cambierà.</p>
-    <p>Grazie per aver scelto CoWorkSpace!</p>
+  <div class="container">
+    <div class="header">
+      <h1>Conferma Prenotazione</h1>
+    </div>
+    <div class="content">
+      <p>Gentile {{NomeCliente}},</p>
+      <p>
+        Siamo lieti di confermare la sua prenotazione presso
+        <strong>CoWorkSpace</strong>. La ringraziamo per averci scelto.
+      </p>
+      <div class="booking-details">
+        <p style="font-size: 18px; font-weight: bold; color: #007bff;">
+          Dettagli della sua prenotazione:
+        </p>
+        <table>
+          <tr>
+            <th>Numero di prenotazione:</th>
+            <td>#{{NumeroPrenotazione}}</td>
+          </tr>
+          <tr>
+            <th>Nome e Cognome:</th>
+            <td>{{NomeCliente}}</td>
+          </tr>
+          <tr>
+            <th>Servizio prenotato:</th>
+            <td>{{ServizioPrenotato}}</td>
+          </tr>
+          <tr>
+            <th>Data/e:</th>
+            <td>Dal {{DataInizio}} al {{DataFine}}</td>
+          </tr>
+          <tr>
+            <th>Orario:</th>
+            <td>{{Orario}}</td>
+          </tr>
+          <tr>
+            <th>Numero di persone:</th>
+            <td>{{NumeroPersone}}</td>
+          </tr>
+          <tr>
+            <th>Totale:</th>
+            <td>{{Importo}}</td>
+          </tr>
+        </table>
+      </div>
+      <p>
+        Per qualsiasi domanda o richiesta di modifica, non esiti a contattarci
+        rispondendo a questa email.
+      </p>
+      <p>Cordiali saluti,<br />Il team di CoWorkSpace</p>
+    </div>
+    <div class="footer">
+      <p>
+        {{NomeAzienda}} | {{IndirizzoAzienda}}<br />
+        {{NumeroTelefono}} | <a href="mailto:{{EmailAzienda}}">{{EmailAzienda}}</a>
+        | <a href="{{SitoWeb}}">{{SitoWeb}}</a>
+      </p>
+    </div>
+  </div>
 </body>
 </html>
