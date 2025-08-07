@@ -1,4 +1,4 @@
-// src/backend/middleware/authMiddlewareMiddleware.js
+// src/backend/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const catchAsync = require('../utils/catchAsync');
