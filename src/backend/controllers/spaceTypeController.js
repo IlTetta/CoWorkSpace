@@ -1,17 +1,18 @@
 const pool = require('../config/db');
 const catchAsync = require('../utils/catchAsync');
+const SpaceType = require('../models/SpaceType');
 
 // Middleware per ottenere tutti i tipi di spazio.
 exports.getAllSpaceTypes = catchAsync(async (req, res, next) => {
-    // Esegue una query per selezionare tutti i record dalla tabella `space_types`.
-    const result = await pool.query('SELECT * FROM space_types');
+    // Utilizza il modello per ottenere tutti i tipi di spazio
+    const spaceTypes = await SpaceType.findAll();
     
     // Invia una risposta di successo con lo stato 200, il numero di risultati e i dati.
     res.status(200).json({
         status: 'success',
-        results: result.rows.length,
+        results: spaceTypes.length,
         data: {
-            spaceTypes: result.rows
+            spaceTypes: spaceTypes
         }
     });
 });
@@ -21,11 +22,11 @@ exports.getSpaceTypeById = catchAsync(async (req, res, next) => {
     // Estrae l'ID dai parametri della URL.
     const { id } = req.params;
     
-    // Esegue la query per trovare il tipo di spazio con l'ID specificato.
-    const result = await pool.query('SELECT * FROM space_types WHERE space_type_id = $1', [id]);
+    // Utilizza il modello per trovare il tipo di spazio
+    const spaceType = await SpaceType.findById(id);
 
-    // Se la query non restituisce righe, significa che il tipo di spazio non è stato trovato.
-    if (result.rows.length === 0) {
+    // Se il tipo di spazio non è stato trovato, restituisce un errore 404.
+    if (!spaceType) {
         return res.status(404).json({
             status: 'fail',
             message: 'Tipo di spazio non trovato'
@@ -36,7 +37,7 @@ exports.getSpaceTypeById = catchAsync(async (req, res, next) => {
     res.status(200).json({
         status: 'success',
         data: {
-            spaceType: result.rows[0]
+            spaceType: spaceType
         }
     });
 });
@@ -46,7 +47,7 @@ exports.createSpaceType = catchAsync(async (req, res, next) => {
     // Estrae i dati del nuovo tipo di spazio dal corpo della richiesta.
     const { type_name, description } = req.body;
 
-    // Validazione dei campi obbligatori.
+    // Validazione dei campi obbligatori (gestita dal modello, ma mantengo per compatibilità).
     if (!type_name) {
         return res.status(400).json({
             status: 'fail',
@@ -56,17 +57,14 @@ exports.createSpaceType = catchAsync(async (req, res, next) => {
 
     // `try...catch` per gestire specifici errori del database.
     try {
-        // Esegue la query di inserimento per creare il nuovo tipo di spazio.
-        const result = await pool.query(
-            'INSERT INTO space_types (type_name, description) VALUES ($1, $2) RETURNING *',
-            [type_name, description]
-        );
+        // Utilizza il modello per creare il nuovo tipo di spazio
+        const spaceType = await SpaceType.create({ type_name, description });
 
         // Invia una risposta con stato 201 (Created) e i dati del nuovo tipo di spazio.
         res.status(201).json({
             status: 'success',
             data: {
-                spaceType: result.rows[0]
+                spaceType: spaceType
             }
         });
     } catch (error) {
@@ -88,23 +86,8 @@ exports.updateSpaceType = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { type_name, description } = req.body;
     
-    // Array per costruire la query di aggiornamento dinamicamente.
-    const updateFields = [];
-    const queryParams = [id]; // L'ID del tipo di spazio è sempre il primo parametro.
-    let queryIndex = 2; // L'indice per i placeholder dei parametri inizia da $2.
-
-    // Aggiunge i campi da aggiornare solo se sono forniti nel corpo della richiesta.
-    if (type_name) {
-        updateFields.push(`type_name = $${queryIndex++}`);
-        queryParams.push(type_name);
-    }
-    if (description) {
-        updateFields.push(`description = $${queryIndex++}`);
-        queryParams.push(description);
-    }
-
-    // Se non sono stati forniti campi validi da aggiornare, invia un errore 400.
-    if (updateFields.length === 0) {
+    // Verifica che almeno un campo sia fornito per l'aggiornamento
+    if (!type_name && !description) {
         return res.status(400).json({
             status: 'fail',
             message: 'Nessun campo valido fornito per l\'aggiornamento'
@@ -113,12 +96,11 @@ exports.updateSpaceType = catchAsync(async (req, res, next) => {
 
     // `try...catch` per gestire specifici errori del database, come la violazione di unicità.
     try {
-        // Costruisce ed esegue la query di aggiornamento dinamica.
-        const query = `UPDATE space_types SET ${updateFields.join(', ')} WHERE space_type_id = $1 RETURNING *`;
-        const result = await pool.query(query, queryParams);
+        // Utilizza il modello per aggiornare il tipo di spazio
+        const spaceType = await SpaceType.update(id, { type_name, description });
 
-        // Se nessuna riga è stata aggiornata, il tipo di spazio non è stato trovato.
-        if (result.rows.length === 0) {
+        // Se il tipo di spazio non è stato trovato
+        if (!spaceType) {
             return res.status(404).json({
                 status: 'fail',
                 message: 'Tipo di spazio non trovato'
@@ -129,7 +111,7 @@ exports.updateSpaceType = catchAsync(async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             data: {
-                spaceType: result.rows[0]
+                spaceType: spaceType
             }
         });
     } catch (error) {
@@ -149,11 +131,11 @@ exports.deleteSpaceType = catchAsync(async (req, res, next) => {
     // Estrae l'ID dai parametri della URL.
     const { id } = req.params;
     
-    // Esegue la query DELETE.
-    const result = await pool.query('DELETE FROM space_types WHERE space_type_id = $1 RETURNING *', [id]);
+    // Utilizza il modello per eliminare il tipo di spazio
+    const deletedSpaceType = await SpaceType.delete(id);
 
-    // Se non viene eliminata alcuna riga, il tipo di spazio non è stato trovato.
-    if (result.rows.length === 0) {
+    // Se il tipo di spazio non è stato trovato
+    if (!deletedSpaceType) {
         return res.status(404).json({
             status: 'fail',
             message: 'Tipo di spazio non trovato'
