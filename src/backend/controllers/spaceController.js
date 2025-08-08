@@ -1,6 +1,7 @@
 const SpaceService = require('../services/SpaceService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Controller per la gestione degli spazi
@@ -17,11 +18,7 @@ const AppError = require('../utils/AppError');
 const getSpaces = catchAsync(async (req, res) => {
   const spaces = await SpaceService.getSpaces(req.query, null);
   
-  res.status(200).json({
-    success: true,
-    message: 'Spazi recuperati con successo',
-    data: { spaces }
-  });
+  return ApiResponse.list(res, spaces, 'Spazi recuperati con successo', req.query);
 });
 
 /**
@@ -31,11 +28,7 @@ const getSpaceById = catchAsync(async (req, res) => {
   const { space_id } = req.params;
   const space = await SpaceService.getSpaceDetails(space_id, null);
   
-  res.status(200).json({
-    success: true,
-    message: 'Spazio recuperato con successo',
-    data: { space }
-  });
+  return ApiResponse.success(res, 200, 'Spazio recuperato con successo', { space });
 });
 
 /**
@@ -44,11 +37,7 @@ const getSpaceById = catchAsync(async (req, res) => {
 const searchAvailableSpaces = catchAsync(async (req, res) => {
   const spaces = await SpaceService.searchAvailableSpaces(req.query);
   
-  res.status(200).json({
-    success: true,
-    message: 'Spazi disponibili recuperati con successo',
-    data: { spaces }
-  });
+  return ApiResponse.list(res, spaces, 'Spazi disponibili recuperati con successo', req.query);
 });
 
 /**
@@ -63,11 +52,7 @@ const checkSpaceAvailability = catchAsync(async (req, res) => {
   
   const availability = await SpaceService.checkSpaceAvailability(space_id, startDateTime, endDateTime);
   
-  res.status(200).json({
-    success: true,
-    message: 'Disponibilità verificata con successo',
-    data: { availability }
-  });
+  return ApiResponse.success(res, 200, 'Disponibilità verificata con successo', { availability });
 });
 
 /**
@@ -102,11 +87,7 @@ const createSpace = catchAsync(async (req, res) => {
   
   const space = await SpaceService.createSpace(spaceData, user);
   
-  res.status(201).json({
-    success: true,
-    message: 'Spazio creato con successo',
-    data: { space }
-  });
+  return ApiResponse.created(res, 'Spazio creato con successo', { space });
 });
 
 /**
@@ -119,11 +100,7 @@ const updateSpace = catchAsync(async (req, res) => {
   
   const space = await SpaceService.updateSpace(space_id, updateData, user);
   
-  res.status(200).json({
-    success: true,
-    message: 'Spazio aggiornato con successo',
-    data: { space }
-  });
+  return ApiResponse.updated(res, { space }, 'Spazio aggiornato con successo');
 });
 
 /**
@@ -135,10 +112,7 @@ const deleteSpace = catchAsync(async (req, res) => {
   
   await SpaceService.deleteSpace(space_id, user);
   
-  res.status(200).json({
-    success: true,
-    message: 'Spazio eliminato con successo'
-  });
+  return ApiResponse.deleted(res, 'Spazio eliminato con successo');
 });
 
 /**

@@ -3,6 +3,7 @@ const BookingService = require('../services/BookingService');
 const NotificationService = require('../services/NotificationService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Controller per gestire le richieste HTTP relative alle prenotazioni
@@ -26,15 +27,7 @@ class BookingController {
 
         const bookings = await BookingService.getBookings(req.user, filters);
 
-        res.status(200).json({
-            success: true,
-            message: 'Prenotazioni recuperate con successo',
-            data: {
-                bookings,
-                count: bookings.length,
-                filters
-            }
-        });
+        return ApiResponse.list(res, bookings, 'Prenotazioni recuperate con successo', filters);
     });
 
     /**
@@ -48,6 +41,8 @@ class BookingController {
         }
 
         const booking = await BookingService.getBookingDetails(req.user, booking_id);
+
+        return ApiResponse.success(res, 200, 'Prenotazione recuperata con successo', { booking });
 
         res.status(200).json({
             success: true,

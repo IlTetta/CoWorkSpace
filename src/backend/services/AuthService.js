@@ -36,13 +36,13 @@ class AuthService {
         // Trova utente per email
         const user = await User.findByEmail(email);
         if (!user) {
-            throw AppError.unauthorized('Credenziali non valide');
+            throw AppError.invalidCredentials();
         }
 
         // Verifica password
         const isPasswordValid = await user.verifyPassword(password);
         if (!isPasswordValid) {
-            throw AppError.unauthorized('Credenziali non valide');
+            throw AppError.invalidCredentials();
         }
 
         // Genera token
@@ -73,10 +73,10 @@ class AuthService {
             return user;
         } catch (error) {
             if (error.name === 'JsonWebTokenError') {
-                throw AppError.unauthorized('Token non valido');
+                throw AppError.tokenInvalid();
             }
             if (error.name === 'TokenExpiredError') {
-                throw AppError.unauthorized('Token scaduto');
+                throw AppError.tokenExpired();
             }
             throw error;
         }
