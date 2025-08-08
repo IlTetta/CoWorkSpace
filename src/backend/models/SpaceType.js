@@ -6,11 +6,35 @@ const pool = require('../config/db');
  */
 class SpaceType {
     /**
-     * Trova tutti i tipi di spazio
+     * Trova tutti i tipi di spazio con filtri opzionali
+     * @param {Object} filters - Filtri di ricerca
      * @returns {Promise<Array>} Array di tutti i tipi di spazio
      */
-    static async findAll() {
-        const result = await pool.query('SELECT * FROM space_types');
+    static async findAll(filters = {}) {
+        let query = 'SELECT * FROM space_types';
+        const queryParams = [];
+        const conditions = [];
+        let paramIndex = 1;
+
+        // Filtro per nome (ricerca parziale)
+        if (filters.type_name) {
+            conditions.push(`type_name ILIKE $${paramIndex++}`);
+            queryParams.push(`%${filters.type_name}%`);
+        }
+
+        // Filtro per descrizione
+        if (filters.description) {
+            conditions.push(`description ILIKE $${paramIndex++}`);
+            queryParams.push(`%${filters.description}%`);
+        }
+
+        if (conditions.length > 0) {
+            query += ` WHERE ${conditions.join(' AND ')}`;
+        }
+
+        query += ' ORDER BY type_name';
+
+        const result = await pool.query(query, queryParams);
         return result.rows;
     }
 
@@ -99,11 +123,125 @@ class SpaceType {
     /**
      * Elimina un tipo di spazio
      * @param {number} id - ID del tipo di spazio da eliminare
-     * @returns {Promise<Object|null>} Tipo di spazio eliminato o null se non trovato
+     * @returns {Promise<boolean>} True se eliminato con successo
      */
     static async delete(id) {
         const result = await pool.query('DELETE FROM space_types WHERE space_type_id = $1 RETURNING *', [id]);
-        return result.rows[0] || null;
+        return result.rows.length > 0;
+    }
+
+    /**
+     * Ottiene tutti gli spazi che utilizzano un tipo specifico
+     * @param {number} spaceTypeId - ID del tipo di spazio
+     * @returns {Promise<Array>} Array degli spazi che utilizzano questo tipo
+     */
+    static async getSpacesUsingType(spaceTypeId) {
+        const query = `
+            SELECT s.*, l.location_name
+            FROM spaces s
+            JOIN locations l ON s.location_id = l.location_id
+            WHERE s.space_type_id = $1
+            ORDER BY l.location_name, s.space_name
+        `;
+
+        const result = await pool.query(query, [spaceTypeId]);
+        return result.rows;
+    }
+
+    /**
+     * Ottiene statistiche sui tipi di spazio
+     * @returns {Promise<Object>} Statistiche sui tipi di spazio
+     */
+    static async getStatistics() {
+        const queries = [
+            // Conteggio totale tipi di spazio
+            'SELECT COUNT(*) as total_space_types FROM space_types',
+            
+            // Tipo più utilizzato
+            `SELECT st.type_name, COUNT(s.space_id) as usage_count
+             FROM space_types st
+             LEFT JOIN spaces s ON st.space_type_id = s.space_type_id
+             GROUP BY st.space_type_id, st.type_name
+             ORDER BY usage_count DESC
+             LIMIT 1`,
+            
+            // Conteggio spazi per tipo
+            `SELECT st.type_name, COUNT(s.space_id) as spaces_count
+             FROM space_types st
+             LEFT JOIN spaces s ON st.space_type_id = s.space_type_id
+             GROUP BY st.space_type_id, st.type_name
+             ORDER BY spaces_count DESC`,
+             
+            // Tipi non utilizzati
+            `SELECT COUNT(*) as unused_types
+             FROM space_types st
+             LEFT JOIN spaces s ON st.space_type_id = s.space_type_id
+             WHERE s.space_id IS NULL`
+        ];
+
+        const results = await Promise.all(
+            queries.map(query => pool.query(query))
+        );
+
+        return {
+            totalSpaceTypes: parseInt(results[0].rows[0].total_space_types),
+            mostUsedType: results[1].rows[0] || null,
+            spacesByType: results[2].rows,
+            unusedTypes: parseInt(results[3].rows[0].unused_types)
+        };
+    }
+
+    /**
+     * Recupera i tipi di spazio più popolari
+     * @param {number} limit - Numero massimo di risultati
+     * @returns {Promise<Array>} Array dei tipi di spazio più utilizzati
+     */
+    static async getMostPopular(limit = 5) {
+        const query = `
+            SELECT st.*, COUNT(s.space_id) as spaces_count
+            FROM space_types st
+            LEFT JOIN spaces s ON st.space_type_id = s.space_type_id
+            GROUP BY st.space_type_id, st.type_name, st.description
+            ORDER BY spaces_count DESC, st.type_name
+            LIMIT $1
+        `;
+
+        const result = await pool.query(query, [limit]);
+        return result.rows;
+    }
+
+    /**
+     * Aggiorna l'ordine di visualizzazione dei tipi di spazio
+     * @param {Array} orderedIds - Array degli ID nell'ordine desiderato
+     * @returns {Promise<Array>} Array dei tipi aggiornati
+     */
+    static async updateDisplayOrder(orderedIds) {
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            const updatedTypes = [];
+            
+            for (let i = 0; i < orderedIds.length; i++) {
+                const result = await client.query(
+                    'UPDATE space_types SET display_order = $1 WHERE space_type_id = $2 RETURNING *',
+                    [i + 1, orderedIds[i]]
+                );
+                
+                if (result.rows[0]) {
+                    updatedTypes.push(result.rows[0]);
+                }
+            }
+            
+            await client.query('COMMIT');
+            return updatedTypes;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     /**
