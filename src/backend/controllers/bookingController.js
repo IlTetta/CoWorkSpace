@@ -1,389 +1,343 @@
-const pool = require('../config/db');
+// src/backend/controllers/bookingController.js
+const BookingService = require('../services/BookingService');
+const NotificationService = require('../services/NotificationService');
 const catchAsync = require('../utils/catchAsync');
-const { calculateBookingPrice } = require('../utils/bookingCalculator');
-//const { sendEmailNotification } = require('../controllers/emailService');
+const AppError = require('../utils/AppError');
 
+/**
+ * Controller per gestire le richieste HTTP relative alle prenotazioni
+ */
+class BookingController {
+    /**
+     * GET /api/bookings - Lista prenotazioni con filtri
+     */
+    static getBookings = catchAsync(async (req, res) => {
+        const filters = {};
+        
+        // Filtri dalla query string
+        if (req.query.status) filters.status = req.query.status;
+        if (req.query.payment_status) filters.payment_status = req.query.payment_status;
+        if (req.query.space_id) filters.space_id = parseInt(req.query.space_id);
+        if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
+        if (req.query.booking_date) filters.booking_date = req.query.booking_date;
+        if (req.query.date_from) filters.date_from = req.query.date_from;
+        if (req.query.date_to) filters.date_to = req.query.date_to;
+        if (req.query.limit) filters.limit = parseInt(req.query.limit);
 
-// Questa funzione calcola la differenza in ore tra due orari.
-function calculateHours(startTime, endTime) {
-    // Viene usata una data fissa per calcolare solo la differenza oraria.
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    let diffMs = end - start;
-    // Gestisce il caso in cui l'ora di fine sia il giorno dopo (es. da 22:00 a 02:00).
-    if (diffMs < 0) {
-        diffMs += 24 * 60 * 60 * 1000;
-    }
-    // Converte i millisecondi in ore e arrotonda a 2 cifre decimali.
-    return parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
-}
+        const bookings = await BookingService.getBookings(req.user, filters);
 
-// Middleware per creare una nuova prenotazione.
-exports.createBooking = catchAsync(async (req, res, next) => {
-    // Estrae i dati della prenotazione dal corpo della richiesta.
-    const { space_id, booking_date, start_time, end_time } = req.body;
-    // L'ID dell'utente viene preso dall'oggetto `req.user`,
-    // che dovrebbe essere stato popolato da un middleware di autenticazione.
-    const user_id = req.user.id;
-
-    // Validazione dei dati di input obbligatori.
-    if (!space_id || !booking_date || !start_time || !end_time) {
-        return res.status(400).json({
-            message: 'Space ID, data, ora di inizio e ora di fine sono obbligatori.'
+        res.status(200).json({
+            success: true,
+            message: 'Prenotazioni recuperate con successo',
+            data: {
+                bookings,
+                count: bookings.length,
+                filters
+            }
         });
-    }
+    });
 
-    // Verifica l'esistenza dello spazio e recupera i suoi prezzi.
-    const spaceResult = await pool.query(
-        'SELECT price_per_hour, price_per_day FROM spaces WHERE id = $1',
-        [space_id]
-    );
-    if (spaceResult.rows.length === 0) {
-        return res.status(404).json({
-            message: 'Spazio non trovato.'
+    /**
+     * GET /api/bookings/:id - Dettagli prenotazione specifica
+     */
+    static getBookingById = catchAsync(async (req, res) => {
+        const booking_id = parseInt(req.params.booking_id);
+        
+        if (isNaN(booking_id)) {
+            throw AppError.badRequest('ID prenotazione non valido');
+        }
+
+        const booking = await BookingService.getBookingDetails(req.user, booking_id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Dettagli prenotazione recuperati con successo',
+            data: {
+                booking
+            }
         });
-    }
-    const { price_per_hour, price_per_day } = spaceResult.rows[0];
+    });
 
-    // Calcola le ore totali e il prezzo totale usando le funzioni definite.
-    const total_hours = calculateHours(start_time, end_time);
-    const total_price = calculateBookingPrice(total_hours, price_per_hour, price_per_day);
-
-    // Verifica la disponibilità del blocco orario.
-    const availabilityCheck = await pool.query(
-        `SELECT * FROM availability
-         WHERE space_id = $1
-         AND booking_date = $2
-         AND start_time <= $3
-         AND end_time >= $4
-         AND is_available = true`,
-        [space_id, booking_date, end_time, start_time]
-    );
-
-    if (availabilityCheck.rows.length === 0) {
-        return res.status(409).json({
-            message: 'Lo spazio non è disponibile l\'orario richiesto.'
-        });
-    }
-
-    // TODO: La verifica attuale controlla solo se esiste *un* blocco di disponibilità che si sovrappone.
-    // Per una logica più robusta, ci si dovrebbe assicurare che l'intero intervallo richiesto sia coperto
-    // da blocchi di disponibilità disponibili, senza buchi.
-
-    // Verifica che non ci siano prenotazioni che si sovrappongono.
-    // Questo è un controllo per evitare doppie prenotazioni.
-    const conflictingBookings = await pool.query(
-        `SELECT * FROM bookings
-         WHERE space_id = $1
-         AND booking_date = $2
-         AND start_time < $3
-         AND end_time > $4
-         AND status IN ('confirmed', 'pending')`,
-        [space_id, booking_date, end_time, start_time]
-    );
-
-    if (conflictingBookings.rows.length > 0) {
-        return res.status(409).json({
-            message: 'Esiste già una prenotazione confermata o in sospeso per questo spazio e orario.'
-        });
-    }
-
-    // Inizia una transazione per garantire l'atomicità: o la prenotazione viene creata e le modifiche applicate, o nulla viene fatto.
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-
-        // Crea la prenotazione nel database. Lo stato iniziale è 'pending'.
-        const bookingResult = await client.query(
-            `INSERT INTO bookings (user_id, space_id, booking_date, start_time, end_time, total_hours, total_price, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending') RETURNING *`,
-            [user_id, space_id, booking_date, start_time, end_time, total_hours, total_price]
-        );
-        const newBooking = bookingResult.rows[0];
-
-   const fullSpaceDetails = await client.query(
-            `SELECT 
-                s.space_name, 
-                l.location_name,
-                l.address AS location_address
-             FROM spaces s
-             JOIN locations l ON s.location_id = l.location_id
-             WHERE s.id = $1`,
-            [space_id]
-        );
-        const { space_name, location_name, location_address } = fullSpaceDetails.rows[0];
-
-       
-        const templateData = {
-            OggettoEmail: `Conferma Prenotazione #${newBooking.booking_id} - ${space_name}`,
-            NomeCliente: `${req.user.name} ${req.user.surname}`, 
-            NomeAzienda: location_name,
-            NumeroPrenotazione: newBooking.booking_id,
-            ServizioPrenotato: space_name,
-            DataInizio: newBooking.booking_date,
-            DataFine: newBooking.booking_date, // Per ora, si assume prenotazione di un solo giorno
-            Orario: `${newBooking.start_time} - ${newBooking.end_time}`,
-            NumeroPersone: 'Non specificato', // TODO: Aggiungi un campo nel body per il numero di persone
-            Importo: newBooking.total_price.toFixed(2),
-            StatoPagamento: 'In attesa di conferma', // Basato sullo stato iniziale
-            Indirizzo: location_address,
-            NumeroTelefono: '031 2389988',
-            EmailAzienda: 'xxx',
-            SitoWeb: 'xxx'
+    /**
+     * POST /api/bookings - Crea nuova prenotazione
+     */
+    static createBooking = catchAsync(async (req, res) => {
+        const bookingData = {
+            user_id: req.body.user_id || req.user.user_id, // Default a utente corrente
+            space_id: req.body.space_id,
+            booking_date: req.body.booking_date,
+            start_time: req.body.start_time,
+            end_time: req.body.end_time,
+            total_hours: req.body.total_hours,
+            total_price: req.body.total_price,
+            status: req.body.status,
+            payment_status: req.body.payment_status,
+            notes: req.body.notes
         };
 
-        // Invia l'email di notifica all'utente.
-        sendEmailNotification(
-            req.user.email,
-            templateData.OggettoEmail,
-            'bookingConfirmation', 
-        ).catch((err) => {
-            console.error('Errore invio email:', err.message);
-        });
+        const booking = await BookingService.createBooking(req.user, bookingData);
 
-        // Conferma la transazione, salvando le modifiche nel database.
-        await client.query('COMMIT');
+        // 📧 Invia email di conferma prenotazione automaticamente
+        try {
+            await NotificationService.sendBookingConfirmation(
+                booking, 
+                req.user, 
+                { name: booking.space_name, location_name: booking.location_name }
+            );
+            console.log(`📧 Conferma prenotazione inviata a: ${req.user.email}`);
+        } catch (emailError) {
+            console.error('❌ Errore invio conferma prenotazione:', emailError.message);
+            // Non bloccare la prenotazione se l'email fallisce
+        }
 
-        // Risposta di successo con stato 201 (Created).
         res.status(201).json({
-            status: 'success',
-            message: 'Prenotazione creata con successo (in attesa di pagamento/conferma).',
+            success: true,
+            message: 'Prenotazione creata con successo',
             data: {
-                booking: newBooking
+                booking
             }
         });
-    } catch (error) {
-        // Se qualcosa va storto, annulla tutte le modifiche della transazione.
-        await client.query('ROLLBACK');
-        // Passa l'errore al middleware di gestione globale.
-        next(error);
-    } finally {
-        // Rilascia il client del pool, rendendolo disponibile per altre richieste.
-        client.release();
-    }
-});
-
-// Middleware per ottenere tutte le prenotazioni, con filtri basati sul ruolo dell'utente.
-exports.getAllBookings = catchAsync(async (req, res, next) => {
-    // Estrae ID e ruolo dell'utente autenticato.
-    const user_id = req.user.id;
-    const user_role = req.user.role;
-    let query;
-    const queryParams = [];
-
-    // Logica di autorizzazione per filtrare le prenotazioni.
-    if (user_role === 'user') {
-        // Un utente normale può vedere solo le proprie prenotazioni.
-        query = `SELECT b.*, s.space_name, l.location_name
-                 FROM bookings b
-                 JOIN spaces s ON b.space_id = s.space_id
-                 JOIN locations l ON s.location_id = l.location_id
-                 WHERE b.user_id = $1
-                 ORDER BY b.created_at DESC`;
-        queryParams.push(user_id);
-    } else if (user_role === 'manager') {
-        // Un manager vede solo le prenotazioni per le sedi che gestisce.
-        query = `SELECT b.*, s.space_name, l.location_name, u.name as user_name, u.surname as user_surname
-                 FROM bookings b
-                 JOIN spaces s ON b.space_id = s.space_id
-                 JOIN locations l ON s.location_id = l.location_id
-                 JOIN users u ON b.user_id = u.user_id
-                 WHERE l.manager_id = $1
-                 ORDER BY b.created_at DESC`;
-        queryParams.push(user_id);
-    } else if (user_role === 'admin') {
-        // Un admin può vedere tutte le prenotazioni del sistema.
-        query = `SELECT b.*, s.space_name, l.location_name, u.name as user_name, u.surname as user_surname
-                 FROM bookings b
-                 JOIN spaces s ON b.space_id = s.space_id
-                 JOIN locations l ON s.location_id = l.location_id
-                 JOIN users u ON b.user_id = u.user_id
-                 ORDER BY b.created_at DESC`;
-    } else {
-        // Se il ruolo non è riconosciuto, l'accesso viene negato.
-        return res.status(403).json({
-            message: 'Non autorizzato a visualizzare le prenotazioni.'
-        });
-    }
-
-    // Esegue la query costruita in base al ruolo.
-    const result = await pool.query(query, queryParams);
-
-    // Invia la risposta con le prenotazioni trovate.
-    res.status(200).json({
-        status: 'success',
-        results: result.rows.length,
-        data: {
-            bookings: result.rows
-        }
     });
-});
 
-// Middleware per ottenere i dettagli di una singola prenotazione, con controlli di accesso.
-exports.getBookingById = catchAsync(async (req, res, next) => {
-    // Estrae l'ID dai parametri della URL e i dati dell'utente autenticato.
-    const { id } = req.params;
-    const user_id = req.user.id;
-    const user_role = req.user.role;
+    /**
+     * PUT /api/bookings/:id - Aggiorna prenotazione
+     */
+    static updateBooking = catchAsync(async (req, res) => {
+        const booking_id = parseInt(req.params.booking_id);
+        
+        if (isNaN(booking_id)) {
+            throw AppError.badRequest('ID prenotazione non valido');
+        }
 
-    // Query per recuperare tutti i dettagli della prenotazione.
-    let query = `SELECT b.*, s.space_name, l.location_name, u.name as user_name, u.surname as user_surname
-                 FROM bookings b
-                 JOIN spaces s ON b.space_id = s.space_id
-                 JOIN locations l ON s.location_id = l.location_id
-                 JOIN users u ON b.user_id = u.user_id
-                 WHERE b.booking_id = $1`;
-    const queryParams = [id];
+        // Campi aggiornabili
+        const updateData = {};
+        const allowedFields = [
+            'booking_date', 'start_time', 'end_time', 'total_hours',
+            'total_price', 'status', 'payment_status', 'notes'
+        ];
 
-    const result = await pool.query(query, queryParams);
-    const booking = result.rows[0];
-
-    // Controlla se la prenotazione esiste.
-    if (!booking) {
-        return res.status(404).json({
-            message: 'Prenotazione non trovata.'
-        });
-    }
-
-    // Logica di autorizzazione.
-    // Solo il proprietario, un admin o un manager della sede possono visualizzare la prenotazione.
-    if (booking.user_id !== user_id && user_role !== 'admin') {
-        if (user_role === 'manager') {
-            // Se è un manager, verifica che gestisca la sede a cui appartiene la prenotazione.
-            const managerLocationCheck = await pool.query('SELECT 1 FROM locations WHERE location_id = $1 AND manager_id = $2', [booking.location_id, user_id]);
-            if (managerLocationCheck.rows.length === 0) {
-                return res.status(403).json({ message: 'Non autorizzato a visualizzare questa prenotazione.' });
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
             }
-        } else {
-            return res.status(403).json({ message: 'Non autorizzato a visualizzare questa prenotazione.' });
-        }
-    }
-
-    // Risposta di successo.
-    res.status(200).json({
-        status: 'success',
-        data: {
-            booking
-        }
-    });
-});
-
-// Middleware per aggiornare lo stato di una prenotazione.
-exports.updateBookingStatus = catchAsync(async (req, res, next) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    const user_id = req.user.id;
-    const user_role = req.user.role;
-
-    // Validazione dello stato fornito.
-    if (!status) {
-        return res.status(400).json({
-            message: 'Lo stato è obbligatorio.'
         });
-    }
-    const validStatuses = ['confirmed', 'pending', 'cancelled', 'completed'];
-    if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: `Stato non valido. Sono ammessi: ${validStatuses.join(', ')}` });
-    }
 
-    // Recupera la prenotazione e i dati di autorizzazione.
-    const currentBookingResult = await pool.query(
-        `SELECT b.user_id, b.status AS current_status, s.location_id, l.manager_id
-         FROM bookings b
-         JOIN spaces s ON b.space_id = s.space_id
-         JOIN locations l ON s.location_id = l.location_id
-         WHERE b.booking_id = $1`,
-        [id]
-    );
-    const booking = currentBookingResult.rows[0];
-
-    if (!booking) {
-        return res.status(404).json({ message: 'Prenotazione non trovata.' });
-    }
-
-    // Logica di autorizzazione per la modifica dello stato.
-    if (user_role === 'manager') {
-        // Un manager può modificare lo stato solo se gestisce la sede.
-        if (booking.manager_id !== user_id) {
-            return res.status(403).json({ message: 'Non autorizzato a modificare lo stato di questa prenotazione (non sei il manager della sede).' });
+        if (Object.keys(updateData).length === 0) {
+            throw AppError.badRequest('Nessun campo da aggiornare fornito');
         }
-    } else if (user_role !== 'admin') {
-        // Solo manager e admin sono autorizzati a modificare lo stato.
-        return res.status(403).json({ message: 'Non autorizzato a modificare lo stato di questa prenotazione.' });
-    }
 
-    // Previene modifiche di stato illogiche.
-    if (booking.current_status === 'completed' || booking.current_status === 'cancelled') {
-        return res.status(400).json({ message: `Non è possibile cambiare lo stato di una prenotazione già ${booking.current_status}.` });
-    }
+        const booking = await BookingService.updateBooking(req.user, booking_id, updateData);
 
-    // Esegue l'aggiornamento dello stato nel database.
-    const result = await pool.query(
-        `UPDATE bookings SET status = $1 WHERE booking_id = $2 RETURNING *`,
-        [status, id]
-    );
-
-    // Risposta di successo.
-    res.status(200).json({
-        status: 'success',
-        message: 'Stato prenotazione aggiornato.',
-        data: {
-            booking: result.rows[0]
-        }
-    });
-});
-
-// Middleware per eliminare una prenotazione.
-exports.deleteBooking = catchAsync(async (req, res, next) => {
-    const { id } = req.params;
-    const user_id = req.user.id;
-    const user_role = req.user.role;
-
-    // Recupera i dati della prenotazione per i controlli di autorizzazione.
-    const bookingResult = await pool.query('SELECT user_id, status FROM bookings WHERE booking_id = $1', [id]);
-    const booking = bookingResult.rows[0];
-
-    if (!booking) {
-        return res.status(404).json({ message: 'Prenotazione non trovata.' });
-    }
-
-    // Logica di autorizzazione per l'eliminazione.
-    if (user_role !== 'admin') {
-        // Se non è un admin, deve essere il proprietario della prenotazione.
-        if (booking.user_id !== user_id) {
-            return res.status(403).json({ message: 'Non autorizzato a eliminare questa prenotazione (non sei il proprietario).' });
-        }
-        // Il proprietario può eliminare solo se la prenotazione non è ancora confermata o completata.
-        if (booking.status === 'confirmed' || booking.status === 'completed') {
-            return res.status(400).json({ message: 'Non è possibile eliminare una prenotazione già confermata o completata. Contattare l\'assistenza.' });
-        }
-    }
-
-    // Esegue la query DELETE.
-    const result = await pool.query('DELETE FROM bookings WHERE booking_id = $1 RETURNING *', [id]);
-    const deletedBooking = result.rows[0];
-
-    // Recupera l'email e il nome dell'utente
-    const userResult = await pool.query('SELECT email, full_name FROM users WHERE user_id = $1', [deletedBooking.user_id]);
-    const user = userResult.rows[0];
-
-    // Invia email di notifica cancellazione
-    
-        sendEmailNotification(
-            user.email,
-            'Cancellazione Prenotazione',
-            'bookingCancellation',
-            {
-                userName: user.full_name || 'Utente',
-                bookingId: deletedBooking.booking_id,
-                bookingDate: new Date(deletedBooking.booking_date).toLocaleDateString(),
-                companyName: 'CoWorkSpace'
+        res.status(200).json({
+            success: true,
+            message: 'Prenotazione aggiornata con successo',
+            data: {
+                booking
             }
+        });
+    });
+
+    /**
+     * DELETE /api/bookings/:id - Elimina prenotazione
+     */
+    static deleteBooking = catchAsync(async (req, res) => {
+        const booking_id = parseInt(req.params.booking_id);
+        
+        if (isNaN(booking_id)) {
+            throw AppError.badRequest('ID prenotazione non valido');
+        }
+
+        const deleted = await BookingService.deleteBooking(req.user, booking_id);
+
+        if (!deleted) {
+            throw AppError.notFound('Prenotazione non trovata');
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Prenotazione eliminata con successo'
+        });
+    });
+
+    /**
+     * POST /api/bookings/check-availability - Verifica disponibilità spazio
+     */
+    static checkAvailability = catchAsync(async (req, res) => {
+        const { space_id, booking_date, start_time, end_time } = req.body;
+
+        if (!space_id || !booking_date || !start_time || !end_time) {
+            throw AppError.badRequest('space_id, booking_date, start_time e end_time sono obbligatori');
+        }
+
+        const availability = await BookingService.checkAvailability(
+            parseInt(space_id),
+            booking_date,
+            start_time,
+            end_time
         );
-    
-    // Risposta di successo con stato 204 (No Content).
-    res.status(204).json({
-        status: 'success',
-        data: null
+
+        res.status(200).json({
+            success: true,
+            data: availability
+        });
     });
-});
+
+    /**
+     * POST /api/bookings/calculate-price - Calcola prezzo prenotazione
+     */
+    static calculatePrice = catchAsync(async (req, res) => {
+        const { space_id, booking_date, start_time, end_time } = req.body;
+
+        if (!space_id || !booking_date || !start_time || !end_time) {
+            throw AppError.badRequest('space_id, booking_date, start_time e end_time sono obbligatori');
+        }
+
+        const pricing = await BookingService.calculateBookingPrice(
+            parseInt(space_id),
+            booking_date,
+            start_time,
+            end_time
+        );
+
+        res.status(200).json({
+            success: true,
+            data: {
+                pricing
+            }
+        });
+    });
+
+    // ============================================================================
+    // ENDPOINTS PROTETTI PER MANAGER/ADMIN
+    // ============================================================================
+
+    /**
+     * GET /api/bookings/dashboard - Dashboard prenotazioni per manager/admin
+     */
+    static getBookingsDashboard = catchAsync(async (req, res) => {
+        const filters = {};
+        
+        // Filtri per la dashboard
+        if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
+        if (req.query.date_from) filters.date_from = req.query.date_from;
+        if (req.query.date_to) filters.date_to = req.query.date_to;
+
+        const dashboard = await BookingService.getBookingsDashboard(req.user, filters);
+
+        res.status(200).json({
+            success: true,
+            data: dashboard
+        });
+    });
+
+    /**
+     * PATCH /api/bookings/:id/status - Aggiorna solo lo status (manager/admin)
+     */
+    static updateBookingStatus = catchAsync(async (req, res) => {
+        const bookingId = parseInt(req.params.id);
+        const { status } = req.body;
+        
+        if (isNaN(bookingId)) {
+            throw AppError.badRequest('ID prenotazione non valido');
+        }
+
+        if (!status) {
+            throw AppError.badRequest('Status è obbligatorio');
+        }
+
+        const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+        if (!validStatuses.includes(status)) {
+            throw AppError.badRequest(`Status non valido. Valori ammessi: ${validStatuses.join(', ')}`);
+        }
+
+        const booking = await BookingService.updateBooking(req.user, bookingId, { status });
+
+        res.status(200).json({
+            success: true,
+            message: `Status prenotazione aggiornato a '${status}'`,
+            data: {
+                booking
+            }
+        });
+    });
+
+    /**
+     * PATCH /api/bookings/:id/payment-status - Aggiorna stato pagamento (manager/admin)
+     */
+    static updatePaymentStatus = catchAsync(async (req, res) => {
+        const bookingId = parseInt(req.params.id);
+        const { payment_status } = req.body;
+        
+        if (isNaN(bookingId)) {
+            throw AppError.badRequest('ID prenotazione non valido');
+        }
+
+        if (!payment_status) {
+            throw AppError.badRequest('Payment status è obbligatorio');
+        }
+
+        const validPaymentStatuses = ['pending', 'paid', 'failed', 'refunded'];
+        if (!validPaymentStatuses.includes(payment_status)) {
+            throw AppError.badRequest(`Payment status non valido. Valori ammessi: ${validPaymentStatuses.join(', ')}`);
+        }
+
+        const booking = await BookingService.updateBooking(req.user, bookingId, { payment_status });
+
+        res.status(200).json({
+            success: true,
+            message: `Stato pagamento aggiornato a '${payment_status}'`,
+            data: {
+                booking
+            }
+        });
+    });
+
+    // ============================================================================
+    // ENDPOINT PUBBLICI (SENZA AUTENTICAZIONE)
+    // ============================================================================
+
+    /**
+     * GET /api/public/bookings/space/:spaceId/availability - Verifica disponibilità pubblica
+     */
+    static getPublicAvailability = catchAsync(async (req, res) => {
+        const spaceId = parseInt(req.params.spaceId);
+        const { date } = req.query;
+
+        if (isNaN(spaceId)) {
+            throw AppError.badRequest('ID spazio non valido');
+        }
+
+        if (!date) {
+            throw AppError.badRequest('Data è obbligatoria');
+        }
+
+        // Per ora restituiamo solo informazioni base
+        // In futuro si potrebbe implementare un calendario di disponibilità
+        const Space = require('../models/Space');
+        const space = await Space.findById(spaceId);
+        
+        if (!space) {
+            throw AppError.notFound('Spazio non trovato');
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                space: {
+                    id: space.space_id,
+                    name: space.name,
+                    capacity: space.capacity,
+                    price_per_hour: space.price_per_hour,
+                    price_per_day: space.price_per_day,
+                    status: space.status
+                },
+                date,
+                message: 'Usa l\'endpoint /check-availability per verificare orari specifici'
+            }
+        });
+    });
+}
+
+module.exports = BookingController;
+
+
