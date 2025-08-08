@@ -3,6 +3,7 @@
 const express = require('express'); 
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const db = require('./config/db');
 const app = express();
 
 // --- Importazione dei moduli delle rotte ---
@@ -14,6 +15,7 @@ const availabilityRoutes = require('./routes/availabilityRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const additionalServiceRoutes = require('./routes/additionalServiceRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // --- Rate Limiting ---
 // Rate limiting generale per tutte le API
@@ -48,6 +50,56 @@ app.use('/api/', generalLimiter);
 app.use('/api/users/login', authLimiter);
 app.use('/api/users/register', authLimiter);
 
+// --- Health Check Endpoint ---
+app.get('/health', async (req, res) => {
+    try {
+        const dbHealth = await db.healthCheck();
+        const poolStats = db.getPoolStats();
+        
+        const healthStatus = {
+            status: dbHealth.status === 'healthy' ? 'OK' : 'ERROR',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            database: dbHealth,
+            connectionPool: poolStats,
+            version: process.env.npm_package_version || '1.0.0',
+            environment: process.env.NODE_ENV || 'development'
+        };
+
+        const statusCode = dbHealth.status === 'healthy' ? 200 : 503;
+        res.status(statusCode).json(healthStatus);
+    } catch (error) {
+        res.status(503).json({
+            status: 'ERROR',
+            timestamp: new Date().toISOString(),
+            error: error.message
+        });
+    }
+});
+
+// --- API Info Endpoint ---
+app.get('/api', (req, res) => {
+    res.json({
+        name: 'CoWorkSpace API',
+        version: process.env.npm_package_version || '1.0.0',
+        description: 'API per la gestione di spazi co-working',
+        endpoints: {
+            auth: '/api/users',
+            locations: '/api/locations',
+            spaces: '/api/spaces',
+            'space-types': '/api/space-types',
+            availability: '/api/availability',
+            bookings: '/api/bookings',
+            payments: '/api/payments',
+            'additional-services': '/api/additional-services',
+            notifications: '/api/notifications'
+        },
+        docs: '/api/docs', // Per future implementazioni
+        health: '/health'
+    });
+});
+
 // --- Definizione delle rotte API ---
 app.use('/api/users', userRoutes);
 app.use('/api/locations', locationsRoutes);
@@ -57,6 +109,7 @@ app.use('/api/availability', availabilityRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/additional-services', additionalServiceRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // --- Gestione globale degli errori ---
 app.use((err, req, res, next) => {
