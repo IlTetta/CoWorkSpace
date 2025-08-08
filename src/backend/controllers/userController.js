@@ -2,6 +2,7 @@ const AuthService = require('../services/AuthService');
 const NotificationService = require('../services/NotificationService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Registrazione nuovo utente
@@ -27,13 +28,9 @@ exports.register = catchAsync(async (req, res, next) => {
         // Non bloccare la registrazione se l'email fallisce
     }
 
-    res.status(201).json({
-        success: true,
-        message: 'Registrazione avvenuta con successo',
-        data: {
-            token: result.token,
-            user: result.user
-        }
+    return ApiResponse.created(res, 'Registrazione avvenuta con successo', {
+        token: result.token,
+        user: result.user
     });
 });
 
@@ -46,13 +43,9 @@ exports.login = catchAsync(async (req, res, next) => {
     // Delega tutta la logica al service
     const result = await AuthService.login(email, password);
 
-    res.status(200).json({
-        success: true,
-        message: 'Login avvenuto con successo',
-        data: {
-            token: result.token,
-            user: result.user
-        }
+    return ApiResponse.success(res, 200, 'Login avvenuto con successo', {
+        token: result.token,
+        user: result.user
     });
 });
 
@@ -70,12 +63,8 @@ exports.getProfile = catchAsync(async (req, res, next) => {
         created_at: req.user.created_at
     };
 
-    res.status(200).json({
-        success: true,
-        message: 'Profilo utente recuperato con successo',
-        data: {
-            user: userProfile
-        }
+    return ApiResponse.success(res, 200, 'Profilo utente recuperato con successo', {
+        user: userProfile
     });
 });
 
@@ -89,10 +78,7 @@ exports.logout = catchAsync(async (req, res, next) => {
     // Effettua logout (per ora solo client-side)
     await AuthService.logout(token);
 
-    res.status(200).json({
-        success: true,
-        message: 'Logout effettuato con successo'
-    });
+    return ApiResponse.success(res, 200, 'Logout effettuato con successo');
 });
 
 /**
@@ -108,13 +94,9 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
         email
     });
 
-    res.status(200).json({
-        success: true,
-        message: 'Profilo aggiornato con successo',
-        data: {
-            user: updatedUser.toJSON()
-        }
-    });
+    return ApiResponse.updated(res, {
+        user: updatedUser.toJSON()
+    }, 'Profilo aggiornato con successo');
 });
 
 /**
@@ -130,8 +112,5 @@ exports.changePassword = catchAsync(async (req, res, next) => {
     // Usa il service per cambiare la password
     await AuthService.changePassword(req.user, currentPassword, newPassword);
 
-    res.status(200).json({
-        success: true,
-        message: 'Password modificata con successo'
-    });
+    return ApiResponse.success(res, 200, 'Password modificata con successo');
 });

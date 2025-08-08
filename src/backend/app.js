@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const db = require('./config/db');
+const ApiResponse = require('./utils/apiResponse');
 const app = express();
 
 // --- Importazione dei moduli delle rotte ---
@@ -141,28 +142,23 @@ app.use((err, req, res, next) => {
 
     // Determina status code e messaggio per la risposta
     const statusCode = err.statusCode || 500;
-    const status = err.status || 'error';
+    const message = err.isOperational ? err.message : 'Errore interno del server';
+    const code = err.code || 'INTERNAL_ERROR';
     
-    // Risposta base
-    const response = {
-        status: status,
-        message: err.isOperational ? err.message : 'Errore interno del server'
-    };
-
-    // Aggiungi dettagli in base all'ambiente e al tipo di errore
+    // Dettagli dell'errore (solo in development o per errori operazionali)
+    let details = null;
     if (process.env.NODE_ENV === 'development') {
-        response.error = {
+        details = {
             name: err.name,
             stack: err.stack,
-            code: err.code,
-            details: err.details
+            originalError: err.details
         };
     } else if (err.isOperational && err.details) {
-        // In produzione, includi solo dettagli da errori operazionali
-        response.details = err.details;
+        details = err.details;
     }
 
-    res.status(statusCode).json(response);
+    // Utilizza ApiResponse per risposta standardizzata
+    return ApiResponse.error(res, statusCode, message, code, details);
 });
 
 // Esporta l'applicazione per poterla usare in server.js e nei test
