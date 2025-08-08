@@ -3,21 +3,29 @@ const express = require('express');
 const router = express.Router();
 const { validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
-const { registerValidation, loginValidation, updateProfileValidation } = require('../middleware/validators/authValidator');const userController = require('../controllers/userController');
+const { registerValidation, loginValidation, updateProfileValidation } = require('../middleware/validators/authValidator');
+const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const validateRequest = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ 
+            status: 'fail',
+            message: 'Dati non validi',
+            errors: errors.array() 
+        });
     }
     next();
-}
+};
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minuti
     max: 5, // Limita a 5 richieste per IP
-    message: 'Troppi tentativi di accesso. Riprova tra 15 minuti.',
+    message: {
+        status: 'error',
+        message: 'Troppi tentativi di accesso. Riprova tra 15 minuti.'
+    },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -36,5 +44,8 @@ router.post('/logout', authMiddleware.protect, userController.logout);
 
 // Aggiornamento profilo utente (protetto)
 router.put('/profile', authMiddleware.protect, updateProfileValidation, validateRequest, userController.updateProfile);
+
+// Cambio password (protetto)
+router.put('/change-password', authMiddleware.protect, userController.changePassword);
 
 module.exports = router;
