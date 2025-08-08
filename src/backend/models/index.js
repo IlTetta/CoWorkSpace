@@ -3,11 +3,24 @@
  * Centralizza l'accesso ai modelli per il resto dell'applicazione
  */
 
+const User = require('./User');
+const Booking = require('./Booking');
 const SpaceType = require('./SpaceType');
+const Space = require('./Space');
+const Location = require('./Location');
+const Availability = require('./Availability');
+const Payment = require('./Payment');
+const AdditionalService = require('./AdditionalService');
+const Notification = require('./Notification');
 
 module.exports = {
-    SpaceType
+    User,
+    Booking,
+    SpaceType,
+    Space,
+    Location,
+    Availability,
+    Payment,
+    AdditionalService,
+    Notification
 };
-
-// Alternativa per import singoli:
-// module.exports.SpaceType = require('./SpaceType');

@@ -105,3 +105,38 @@ CREATE TABLE IF NOT EXISTS space_services (
   FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
   FOREIGN KEY (service_id) REFERENCES additional_services(service_id) ON DELETE CASCADE
 );
+
+-- Tabella Notifiche
+CREATE TABLE IF NOT EXISTS notifications (
+  notification_id BIGSERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('email', 'push', 'sms')),
+  channel VARCHAR(50) NOT NULL CHECK (channel IN (
+    'booking_confirmation',
+    'booking_cancellation', 
+    'payment_success',
+    'payment_failed',
+    'payment_refund',
+    'booking_reminder',
+    'user_registration'
+  )),
+  recipient VARCHAR(255) NOT NULL,
+  subject VARCHAR(255),
+  content TEXT,
+  template_name VARCHAR(100),
+  template_data JSONB,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'delivered', 'read')),
+  metadata JSONB,
+  booking_id INT,
+  payment_id INT,
+  sent_at TIMESTAMP,
+  delivered_at TIMESTAMP,
+  read_at TIMESTAMP,
+  error_message TEXT,
+  retry_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE SET NULL,
+  FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE SET NULL
+);
