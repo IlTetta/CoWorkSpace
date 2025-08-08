@@ -2,14 +2,14 @@ npm i -D vitest --> Test runner
 
 npm run dev --> rilancia il server ad ogni modifica dei file
 
-npm install jsonwebtoken bcryptjs cors express dotenv pg express-validator express-rate-limit
+npm install jsonwebtoken bcryptjs cors express dotenv pg express-validator express-rate-limit nodemailer
 npm install -D jest supertest
 
 
 
 server.js non richiede test unitari
 
-controller si occupano solo di HTTP, modelli solo dei dati/SQL
+controller si occupano solo di HTTP, modelli solo dei dati/SQL (repository pattern)
 
 TODO:
 1. Separare Model da Controller (vedere esempio)
