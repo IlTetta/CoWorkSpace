@@ -1,5 +1,5 @@
-const exrpess = require('express');
-const router = exrpess.Router();
+const express = require('express');
+const router = express.Router();
 const availabilityController = require('../controllers/availabilityController');
 const authMiddleware = require('../middleware/authMiddleware');
 
