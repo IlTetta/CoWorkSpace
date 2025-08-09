@@ -191,11 +191,11 @@ router.get('/search/available', spaceController.searchAvailableSpaces);
  *           schema:
  *             type: object
  *             required:
- *               - spaceId
+ *               - space_id
  *               - startDateTime
  *               - endDateTime
  *             properties:
- *               spaceId:
+ *               space_id:
  *                 type: integer
  *                 description: ID dello spazio da verificare
  *                 example: 1
@@ -261,11 +261,11 @@ router.post('/availability/check', spaceController.checkSpaceAvailability);
  *           schema:
  *             type: object
  *             required:
- *               - spaceId
+ *               - space_id
  *               - startDateTime
  *               - endDateTime
  *             properties:
- *               spaceId:
+ *               space_id:
  *                 type: integer
  *                 description: ID dello spazio
  *                 example: 1

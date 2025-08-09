@@ -52,8 +52,8 @@ const loginLimiter = rateLimit({
  *             required:
  *               - email
  *               - password
- *               - firstName
- *               - lastName
+ *               - name
+ *               - surname
  *             properties:
  *               email:
  *                 type: string
@@ -63,10 +63,10 @@ const loginLimiter = rateLimit({
  *                 type: string
  *                 minLength: 6
  *                 example: password123
- *               firstName:
+ *               name:
  *                 type: string
  *                 example: Mario
- *               lastName:
+ *               surname:
  *                 type: string
  *                 example: Rossi
  *               phoneNumber:

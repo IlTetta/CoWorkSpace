@@ -36,24 +36,30 @@ router.get('/public/space/:spaceId/availability',
  *           schema:
  *             type: object
  *             required:
- *               - spaceId
- *               - startDateTime
- *               - endDateTime
+ *               - space_id
+ *               - booking_date
+ *               - start_time
+ *               - end_time
  *             properties:
- *               spaceId:
+ *               space_id:
  *                 type: integer
  *                 description: ID dello spazio
  *                 example: 1
- *               startDateTime:
+ *               booking_date:
  *                 type: string
- *                 format: date-time
- *                 description: Data e ora di inizio
- *                 example: '2024-01-20T09:00:00Z'
- *               endDateTime:
+ *                 format: date
+ *                 description: Data della prenotazione
+ *                 example: '2024-01-20'
+ *               start_time:
  *                 type: string
- *                 format: date-time
- *                 description: Data e ora di fine
- *                 example: '2024-01-20T17:00:00Z'
+ *                 format: time
+ *                 description: Ora di inizio
+ *                 example: '09:00:00'
+ *               end_time:
+ *                 type: string
+ *                 format: time
+ *                 description: Ora di fine
+ *                 example: '17:00:00'
  *     responses:
  *       200:
  *         description: Risultato verifica disponibilità
@@ -173,20 +179,30 @@ router.use(authMiddleware.protect);
  *           schema:
  *             type: object
  *             required:
- *               - spaceId
- *               - startDateTime
- *               - endDateTime
+ *               - space_id
+ *               - booking_date
+ *               - start_time
+ *               - end_time
  *             properties:
- *               spaceId:
+ *               space_id:
  *                 type: integer
  *                 description: ID dello spazio da prenotare
  *                 example: 1
- *               startDateTime:
+ *               booking_date:
  *                 type: string
- *                 format: date-time
- *                 description: Data e ora di inizio
- *                 example: '2024-01-20T09:00:00Z'
- *               endDateTime:
+ *                 format: date
+ *                 description: Data della prenotazione
+ *                 example: '2024-01-20'
+ *               start_time:
+ *                 type: string
+ *                 format: time
+ *                 description: Ora di inizio
+ *                 example: '09:00:00'
+ *               end_time:
+ *                 type: string
+ *                 format: time
+ *                 description: Ora di fine
+ *                 example: '17:00:00'
  *                 type: string
  *                 format: date-time
  *                 description: Data e ora di fine
