@@ -5,6 +5,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const db = require('./config/db');
 const ApiResponse = require('./utils/apiResponse');
+const { specs, swaggerUi } = require('./config/swagger');
 const app = express();
 
 // --- Importazione dei moduli delle rotte ---
@@ -51,6 +52,22 @@ app.use('/api/', generalLimiter);
 app.use('/api/users/login', authLimiter);
 app.use('/api/users/register', authLimiter);
 
+// --- Swagger Documentation ---
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'CoWorkSpace API Documentation',
+    customfavIcon: '/favicon.ico',
+    swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        filter: true,
+        docExpansion: 'none',
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1
+    }
+}));
+
 // --- Health Check Endpoint ---
 app.get('/health', async (req, res) => {
     try {
@@ -96,7 +113,7 @@ app.get('/api', (req, res) => {
             'additional-services': '/api/additional-services',
             notifications: '/api/notifications'
         },
-        docs: '/api/docs', // Per future implementazioni
+        docs: '/api-docs', // Documentazione Swagger
         health: '/health'
     });
 });
