@@ -3,15 +3,16 @@ const PaymentService = require('../services/PaymentService');
 const NotificationService = require('../services/NotificationService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Controller per gestire le richieste HTTP relative ai pagamenti
  */
-class PaymentController {
-    /**
-     * POST /api/payments - Crea nuovo pagamento
-     */
-    static createPayment = catchAsync(async (req, res) => {
+
+/**
+ * POST /api/payments - Crea nuovo pagamento
+ */
+exports.createPayment = catchAsync(async (req, res) => {
         const paymentData = {
             booking_id: req.body.booking_id,
             amount: req.body.amount,
@@ -42,19 +43,15 @@ class PaymentController {
             // Non bloccare il pagamento se l'email fallisce
         }
 
-        res.status(201).json({
-            success: true,
-            message: 'Pagamento registrato e prenotazione confermata',
-            data: {
-                payment: payment.toJSON()
-            }
+        return ApiResponse.created(res, 'Pagamento registrato e prenotazione confermata', {
+            payment: payment.toJSON()
         });
-    });
+});
 
-    /**
-     * GET /api/payments - Lista pagamenti con filtri
-     */
-    static getPayments = catchAsync(async (req, res) => {
+/**
+ * GET /api/payments - Lista pagamenti con filtri
+ */
+exports.getPayments = catchAsync(async (req, res) => {
         const filters = {};
         
         // Filtri dalla query string
@@ -67,21 +64,13 @@ class PaymentController {
 
         const payments = await PaymentService.getPayments(req.user, filters);
 
-        res.status(200).json({
-            success: true,
-            message: 'Pagamenti recuperati con successo',
-            data: {
-                payments: payments.map(payment => payment.toJSON()),
-                count: payments.length,
-                filters
-            }
-        });
-    });
+        return ApiResponse.list(res, payments.map(payment => payment.toJSON()), 'Pagamenti recuperati con successo', filters);
+});
 
-    /**
-     * GET /api/payments/:id - Dettagli pagamento specifico
-     */
-    static getPaymentById = catchAsync(async (req, res) => {
+/**
+ * GET /api/payments/:id - Dettagli pagamento specifico
+ */
+exports.getPaymentById = catchAsync(async (req, res) => {
         const paymentId = parseInt(req.params.id);
         
         if (isNaN(paymentId)) {
@@ -90,19 +79,15 @@ class PaymentController {
 
         const payment = await PaymentService.getPaymentDetails(req.user, paymentId);
 
-        res.status(200).json({
-            success: true,
-            message: 'Dettagli pagamento recuperati con successo',
-            data: {
-                payment: payment.toJSON()
-            }
+        return ApiResponse.success(res, 200, 'Dettagli pagamento recuperati con successo', {
+            payment: payment.toJSON()
         });
-    });
+});
 
-    /**
-     * PATCH /api/payments/:id/status - Aggiorna stato pagamento
-     */
-    static updatePaymentStatus = catchAsync(async (req, res) => {
+/**
+ * PATCH /api/payments/:id/status - Aggiorna stato pagamento
+ */
+exports.updatePaymentStatus = catchAsync(async (req, res) => {
         const paymentId = parseInt(req.params.id);
         const { status, transaction_id } = req.body;
         
@@ -121,19 +106,15 @@ class PaymentController {
 
         const payment = await PaymentService.updatePaymentStatus(req.user, paymentId, updateData);
 
-        res.status(200).json({
-            status: 'success',
-            message: `Stato pagamento aggiornato a '${status}'`,
-            data: {
-                payment: payment.toJSON()
-            }
-        });
-    });
+        return ApiResponse.updated(res, {
+            payment: payment.toJSON()
+        }, `Stato pagamento aggiornato a '${status}'`);
+});
 
-    /**
-     * DELETE /api/payments/:id - Elimina pagamento (solo admin)
-     */
-    static deletePayment = catchAsync(async (req, res) => {
+/**
+ * DELETE /api/payments/:id - Elimina pagamento (solo admin)
+ */
+exports.deletePayment = catchAsync(async (req, res) => {
         const paymentId = parseInt(req.params.id);
         
         if (isNaN(paymentId)) {
@@ -146,16 +127,13 @@ class PaymentController {
             throw AppError.notFound('Pagamento non trovato');
         }
 
-        res.status(200).json({
-            status: 'success',
-            message: 'Pagamento eliminato con successo'
-        });
-    });
+        return ApiResponse.deleted(res, 'Pagamento eliminato con successo');
+});
 
-    /**
-     * GET /api/payments/statistics - Statistiche pagamenti (manager/admin)
-     */
-    static getPaymentStatistics = catchAsync(async (req, res) => {
+/**
+ * GET /api/payments/statistics - Statistiche pagamenti (manager/admin)
+ */
+exports.getPaymentStatistics = catchAsync(async (req, res) => {
         const filters = {};
         
         // Filtri per le statistiche
@@ -165,19 +143,16 @@ class PaymentController {
 
         const statistics = await PaymentService.getPaymentStatistics(req.user, filters);
 
-        res.status(200).json({
-            status: 'success',
-            data: {
-                statistics,
-                filters
-            }
+        return ApiResponse.success(res, 200, 'Statistiche pagamenti recuperate con successo', {
+            statistics,
+            filters
         });
-    });
+});
 
-    /**
-     * GET /api/payments/check-booking/:bookingId - Verifica se una prenotazione può essere pagata
-     */
-    static checkBookingPayment = catchAsync(async (req, res) => {
+/**
+ * GET /api/payments/check-booking/:bookingId - Verifica se una prenotazione può essere pagata
+ */
+exports.checkBookingPayment = catchAsync(async (req, res) => {
         const bookingId = parseInt(req.params.bookingId);
         
         if (isNaN(bookingId)) {
@@ -186,11 +161,5 @@ class PaymentController {
 
         const result = await PaymentService.canPayBooking(bookingId);
 
-        res.status(200).json({
-            status: 'success',
-            data: result
-        });
-    });
-}
-
-module.exports = PaymentController;
+    return ApiResponse.success(res, 200, 'Verifica pagamento prenotazione completata', result);
+});

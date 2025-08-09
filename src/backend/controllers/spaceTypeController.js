@@ -1,5 +1,6 @@
 const SpaceTypeService = require('../services/SpaceTypeService');
 const catchAsync = require('../utils/catchAsync');
+const ApiResponse = require('../utils/apiResponse');
 
 // Middleware per ottenere tutti i tipi di spazio.
 exports.getAllSpaceTypes = catchAsync(async (req, res, next) => {
@@ -11,14 +12,7 @@ exports.getAllSpaceTypes = catchAsync(async (req, res, next) => {
 
     const spaceTypes = await SpaceTypeService.getAllSpaceTypes(filters);
     
-    res.status(200).json({
-        success: true,
-        message: 'Tipi di spazio recuperati con successo',
-        data: {
-            spaceTypes: spaceTypes,
-            count: spaceTypes.length
-        }
-    });
+    return ApiResponse.list(res, spaceTypes, 'Tipi di spazio recuperati con successo', filters);
 });
 
 // Middleware per ottenere i dettagli di un singolo tipo di spazio tramite il suo ID.
@@ -27,12 +21,8 @@ exports.getSpaceTypeById = catchAsync(async (req, res, next) => {
     
     const spaceType = await SpaceTypeService.getSpaceTypeById(space_type_id);
 
-    res.status(200).json({
-        success: true,
-        message: 'Tipo di spazio recuperato con successo',
-        data: {
-            spaceType: spaceType
-        }
+    return ApiResponse.success(res, 200, 'Tipo di spazio recuperato con successo', {
+        spaceType: spaceType
     });
 });
 
@@ -42,12 +32,8 @@ exports.createSpaceType = catchAsync(async (req, res, next) => {
 
     const newSpaceType = await SpaceTypeService.createSpaceType(spaceTypeData);
         
-    res.status(201).json({
-        success: true,
-        message: 'Tipo di spazio creato con successo',
-        data: {
-            spaceType: newSpaceType
-        }
+    return ApiResponse.created(res, 'Tipo di spazio creato con successo', {
+        spaceType: newSpaceType
     });
 });
 
@@ -58,13 +44,9 @@ exports.updateSpaceType = catchAsync(async (req, res, next) => {
 
     const updatedSpaceType = await SpaceTypeService.updateSpaceType(space_type_id, updateData);
         
-    res.status(200).json({
-        success: true,
-        message: 'Tipo di spazio aggiornato con successo',
-        data: {
-            spaceType: updatedSpaceType
-        }
-    });
+    return ApiResponse.updated(res, {
+        spaceType: updatedSpaceType
+    }, 'Tipo di spazio aggiornato con successo');
 });
 
 // Middleware per eliminare un tipo di spazio.
@@ -73,10 +55,7 @@ exports.deleteSpaceType = catchAsync(async (req, res, next) => {
     
     await SpaceTypeService.deleteSpaceType(space_type_id);
 
-    res.status(200).json({
-        success: true,
-        message: 'Tipo di spazio eliminato con successo'
-    });
+    return ApiResponse.deleted(res, 'Tipo di spazio eliminato con successo');
 });
 
 // Middleware per ottenere gli spazi che utilizzano un tipo specifico.
@@ -85,14 +64,7 @@ exports.getSpacesByType = catchAsync(async (req, res, next) => {
 
     const spaces = await SpaceTypeService.getSpacesByType(space_type_id);
 
-    res.status(200).json({
-        success: true,
-        message: 'Spazi per tipo recuperati con successo',
-        data: {
-            spaces: spaces,
-            count: spaces.length
-        }
-    });
+    return ApiResponse.list(res, spaces, 'Spazi per tipo recuperati con successo');
 });
 
 // Middleware per cercare tipi di spazio.
@@ -101,24 +73,15 @@ exports.searchSpaceTypes = catchAsync(async (req, res, next) => {
 
     const spaceTypes = await SpaceTypeService.searchSpaceTypes(q);
 
-    res.status(200).json({
-        status: 'success',
-        results: spaceTypes.length,
-        data: {
-            spaceTypes: spaceTypes
-        }
-    });
+    return ApiResponse.list(res, spaceTypes, 'Ricerca tipi di spazio completata');
 });
 
 // Middleware per ottenere statistiche sui tipi di spazio.
 exports.getSpaceTypeStatistics = catchAsync(async (req, res, next) => {
     const statistics = await SpaceTypeService.getSpaceTypeStatistics();
 
-    res.status(200).json({
-        status: 'success',
-        data: {
-            statistics: statistics
-        }
+    return ApiResponse.success(res, 200, 'Statistiche tipi di spazio recuperate con successo', {
+        statistics: statistics
     });
 });
 
@@ -128,8 +91,5 @@ exports.canDeleteSpaceType = catchAsync(async (req, res, next) => {
 
     const result = await SpaceTypeService.canDelete(id);
 
-    res.status(200).json({
-        status: 'success',
-        data: result
-    });
+    return ApiResponse.success(res, 200, 'Verifica eliminazione tipo di spazio completata', result);
 });

@@ -2,6 +2,7 @@
 const LocationService = require('../services/LocationService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Ottieni tutte le locations con filtri opzionali
@@ -21,14 +22,7 @@ exports.getAllLocations = catchAsync(async (req, res, next) => {
     // req.user può essere undefined per richieste pubbliche
     const locations = await LocationService.getLocations(filters, req.user || null);
 
-    res.status(200).json({
-        success: true,
-        message: 'Locations recuperate con successo',
-        data: {
-            locations: locations.map(location => location.toJSON()),
-            count: locations.length
-        }
-    });
+    return ApiResponse.list(res, locations.map(location => location.toJSON()), 'Locations recuperate con successo', filters);
 });
 
 /**
@@ -44,11 +38,7 @@ exports.getLocationById = catchAsync(async (req, res, next) => {
     // req.user può essere undefined per richieste pubbliche
     const locationDetails = await LocationService.getLocationDetails(location_id, req.user || null);
 
-    res.status(200).json({
-        success: true,
-        message: 'Dettagli location recuperati con successo',
-        data: locationDetails
-    });
+    return ApiResponse.success(res, 200, 'Dettagli location recuperati con successo', locationDetails);
 });
 
 /**
@@ -67,12 +57,8 @@ exports.createLocation = catchAsync(async (req, res, next) => {
 
     const location = await LocationService.createLocation(locationData, req.user);
 
-    res.status(201).json({
-        success: true,
-        message: 'Location creata con successo',
-        data: {
-            location: location.toJSON()
-        }
+    return ApiResponse.created(res, 'Location creata con successo', {
+        location: location.toJSON()
     });
 });
 
@@ -97,13 +83,9 @@ exports.updateLocation = catchAsync(async (req, res, next) => {
 
     const location = await LocationService.updateLocation(location_id, updateData, req.user);
 
-    res.status(200).json({
-        success: true,
-        message: 'Location aggiornata con successo',
-        data: {
-            location: location.toJSON()
-        }
-    });
+    return ApiResponse.updated(res, {
+        location: location.toJSON()
+    }, 'Location aggiornata con successo');
 });
 
 /**
@@ -118,10 +100,7 @@ exports.deleteLocation = catchAsync(async (req, res, next) => {
 
     await LocationService.deleteLocation(location_id, req.user);
 
-    res.status(200).json({
-        success: true,
-        message: 'Location eliminata con successo'
-    });
+    return ApiResponse.deleted(res, 'Location eliminata con successo');
 });
 
 /**
@@ -140,14 +119,7 @@ exports.searchAvailableLocations = catchAsync(async (req, res, next) => {
 
     const locations = await LocationService.searchAvailableLocations(searchCriteria);
 
-    res.status(200).json({
-        success: true,
-        message: 'Locations disponibili recuperate con successo',
-        data: {
-            locations,
-            count: locations.length
-        }
-    });
+    return ApiResponse.list(res, locations, 'Locations disponibili recuperate con successo');
 });
 
 /**
@@ -167,13 +139,9 @@ exports.transferLocation = catchAsync(async (req, res, next) => {
 
     const location = await LocationService.transferLocation(locationId, newManagerId, req.user);
 
-    res.status(200).json({
-        success: true,
-        message: 'Gestione location trasferita con successo',
-        data: {
-            location: location.toJSON()
-        }
-    });
+    return ApiResponse.updated(res, {
+        location: location.toJSON()
+    }, 'Gestione location trasferita con successo');
 });
 
 /**
@@ -182,11 +150,7 @@ exports.transferLocation = catchAsync(async (req, res, next) => {
 exports.getManagerDashboard = catchAsync(async (req, res, next) => {
     const dashboard = await LocationService.getManagerDashboard(req.user);
 
-    res.status(200).json({
-        success: true,
-        message: 'Dashboard manager recuperata con successo',
-        data: dashboard
-    });
+    return ApiResponse.success(res, 200, 'Dashboard manager recuperata con successo', dashboard);
 });
 
 /**
@@ -201,12 +165,8 @@ exports.getLocationStats = catchAsync(async (req, res, next) => {
 
     const locationDetails = await LocationService.getLocationDetails(locationId, req.user);
 
-    res.status(200).json({
-        success: true,
-        message: 'Statistiche location recuperate con successo',
-        data: {
-            statistics: locationDetails.statistics
-        }
+    return ApiResponse.success(res, 200, 'Statistiche location recuperate con successo', {
+        statistics: locationDetails.statistics
     });
 });
 
@@ -221,12 +181,5 @@ exports.getAllLocationsAlphabetically = catchAsync(async (req, res, next) => {
         .sort((a, b) => a.location_name.localeCompare(b.location_name))
         .map(location => location.toJSON());
 
-    res.status(200).json({
-        success: true,
-        message: 'Locations ordinate recuperate con successo',
-        data: {
-            locations: sortedLocations,
-            count: sortedLocations.length
-        }
-    });
+    return ApiResponse.list(res, sortedLocations, 'Locations ordinate recuperate con successo');
 });
