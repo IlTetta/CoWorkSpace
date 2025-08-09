@@ -1,5 +1,6 @@
 const AvailabilityService = require('../services/AvailabilityService');
 const catchAsync = require('../utils/catchAsync');
+const ApiResponse = require('../utils/apiResponse');
 
 // Middleware per ottenere la disponibilità di uno spazio in un intervallo di date.
 exports.getSpaceAvailability = catchAsync(async (req, res, next) => {
@@ -8,14 +9,7 @@ exports.getSpaceAvailability = catchAsync(async (req, res, next) => {
 
     const availability = await AvailabilityService.getSpaceAvailability(space_id, start_date, end_date);
 
-    res.status(200).json({
-        success: true,
-        message: 'Disponibilità spazio recuperata con successo',
-        data: {
-            availability: availability,
-            count: availability.length
-        }
-    });
+    return ApiResponse.list(res, availability, 'Disponibilità spazio recuperata con successo');
 });
 
 // Middleware per creare un nuovo blocco di disponibilità.
@@ -24,12 +18,8 @@ exports.createAvailability = catchAsync(async (req, res, next) => {
 
     const newAvailability = await AvailabilityService.createAvailability(availabilityData);
 
-    res.status(201).json({
-        success: true,
-        message: 'Disponibilità creata con successo',
-        data: {
-            availability: newAvailability
-        }
+    return ApiResponse.created(res, 'Disponibilità creata con successo', {
+        availability: newAvailability
     });
 });
 
@@ -40,13 +30,9 @@ exports.updateAvailability = catchAsync(async (req, res, next) => {
 
     const updatedAvailability = await AvailabilityService.updateAvailability(id, updateData);
 
-    res.status(200).json({
-        success: true,
-        message: 'Disponibilità aggiornata con successo',
-        data: {
-            availability: updatedAvailability
-        }
-    });
+    return ApiResponse.updated(res, {
+        availability: updatedAvailability
+    }, 'Disponibilità aggiornata con successo');
 });
 
 // Middleware per eliminare un blocco di disponibilità.
@@ -55,8 +41,5 @@ exports.deleteAvailability = catchAsync(async (req, res, next) => {
 
     await AvailabilityService.deleteAvailability(id);
 
-    res.status(200).json({
-        success: true,
-        message: 'Disponibilità eliminata con successo'
-    });
+    return ApiResponse.deleted(res, 'Disponibilità eliminata con successo');
 });

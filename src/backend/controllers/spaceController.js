@@ -67,11 +67,7 @@ const calculateBookingPrice = catchAsync(async (req, res) => {
   
   const pricing = await SpaceService.calculateBookingPrice(space_id, startDateTime, endDateTime);
   
-  res.status(200).json({
-    success: true,
-    message: 'Prezzo calcolato con successo',
-    data: { pricing }
-  });
+  return ApiResponse.success(res, 200, 'Prezzo calcolato con successo', { pricing });
 });
 
 // ============================================================================
@@ -122,11 +118,7 @@ const getUserOwnedSpaces = catchAsync(async (req, res) => {
   const user = req.user;
   const spaces = await SpaceService.getSpacesByLocation(req.query.location_id, user);
   
-  res.status(200).json({
-    success: true,
-    message: 'Spazi posseduti recuperati con successo',
-    data: { spaces }
-  });
+  return ApiResponse.list(res, spaces, 'Spazi posseduti recuperati con successo');
 });
 
 // ============================================================================
@@ -140,47 +132,28 @@ const getManagerDashboard = catchAsync(async (req, res) => {
   const user = req.user;
   const dashboard = await SpaceService.getSpacesDashboard(user);
   
-  res.status(200).json({
-    success: true,
-    message: 'Dashboard recuperata con successo',
-    data: { dashboard }
-  });
+  return ApiResponse.success(res, 200, 'Dashboard recuperata con successo', { dashboard });
 });
 
 // Per le funzioni non ancora implementate nel service, creo placeholder
 const getManagerStatistics = catchAsync(async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Funzionalità non ancora implementata'
-  });
+  return ApiResponse.error(res, 501, 'Funzionalità non ancora implementata', 'NOT_IMPLEMENTED');
 });
 
 const bulkUpdateSpaceStatus = catchAsync(async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Funzionalità non ancora implementata'
-  });
+  return ApiResponse.error(res, 501, 'Funzionalità non ancora implementata', 'NOT_IMPLEMENTED');
 });
 
 const getAdminSpacesList = catchAsync(async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Funzionalità non ancora implementata'
-  });
+  return ApiResponse.error(res, 501, 'Funzionalità non ancora implementata', 'NOT_IMPLEMENTED');
 });
 
 const getAdminDashboard = catchAsync(async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Funzionalità non ancora implementata'
-  });
+  return ApiResponse.error(res, 501, 'Funzionalità non ancora implementata', 'NOT_IMPLEMENTED');
 });
 
 const bulkAssignSpacesToLocation = catchAsync(async (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'Funzionalità non ancora implementata'
-  });
+  return ApiResponse.error(res, 501, 'Funzionalità non ancora implementata', 'NOT_IMPLEMENTED');
 });
 
 module.exports = {

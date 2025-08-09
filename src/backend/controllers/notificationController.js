@@ -2,15 +2,16 @@
 const NotificationService = require('../services/NotificationService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Controller per gestire le richieste HTTP relative alle notifiche
  */
-class NotificationController {
-    /**
-     * POST /api/notifications/send-email - Invia notifica email
-     */
-    static sendEmail = catchAsync(async (req, res) => {
+
+/**
+ * POST /api/notifications/send-email - Invia notifica email
+ */
+exports.sendEmail = catchAsync(async (req, res) => {
         const { recipient, subject, templateName, templateData } = req.body;
 
         if (!recipient || !subject || !templateName) {
@@ -25,19 +26,16 @@ class NotificationController {
             user_id: req.user.user_id
         });
 
-        res.status(200).json({
-            success: result.success,
-            message: result.success ? 'Email inviata con successo' : 'Errore invio email',
-            data: {
-                result
-            }
-        });
-    });
+        return ApiResponse.success(res, 200, 
+            result.success ? 'Email inviata con successo' : 'Errore invio email', 
+            { result }
+        );
+});
 
-    /**
-     * POST /api/notifications/send-push - Invia notifica push
-     */
-    static sendPush = catchAsync(async (req, res) => {
+/**
+ * POST /api/notifications/send-push - Invia notifica push
+ */
+exports.sendPush = catchAsync(async (req, res) => {
         const { fcmToken, title, templateName, templateData } = req.body;
 
         if (!fcmToken || !title || !templateName) {
@@ -52,19 +50,16 @@ class NotificationController {
             user_id: req.user.user_id
         });
 
-        res.status(200).json({
-            success: result.success,
-            message: result.success ? 'Push notification inviata con successo' : 'Errore invio push',
-            data: {
-                result
-            }
-        });
-    });
+        return ApiResponse.success(res, 200, 
+            result.success ? 'Push notification inviata con successo' : 'Errore invio push', 
+            { result }
+        );
+});
 
-    /**
-     * POST /api/notifications/booking-confirmation - Invia conferma prenotazione
-     */
-    static sendBookingConfirmation = catchAsync(async (req, res) => {
+/**
+ * POST /api/notifications/booking-confirmation - Invia conferma prenotazione
+ */
+exports.sendBookingConfirmation = catchAsync(async (req, res) => {
         const { booking, user, space } = req.body;
 
         if (!booking || !user || !space) {
@@ -73,19 +68,16 @@ class NotificationController {
 
         const result = await NotificationService.sendBookingConfirmation(booking, user, space);
 
-        res.status(200).json({
-            success: result.success,
-            message: result.success ? 'Conferma prenotazione inviata' : 'Errore invio conferma',
-            data: {
-                result
-            }
-        });
-    });
+        return ApiResponse.success(res, 200, 
+            result.success ? 'Conferma prenotazione inviata' : 'Errore invio conferma', 
+            { result }
+        );
+});
 
-    /**
-     * POST /api/notifications/booking-cancellation - Invia cancellazione prenotazione
-     */
-    static sendBookingCancellation = catchAsync(async (req, res) => {
+/**
+ * POST /api/notifications/booking-cancellation - Invia cancellazione prenotazione
+ */
+exports.sendBookingCancellation = catchAsync(async (req, res) => {
         const { booking, user, space } = req.body;
 
         if (!booking || !user || !space) {
@@ -94,19 +86,16 @@ class NotificationController {
 
         const result = await NotificationService.sendBookingCancellation(booking, user, space);
 
-        res.status(200).json({
-            success: result.success,
-            message: result.success ? 'Cancellazione prenotazione inviata' : 'Errore invio cancellazione',
-            data: {
-                result
-            }
-        });
-    });
+        return ApiResponse.success(res, 200, 
+            result.success ? 'Cancellazione prenotazione inviata' : 'Errore invio cancellazione', 
+            { result }
+        );
+});
 
-    /**
-     * POST /api/notifications/payment-success - Invia conferma pagamento
-     */
-    static sendPaymentSuccess = catchAsync(async (req, res) => {
+/**
+ * POST /api/notifications/payment-success - Invia conferma pagamento
+ */
+exports.sendPaymentSuccess = catchAsync(async (req, res) => {
         const { payment, booking, user, space } = req.body;
 
         if (!payment || !booking || !user || !space) {
@@ -115,19 +104,16 @@ class NotificationController {
 
         const result = await NotificationService.sendPaymentSuccess(payment, booking, user, space);
 
-        res.status(200).json({
-            success: result.success,
-            message: result.success ? 'Conferma pagamento inviata' : 'Errore invio conferma pagamento',
-            data: {
-                result
-            }
-        });
-    });
+        return ApiResponse.success(res, 200, 
+            result.success ? 'Conferma pagamento inviata' : 'Errore invio conferma pagamento', 
+            { result }
+        );
+});
 
-    /**
-     * POST /api/notifications/user-registration - Invia benvenuto registrazione
-     */
-    static sendUserRegistration = catchAsync(async (req, res) => {
+/**
+ * POST /api/notifications/user-registration - Invia benvenuto registrazione
+ */
+exports.sendUserRegistration = catchAsync(async (req, res) => {
         const { user } = req.body;
 
         if (!user) {
@@ -136,19 +122,16 @@ class NotificationController {
 
         const result = await NotificationService.sendUserRegistration(user);
 
-        res.status(200).json({
-            status: result.success ? 'success' : 'fail',
-            message: result.success ? 'Email di benvenuto inviata' : 'Errore invio benvenuto',
-            data: {
-                result
-            }
-        });
-    });
+        return ApiResponse.success(res, 200, 
+            result.success ? 'Email di benvenuto inviata' : 'Errore invio benvenuto', 
+            { result }
+        );
+});
 
-    /**
-     * GET /api/notifications - Lista notifiche utente
-     */
-    static getUserNotifications = catchAsync(async (req, res) => {
+/**
+ * GET /api/notifications - Lista notifiche utente
+ */
+exports.getUserNotifications = catchAsync(async (req, res) => {
         const filters = {};
         
         // Filtri dalla query string
@@ -159,20 +142,13 @@ class NotificationController {
 
         const notifications = await NotificationService.getUserNotifications(req.user.user_id, filters);
 
-        res.status(200).json({
-            status: 'success',
-            results: notifications.length,
-            data: {
-                notifications,
-                filters
-            }
-        });
-    });
+        return ApiResponse.list(res, notifications, 'Notifiche utente recuperate con successo', filters);
+});
 
-    /**
-     * POST /api/notifications/test - Test notifica (solo sviluppo)
-     */
-    static testNotification = catchAsync(async (req, res) => {
+/**
+ * POST /api/notifications/test - Test notifica (solo sviluppo)
+ */
+exports.testNotification = catchAsync(async (req, res) => {
         // Solo in modalità sviluppo
         if (process.env.NODE_ENV === 'production') {
             throw AppError.forbidden('Endpoint di test non disponibile in produzione');
@@ -206,14 +182,5 @@ class NotificationController {
             });
         }
 
-        res.status(200).json({
-            status: 'success',
-            message: 'Test notifica completato',
-            data: {
-                result
-            }
-        });
-    });
-}
-
-module.exports = NotificationController;
+        return ApiResponse.success(res, 200, 'Test notifica completato', { result });
+});
