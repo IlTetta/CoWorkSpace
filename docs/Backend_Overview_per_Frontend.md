@@ -16,7 +16,6 @@
 
 ## 🌐 Panoramica Generale
 
-CoWorkSpace è un sistema di gestione per spazi coworking che permette di:
 - **Gestire utenti** (registrazione, autenticazione, profili)
 - **Gestire location e spazi** (uffici, sale riunioni, postazioni)
 - **Gestire prenotazioni** (disponibilità, booking, calendario)
