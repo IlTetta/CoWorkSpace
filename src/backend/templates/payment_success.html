@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{OggettoEmail}}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px;
+            color: #333333;
+        }
+        .content h2 {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .details-table th, .details-table td {
+            text-align: left;
+            padding: 12px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
+        .details-table th {
+            font-weight: bold;
+            color: #555555;
+            width: 40%;
+        }
+        .details-table tr:last-child th, .details-table tr:last-child td {
+            border-bottom: none;
+        }
+        .total-row {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .footer {
+            background-color: #f0f0f0;
+            color: #888888;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 480px) {
+            .content {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Pagamento Riuscito</h1>
+        </div>
+        <div class="content">
+            <h2>Ciao {{NomeCliente}},</h2>
+            <p>Grazie per averci scelto. Siamo lieti di confermare che il tuo pagamento di **{{Importo}}** è stato elaborato con successo.</p>
+            <p>Di seguito trovi il riepilogo della transazione per il servizio: **{{ServizioPagato}}**.</p>
+            
+            <table class="details-table">
+                <tr>
+                    <th>Numero transazione:</th>
+                    <td>{{NumeroTransazione}}</td>
+                </tr>
+                <tr>
+                    <th>Data del pagamento:</th>
+                    <td>{{DataPagamento}}</td>
+                </tr>
+                <tr>
+                    <th>Metodo di pagamento:</th>
+                    <td>{{MetodoPagamento}}</td>
+                </tr>
+                <tr class="total-row">
+                    <th>Importo totale:</th>
+                    <td>{{Importo}}</td>
+                </tr>
+            </table>
+
+            <p style="margin-top: 30px;">Puoi visualizzare i dettagli completi della tua prenotazione e scaricare la fattura accedendo al tuo account.</p>
+            <p>Se hai bisogno di assistenza o hai domande, rispondi a questa email per metterti in contatto con il nostro team di supporto.</p>
+            <p>A presto,<br>Il team di {{NomeAzienda}}</p>
+        </div>
+        <div class="footer">
+            <p>{{NomeAzienda}} | {{IndirizzoAzienda}}<br>
+            <a href="mailto:{{EmailAzienda}}">{{EmailAzienda}}</a> | <a href="{{SitoWeb}}">{{SitoWeb}}</a></p>
+        </div>
+    </div>
+</body>
+</html>

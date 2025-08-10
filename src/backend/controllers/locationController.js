@@ -1,217 +1,185 @@
-const pool = require('../config/db');
+// src/backend/controllers/locationController.js
+const LocationService = require('../services/LocationService');
 const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/AppError');
+const ApiResponse = require('../utils/apiResponse');
 
-// Funzione per ottenere tutte le sedi, con un filtro opzionale per la città.
+/**
+ * Ottieni tutte le locations con filtri opzionali
+ */
 exports.getAllLocations = catchAsync(async (req, res, next) => {
-    // Estrae il parametro 'city' dalla query string (es. /api/locations?city=Roma).
-    const { city } = req.query;
-    let query = 'SELECT * FROM locations';
-    const queryParams = [];
+    const filters = {
+        city: req.query.city,
+        name: req.query.name,
+        manager_id: req.query.manager_id
+    };
 
-    // Se il filtro per la città è presente, modifica la query SQL.
-    if (city) {
-        // Aggiunge una clausola WHERE per cercare la città in modo case-insensitive.
-        // `ILIKE` è un operatore di PostgreSQL per la ricerca case-insensitive.
-        // I caratteri `%` sono wildcard che permettono di trovare la città anche se è solo una parte del nome.
-        query += ' WHERE city ILIKE $1';
-        queryParams.push(`%${city}%`);
-    }
-
-    // Esegue la query costruita dinamicamente.
-    const result = await pool.query(query, queryParams);
-    
-    // Invia una risposta di successo con lo stato 200, il numero di risultati e i dati delle sedi.
-    res.status(200).json({
-        status: 'success',
-        results: result.rows.length,
-        data: {
-            locations: result.rows
-        }
+    // Rimuovi filtri vuoti
+    Object.keys(filters).forEach(key => {
+        if (!filters[key]) delete filters[key];
     });
+
+    // req.user può essere undefined per richieste pubbliche
+    const locations = await LocationService.getLocations(filters, req.user || null);
+
+    return ApiResponse.list(res, locations.map(location => location.toJSON()), 'Locations recuperate con successo', filters);
 });
 
-// Funzione mancante: ottiene tutte le sedi ordinate alfabeticamente per nome.
-exports.getAllLocationsAlphabetically = catchAsync(async (req, res, next) => {
-    // La query seleziona tutte le sedi e le ordina per 'location_name' in ordine crescente.
-    const result = await pool.query('SELECT * FROM locations ORDER BY location_name ASC');
-
-    // Invia una risposta di successo con lo stato 200 e i dati delle sedi ordinate.
-    res.status(200).json({
-        status: 'success',
-        results: result.rows.length,
-        data: {
-            locations: result.rows
-        }
-    });
-});
-
-// Funzione per ottenere i dettagli di una singola sede tramite il suo ID.
+/**
+ * Ottieni dettagli di una location specifica
+ */
 exports.getLocationById = catchAsync(async (req, res, next) => {
-    // Estrae l'ID dai parametri della URL.
-    const { id } = req.params;
+    const location_id = parseInt(req.params.location_id);
     
-    // Esegue la query per trovare la sede con l'ID specificato.
-    const result = await pool.query('SELECT * FROM locations WHERE location_id = $1', [id]);
-
-    // Se non viene trovata alcuna riga, significa che la sede non esiste.
-    if (result.rows.length === 0) {
-        // Invia un errore 404 (Not Found).
-        return res.status(404).json({
-            status: 'fail',
-            message: 'Sede non trovata'
-        });
+    if (!location_id || location_id <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
     }
 
-    // Invia una risposta di successo con i dati della sede trovata.
-    res.status(200).json({
-        status: 'success',
-        data: {
-            location: result.rows[0]
-        }
-    });
+    // req.user può essere undefined per richieste pubbliche
+    const locationDetails = await LocationService.getLocationDetails(location_id, req.user || null);
+
+    return ApiResponse.success(res, 200, 'Dettagli location recuperati con successo', locationDetails);
 });
 
-// Funzione per creare una nuova sede.
+/**
+ * Crea una nuova location
+ */
 exports.createLocation = catchAsync(async (req, res, next) => {
-    // Estrae i dati della nuova sede dal corpo della richiesta.
     const { location_name, address, city, description, manager_id } = req.body;
 
-    // Validazione dei campi obbligatori.
-    if( !location_name || !address || !city) {
-        return res.status(400).json({
-            status: 'fail',
-            message: 'Nome, indirizzo e città sono obbligatori'
-        });
-    }
+    const locationData = {
+        location_name,
+        address,
+        city,
+        description,
+        manager_id
+    };
 
-    // Se viene specificato un `manager_id`, esegue una verifica.
-    if (manager_id) {
-        // Controlla se l'ID esiste e se l'utente associato ha il ruolo di "manager".
-        const managerCheck = await pool.query(
-            'SELECT user_id FROM users WHERE user_id = $1 AND role = $2',
-            [manager_id, 'manager']
-        );
-        if (managerCheck.rows.length === 0) {
-            return res.status(400).json({
-                status: 'fail',
-                message: 'L\'ID del manager non è valido o non è un manager'
-            });
-        }
-    }
+    const location = await LocationService.createLocation(locationData, req.user);
 
-    // Esegue la query di inserimento per creare la nuova sede.
-    const result = await pool.query(
-        `INSERT INTO locations (location_name, address, city, description, manager_id) 
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        // Imposta `manager_id` a `null` se non è stato fornito.
-        [location_name, address, city, description, manager_id || null]
-    );
-
-    // Invia una risposta con stato 201 (Created) e i dati della nuova sede.
-    res.status(201).json({
-        status: 'success',
-        data: {
-            location: result.rows[0]
-        }
+    return ApiResponse.created(res, 'Location creata con successo', {
+        location: location.toJSON()
     });
 });
 
-// Funzione per aggiornare i dati di una sede esistente.
+/**
+ * Aggiorna una location esistente
+ */
 exports.updateLocation = catchAsync(async (req, res, next) => {
-    // Estrae l'ID dai parametri della URL e i campi da aggiornare dal corpo della richiesta.
-    const { id } = req.params;
+    const location_id = parseInt(req.params.location_id);
+    
+    if (!location_id || location_id <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
+    }
+
     const { location_name, address, city, description, manager_id } = req.body;
+
+    const updateData = {};
+    if (location_name !== undefined) updateData.location_name = location_name;
+    if (address !== undefined) updateData.address = address;
+    if (city !== undefined) updateData.city = city;
+    if (description !== undefined) updateData.description = description;
+    if (manager_id !== undefined) updateData.manager_id = manager_id;
+
+    const location = await LocationService.updateLocation(location_id, updateData, req.user);
+
+    return ApiResponse.updated(res, {
+        location: location.toJSON()
+    }, 'Location aggiornata con successo');
+});
+
+/**
+ * Elimina una location
+ */
+exports.deleteLocation = catchAsync(async (req, res, next) => {
+    const location_id = parseInt(req.params.location_id);
     
-    // Array per costruire la query di aggiornamento dinamicamente.
-    const updateFields = [];
-    const queryParams = [id]; // L'ID della sede è sempre il primo parametro.
-    let queryIndex = 2; // Inizia l'indice per i placeholder dei parametri da $2.
+    if (!location_id || location_id <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
+    }
 
-    // Aggiunge i campi forniti alla lista da aggiornare.
-    if (location_name) {
-        updateFields.push(`location_name = $${queryIndex++}`);
-        queryParams.push(location_name);
+    await LocationService.deleteLocation(location_id, req.user);
+
+    return ApiResponse.deleted(res, 'Location eliminata con successo');
+});
+
+/**
+ * Cerca locations disponibili per prenotazione
+ */
+exports.searchAvailableLocations = catchAsync(async (req, res, next) => {
+    const { city, startDate, endDate, capacity, spaceType } = req.query;
+
+    const searchCriteria = {
+        city,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        capacity: capacity ? parseInt(capacity) : null,
+        spaceType
+    };
+
+    const locations = await LocationService.searchAvailableLocations(searchCriteria);
+
+    return ApiResponse.list(res, locations, 'Locations disponibili recuperate con successo');
+});
+
+/**
+ * Trasferisci gestione di una location
+ */
+exports.transferLocation = catchAsync(async (req, res, next) => {
+    const locationId = parseInt(req.params.id);
+    const { newManagerId } = req.body;
+
+    if (!locationId || locationId <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
     }
-    if (address) {
-        updateFields.push(`address = $${queryIndex++}`);
-        queryParams.push(address);
+
+    if (!newManagerId || newManagerId <= 0) {
+        return next(AppError.badRequest('ID nuovo manager non valido'));
     }
-    if (city) {
-        updateFields.push(`city = $${queryIndex++}`);
-        queryParams.push(city);
-    }
-    if (description) {
-        updateFields.push(`description = $${queryIndex++}`);
-        queryParams.push(description);
-    }
+
+    const location = await LocationService.transferLocation(locationId, newManagerId, req.user);
+
+    return ApiResponse.updated(res, {
+        location: location.toJSON()
+    }, 'Gestione location trasferita con successo');
+});
+
+/**
+ * Dashboard per manager
+ */
+exports.getManagerDashboard = catchAsync(async (req, res, next) => {
+    const dashboard = await LocationService.getManagerDashboard(req.user);
+
+    return ApiResponse.success(res, 200, 'Dashboard manager recuperata con successo', dashboard);
+});
+
+/**
+ * Ottieni statistiche di una location
+ */
+exports.getLocationStats = catchAsync(async (req, res, next) => {
+    const locationId = parseInt(req.params.id);
     
-    // Gestione dell'ID del manager.
-    if (manager_id !== undefined) {
-        if (manager_id !== null) {
-            // Se un nuovo manager_id è fornito e non è null, verifica che sia valido.
-            const managerCheck = await pool.query(
-                'SELECT user_id FROM users WHERE user_id = $1 AND role = $2',
-                [manager_id, 'manager']
-            );
-            if (managerCheck.rows.length === 0) {
-                return res.status(400).json({
-                    status: 'fail',
-                    message: 'L\'ID del manager non è valido o non è un manager'
-                });
-            }
-        }
-        updateFields.push(`manager_id = $${queryIndex++}`);
-        queryParams.push(manager_id);
+    if (!locationId || locationId <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
     }
 
-    // Se nessun campo da aggiornare è stato fornito, invia un errore 400.
-    if (updateFields.length === 0) {
-        return res.status(400).json({
-            status: 'fail',
-            message: 'Nessun campo valido fornito per l\'aggiornamento'
-        });
-    }
+    const locationDetails = await LocationService.getLocationDetails(locationId, req.user);
 
-    // Costruisce ed esegue la query di aggiornamento.
-    const query = `UPDATE locations SET ${updateFields.join(', ')} WHERE location_id = $1 RETURNING *`;
-    const result = await pool.query(query, queryParams);
-
-    // Se nessuna riga è stata aggiornata, la sede non è stata trovata.
-    if (result.rows.length === 0) {
-        return res.status(404).json({
-            status: 'fail',
-            message: 'Sede non trovata'
-        });
-    }
-
-    // Invia una risposta di successo con i dati aggiornati.
-    res.status(200).json({
-        status: 'success',
-        data: {
-            location: result.rows[0]
-        }
+    return ApiResponse.success(res, 200, 'Statistiche location recuperate con successo', {
+        statistics: locationDetails.statistics
     });
 });
 
-// Funzione per eliminare una sede.
-exports.deleteLocation = catchAsync(async (req, res, next) => {
-    // Estrae l'ID dai parametri della URL.
-    const { id } = req.params;
-    
-    // Esegue la query DELETE e restituisce la riga eliminata.
-    const result = await pool.query('DELETE FROM locations WHERE location_id = $1 RETURNING *', [id]);
+/**
+ * Ottieni locations ordinate alfabeticamente (compatibilità)
+ */
+exports.getAllLocationsAlphabetically = catchAsync(async (req, res, next) => {
+    const locations = await LocationService.getLocations({}, req.user || null);
 
-    // Se non viene eliminata alcuna riga, la sede non è stata trovata.
-    if (result.rows.length === 0) {
-        return res.status(404).json({
-            status: 'fail',
-            message: 'Sede non trovata'
-        });
-    }
+    // Ordina alfabeticamente
+    const sortedLocations = locations
+        .sort((a, b) => a.location_name.localeCompare(b.location_name))
+        .map(location => location.toJSON());
 
-    // Invia una risposta di successo con stato 204 (No Content), poiché non c'è corpo da restituire.
-    res.status(204).json({
-        status: 'success',
-        data: null
-    });
+    return ApiResponse.list(res, sortedLocations, 'Locations ordinate recuperate con successo');
 });
