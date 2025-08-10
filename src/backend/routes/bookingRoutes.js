@@ -203,10 +203,6 @@ router.use(authMiddleware.protect);
  *                 format: time
  *                 description: Ora di fine
  *                 example: '17:00:00'
- *                 type: string
- *                 format: date-time
- *                 description: Data e ora di fine
- *                 example: '2024-01-20T17:00:00Z'
  *               notes:
  *                 type: string
  *                 description: Note aggiuntive
