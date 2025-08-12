@@ -186,7 +186,7 @@ router.get('/', locationController.getAllLocations);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', locationController.getLocationById);
+router.get('/:location_id', locationController.getLocationById);
 
 // Rotte protette - Dashboard manager
 router.get('/dashboard/manager', 
