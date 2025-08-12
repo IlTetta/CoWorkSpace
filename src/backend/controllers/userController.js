@@ -43,10 +43,17 @@ exports.login = catchAsync(async (req, res, next) => {
     // Delega tutta la logica al service
     const result = await AuthService.login(email, password);
 
-    return ApiResponse.success(res, 200, 'Login avvenuto con successo', {
+    // Se l'utente deve resettare la password, includi l'informazione nella response
+    const responseData = {
         token: result.token,
         user: result.user
-    });
+    };
+
+    if (result.requiresPasswordReset) {
+        responseData.requiresPasswordReset = true;
+    }
+
+    return ApiResponse.success(res, 200, 'Login avvenuto con successo', responseData);
 });
 
 /**
@@ -109,8 +116,53 @@ exports.changePassword = catchAsync(async (req, res, next) => {
         throw AppError.badRequest('Password attuale e nuova password sono obbligatorie');
     }
 
-    // Usa il service per cambiare la password
-    await AuthService.changePassword(req.user, currentPassword, newPassword);
+    // Se l'utente è in modalità reset, usa il metodo specifico
+    if (req.user.is_password_reset_required) {
+        await AuthService.changePasswordOnReset(req.user, currentPassword, newPassword);
+    } else {
+        // Usa il service per cambiare la password normalmente
+        await AuthService.changePassword(req.user, currentPassword, newPassword);
+    }
 
     return ApiResponse.success(res, 200, 'Password modificata con successo');
+});
+
+/**
+ * Richiede reset password (password dimenticata)
+ */
+exports.requestPasswordReset = catchAsync(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) {
+        throw AppError.badRequest('Email è obbligatoria');
+    }
+
+    // Delega al service la logica di reset
+    const result = await AuthService.requestPasswordReset(email);
+
+    // Se il reset è andato a buon fine, invia email con password temporanea
+    if (result.success && result.tempPassword) {
+        try {
+            await NotificationService.sendPasswordReset(result.user, result.tempPassword);
+            console.log(`📧 Email di reset password inviata a: ${result.user.email}`);
+        } catch (emailError) {
+            console.error('❌ Errore invio email reset password:', emailError.message);
+            // Non bloccare l'operazione se l'email fallisce
+        }
+    }
+
+    return ApiResponse.success(res, 200, result.message);
+});
+
+/**
+ * Inizia procedura cambio password dal profilo
+ */
+exports.initiatePasswordChange = catchAsync(async (req, res, next) => {
+    // Imposta il flag per richiedere reset password
+    const result = await AuthService.initiatePasswordChange(req.user);
+
+    return ApiResponse.success(res, 200, result.message, {
+        user: result.user,
+        requiresPasswordReset: true
+    });
 });

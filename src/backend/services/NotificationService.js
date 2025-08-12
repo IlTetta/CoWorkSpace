@@ -321,6 +321,28 @@ class NotificationService {
     }
 
     /**
+     * Invia email reset password con password temporanea
+     */
+    static async sendPasswordReset(user, tempPassword) {
+        const templateData = {
+            userName: `${user.name} ${user.surname}`,
+            email: user.email,
+            tempPassword: tempPassword,
+            companyName: 'CoWorkSpace',
+            loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
+            subject: `Reset Password - CoWorkSpace`
+        };
+
+        return this.sendEmail({
+            recipient: user.email,
+            subject: templateData.subject,
+            templateName: 'password_reset',
+            templateData,
+            user_id: user.id || user.user_id
+        });
+    }
+
+    /**
      * Ottieni notifiche per un utente
      */
     static async getUserNotifications(user_id, filters = {}) {

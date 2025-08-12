@@ -12,12 +12,18 @@ server.js non richiede test unitari
 controller si occupano solo di HTTP, modelli solo dei dati/SQL (repository pattern)
 
 TODO:
-1. Separare Model da Controller (vedere esempio)
-2. Migliorare la sicurezza in app.js, server.js (vedere altri file)
-3. Sistemare catchAsync e AppError + usarli nei controller
-4. Aggiornare errorCode amn mano che si usa AppError
-5. Creare schema SQL per notifiche
-6. Usare un logger? 
+7. bool user per reset password --> genera pass variabile nella mail --> login con bool=T --> cambia password --> bool = F
+8. query location con parametro per ordine 
+9. query con tutte info per location
+10. info base + tipi sapazio
+11. query per email utente
+12. setStatusPassword per utente loggato T/F
+13. modifica booking con più giorni 
+14. get total import da pagare
+15. get prenotazioni da pagare
+16. modificare static functions in exports?
+17. cookiw injection
+
 
 GMail coworkspace.webdev@gmail.com 
 pass BM7oh1,0o9]>

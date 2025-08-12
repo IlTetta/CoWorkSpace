@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
   password_hash VARCHAR(255) NOT NULL,
   role user_role_enum NOT NULL,
+  is_password_reset_required BOOLEAN DEFAULT FALSE,
+  temp_password_hash VARCHAR(255),
+  temp_password_expires_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -118,7 +121,8 @@ CREATE TABLE IF NOT EXISTS notifications (
     'payment_failed',
     'payment_refund',
     'booking_reminder',
-    'user_registration'
+    'user_registration',
+    'password_reset'
   )),
   recipient VARCHAR(255) NOT NULL,
   subject VARCHAR(255),
