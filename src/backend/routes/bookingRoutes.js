@@ -100,6 +100,12 @@ router.post('/check-availability', BookingController.checkAvailability);
  */
 router.post('/calculate-price', BookingController.calculatePrice);
 
+/**
+ * POST /api/bookings/find-overlapping
+ * Trova prenotazioni che si sovrappongono con un periodo specificato (pubblico)
+ */
+router.post('/find-overlapping', BookingController.findOverlappingBookings);
+
 // ============================================================================
 // MIDDLEWARE DI AUTENTICAZIONE
 // ============================================================================
@@ -444,6 +450,24 @@ router.put('/:id', BookingController.updateBooking);
  * Elimina prenotazione (con controlli autorizzazione)
  */
 router.delete('/:id', BookingController.deleteBooking);
+
+/**
+ * GET /api/bookings/space/:spaceId/schedule
+ * Programma prenotazioni per uno spazio specifico
+ */
+router.get('/space/:spaceId/schedule', BookingController.getSpaceSchedule);
+
+/**
+ * GET /api/bookings/space/:spaceId/slots
+ * Ottieni slot disponibili per uno spazio in una data specifica
+ */
+router.get('/space/:spaceId/slots', BookingController.getAvailableSlots);
+
+/**
+ * POST /api/bookings/find-overlapping
+ * Trova prenotazioni che si sovrappongono a un periodo
+ */
+router.post('/find-overlapping', BookingController.findOverlappingBookings);
 
 // ============================================================================
 // ROUTES UTILITY (utenti autenticati)

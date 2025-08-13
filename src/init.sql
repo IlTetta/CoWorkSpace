@@ -1,7 +1,7 @@
 -- Tipi ENUM personalizzati per PostgreSQL
 CREATE TYPE user_role_enum AS ENUM ('user', 'manager', 'admin');
 CREATE TYPE booking_status_enum AS ENUM ('confirmed', 'pending', 'cancelled', 'completed');
-CREATE TYPE payment_status_enum AS ENUM ('completed', 'failed', 'refunded');
+CREATE TYPE payment_status_enum AS ENUM ('pending', 'completed', 'failed', 'refunded');
 CREATE TYPE payment_method_enum AS ENUM ('credit_card', 'paypal', 'bank_transfer', 'cash');
 
 
@@ -47,6 +47,16 @@ CREATE TABLE IF NOT EXISTS spaces (
   capacity INT NOT NULL,
   price_per_hour DECIMAL(10, 2) NOT NULL,
   price_per_day DECIMAL(10, 2) NOT NULL,
+  -- Orari di disponibilità standard
+  opening_time TIME DEFAULT '09:00:00',
+  closing_time TIME DEFAULT '18:00:00',
+  -- Giorni della settimana disponibili (1=Lunedì, 7=Domenica)
+  available_days INTEGER[] DEFAULT ARRAY[1,2,3,4,5], -- Lunedì-Venerdì di default
+  -- Configurazioni avanzate
+  min_booking_hours DECIMAL(3,1) DEFAULT 1.0,
+  max_booking_hours DECIMAL(4,1) DEFAULT 24.0,
+  booking_advance_days INTEGER DEFAULT 30,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'inactive')),
   FOREIGN KEY (location_id) REFERENCES locations(location_id) ON DELETE CASCADE,
   FOREIGN KEY (space_type_id) REFERENCES space_types(space_type_id) ON DELETE CASCADE
 );
@@ -68,15 +78,19 @@ CREATE TABLE IF NOT EXISTS bookings (
   booking_id SERIAL PRIMARY KEY,
   user_id INT NOT NULL, -- Riferimento all'utente che prenota
   space_id INT NOT NULL,
-  booking_date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  total_hours DECIMAL(5, 2) NOT NULL,
+  start_datetime TIMESTAMP NOT NULL,
+  end_datetime TIMESTAMP NOT NULL,
+  total_hours DECIMAL(5, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_datetime - start_datetime)) / 3600) STORED,
   total_price DECIMAL(10, 2) NOT NULL,
   status booking_status_enum NOT NULL DEFAULT 'pending',
+  payment_status payment_status_enum DEFAULT 'pending',
+  notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-  FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE
+  FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
+  -- Constraint per validazione datetime
+  CONSTRAINT booking_datetime_order CHECK (start_datetime < end_datetime),
+  CONSTRAINT booking_future_date CHECK (start_datetime > CURRENT_TIMESTAMP - INTERVAL '1 day')
 );
 
 -- Tabella Pagamenti

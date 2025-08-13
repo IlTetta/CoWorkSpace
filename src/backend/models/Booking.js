@@ -4,15 +4,15 @@ const AppError = require('../utils/AppError');
 
 /**
  * Model per gestire le prenotazioni degli spazi di co-working
+ * Supporta prenotazioni multi-giorno con datetime completi
  */
 class Booking {
     constructor(data) {
         this.booking_id = data.booking_id;
         this.user_id = data.user_id;
         this.space_id = data.space_id;
-        this.booking_date = data.booking_date;
-        this.start_time = data.start_time;
-        this.end_time = data.end_time;
+        this.start_datetime = data.start_datetime;
+        this.end_datetime = data.end_datetime;
         this.total_hours = data.total_hours;
         this.total_price = data.total_price;
         this.status = data.status || 'pending';
@@ -27,6 +27,25 @@ class Booking {
         this.space_name = data.space_name;
         this.location_name = data.location_name;
         this.location_address = data.location_address;
+        
+        // Campi calcolati per comodità
+        this.booking_date = data.start_datetime ? new Date(data.start_datetime).toISOString().split('T')[0] : null;
+        this.duration_days = this.calculateDurationDays();
+    }
+
+    /**
+     * Calcola la durata in giorni della prenotazione
+     * @returns {number} - Numero di giorni (inclusi parziali)
+     */
+    calculateDurationDays() {
+        if (!this.start_datetime || !this.end_datetime) return 0;
+        
+        const start = new Date(this.start_datetime);
+        const end = new Date(this.end_datetime);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays;
     }
 
     // ============================================================================
@@ -40,34 +59,38 @@ class Booking {
      */
     static async create(bookingData) {
         const {
-            user_id, space_id, booking_date, start_time, end_time,
-            total_hours, total_price, status = 'pending'
+            user_id, space_id, start_datetime, end_datetime,
+            total_price, status = 'pending', payment_status = 'pending', notes
         } = bookingData;
 
         // Validazione dati obbligatori
         this.validateBookingData(bookingData);
 
-        // Verifica disponibilità prima di creare
-        const isAvailable = await this.checkSpaceAvailability(
-            space_id, booking_date, start_time, end_time
+        // Verifica disponibilità prima di creare (con orari di apertura)
+        const Space = require('./Space');
+        const availabilityCheck = await Space.checkAvailabilityWithSchedule(
+            space_id, start_datetime, end_datetime
         );
         
-        if (!isAvailable) {
-            throw AppError.conflict('Lo spazio non è disponibile per l\'orario richiesto');
+        if (!availabilityCheck.available) {
+            throw AppError.conflict(availabilityCheck.message, {
+                reason: availabilityCheck.reason,
+                details: availabilityCheck
+            });
         }
 
         try {
             const query = `
                 INSERT INTO bookings (
-                    user_id, space_id, booking_date, start_time, end_time,
-                    total_hours, total_price, status
+                    user_id, space_id, start_datetime, end_datetime,
+                    total_price, status, payment_status, notes
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 RETURNING *
             `;
             
             const values = [
-                user_id, space_id, booking_date, start_time, end_time,
-                total_hours, total_price, status
+                user_id, space_id, start_datetime, end_datetime,
+                total_price, status, payment_status, notes
             ];
 
             const result = await pool.query(query, values);
@@ -82,6 +105,14 @@ class Booking {
                 }
                 if (error.constraint?.includes('space_id')) {
                     throw AppError.badRequest('Spazio non valido');
+                }
+            }
+            if (error.code === '23514') { // Check constraint violation
+                if (error.constraint?.includes('booking_datetime_order')) {
+                    throw AppError.badRequest('La data/ora di inizio deve essere precedente a quella di fine');
+                }
+                if (error.constraint?.includes('booking_future_date')) {
+                    throw AppError.badRequest('La prenotazione deve essere per una data futura');
                 }
             }
             throw AppError.internal('Errore durante la creazione della prenotazione', error);
@@ -185,23 +216,41 @@ class Booking {
                 values.push(filters.payment_status);
             }
 
-            if (filters.booking_date) {
-                query += ` AND b.booking_date = $${paramCount++}`;
-                values.push(filters.booking_date);
+            // Filtri per datetime
+            if (filters.start_date) {
+                query += ` AND DATE(b.start_datetime) >= $${paramCount++}`;
+                values.push(filters.start_date);
+            }
+
+            if (filters.end_date) {
+                query += ` AND DATE(b.end_datetime) <= $${paramCount++}`;
+                values.push(filters.end_date);
             }
 
             if (filters.date_from) {
-                query += ` AND b.booking_date >= $${paramCount++}`;
+                query += ` AND b.start_datetime >= $${paramCount++}`;
                 values.push(filters.date_from);
             }
 
             if (filters.date_to) {
-                query += ` AND b.booking_date <= $${paramCount++}`;
+                query += ` AND b.end_datetime <= $${paramCount++}`;
                 values.push(filters.date_to);
             }
 
+            // Filtro per prenotazioni che toccano una data specifica
+            if (filters.intersects_date) {
+                query += ` AND DATE(b.start_datetime) <= $${paramCount} AND DATE(b.end_datetime) >= $${paramCount++}`;
+                values.push(filters.intersects_date);
+            }
+
+            // Filtro per prenotazioni attive in un periodo
+            if (filters.active_between_start && filters.active_between_end) {
+                query += ` AND b.start_datetime < $${paramCount++} AND b.end_datetime > $${paramCount++}`;
+                values.push(filters.active_between_end, filters.active_between_start);
+            }
+
             // Ordinamento
-            query += ` ORDER BY b.booking_date DESC, b.start_time DESC`;
+            query += ` ORDER BY b.start_datetime DESC, b.created_at DESC`;
 
             // Limite risultati
             if (filters.limit) {
@@ -231,8 +280,8 @@ class Booking {
 
         // Campi aggiornabili
         const allowedFields = [
-            'booking_date', 'start_time', 'end_time', 'total_hours', 
-            'total_price', 'status', 'payment_status', 'notes'
+            'start_datetime', 'end_datetime', 'total_price', 
+            'status', 'payment_status', 'notes'
         ];
         
         const fieldsToUpdate = [];
@@ -251,18 +300,21 @@ class Booking {
             throw AppError.badRequest('Nessun campo valido da aggiornare');
         }
 
-        // Verifica disponibilità se si modificano date/orari
-        if (updateData.booking_date || updateData.start_time || updateData.end_time) {
-            const newDate = updateData.booking_date || existing.booking_date;
-            const newStartTime = updateData.start_time || existing.start_time;
-            const newEndTime = updateData.end_time || existing.end_time;
+        // Verifica disponibilità se si modificano datetime (con orari di apertura)
+        if (updateData.start_datetime || updateData.end_datetime) {
+            const newStartDatetime = updateData.start_datetime || existing.start_datetime;
+            const newEndDatetime = updateData.end_datetime || existing.end_datetime;
 
-            const isAvailable = await this.checkSpaceAvailability(
-                existing.space_id, newDate, newStartTime, newEndTime, bookingId
+            const Space = require('./Space');
+            const availabilityCheck = await Space.checkAvailabilityWithSchedule(
+                existing.space_id, newStartDatetime, newEndDatetime
             );
             
-            if (!isAvailable) {
-                throw AppError.conflict('Lo spazio non è disponibile per il nuovo orario');
+            if (!availabilityCheck.available) {
+                throw AppError.conflict(availabilityCheck.message, {
+                    reason: availabilityCheck.reason,
+                    details: availabilityCheck
+                });
             }
         }
 
@@ -279,6 +331,14 @@ class Booking {
             const result = await pool.query(query, values);
             return await this.findById(result.rows[0].booking_id);
         } catch (error) {
+            if (error.code === '23514') { // Check constraint violation
+                if (error.constraint?.includes('booking_datetime_order')) {
+                    throw AppError.badRequest('La data/ora di inizio deve essere precedente a quella di fine');
+                }
+                if (error.constraint?.includes('booking_future_date')) {
+                    throw AppError.badRequest('La prenotazione deve essere per una data futura');
+                }
+            }
             throw AppError.internal('Errore durante l\'aggiornamento della prenotazione', error);
         }
     }
@@ -306,33 +366,31 @@ class Booking {
     // ============================================================================
 
     /**
-     * Verifica disponibilità di uno spazio per un determinato orario
+     * Verifica disponibilità di uno spazio per un determinato periodo
      * @param {number} spaceId - ID dello spazio
-     * @param {string} date - Data prenotazione (YYYY-MM-DD)
-     * @param {string} startTime - Ora inizio (HH:MM:SS)
-     * @param {string} endTime - Ora fine (HH:MM:SS)
+     * @param {string} startDatetime - Data/ora inizio (ISO string)
+     * @param {string} endDatetime - Data/ora fine (ISO string)
      * @param {number} excludeBookingId - ID prenotazione da escludere (per update)
      * @returns {Promise<boolean>} - true se disponibile
      */
-    static async checkSpaceAvailability(spaceId, date, startTime, endTime, excludeBookingId = null) {
+    static async checkSpaceAvailability(spaceId, startDatetime, endDatetime, excludeBookingId = null) {
         try {
             let query = `
                 SELECT COUNT(*) as conflicts
                 FROM bookings
                 WHERE space_id = $1 
-                AND booking_date = $2
                 AND status NOT IN ('cancelled')
                 AND (
-                    (start_time < $4 AND end_time > $3) OR
-                    (start_time < $3 AND end_time > $3) OR
-                    (start_time >= $3 AND start_time < $4)
+                    (start_datetime < $3 AND end_datetime > $2) OR
+                    (start_datetime >= $2 AND start_datetime < $3) OR
+                    (end_datetime > $2 AND end_datetime <= $3)
                 )
             `;
 
-            const values = [spaceId, date, startTime, endTime];
+            const values = [spaceId, startDatetime, endDatetime];
 
             if (excludeBookingId) {
-                query += ` AND booking_id != $5`;
+                query += ` AND booking_id != $4`;
                 values.push(excludeBookingId);
             }
 
@@ -340,6 +398,72 @@ class Booking {
             return parseInt(result.rows[0].conflicts) === 0;
         } catch (error) {
             throw AppError.internal('Errore durante la verifica disponibilità', error);
+        }
+    }
+
+    /**
+     * Verifica disponibilità di uno spazio per una data specifica
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} date - Data nel formato YYYY-MM-DD
+     * @returns {Promise<Array>} - Array di orari occupati
+     */
+    static async getSpaceAvailabilityForDate(spaceId, date) {
+        try {
+            const query = `
+                SELECT 
+                    start_datetime,
+                    end_datetime,
+                    status
+                FROM bookings
+                WHERE space_id = $1 
+                AND DATE(start_datetime) <= $2
+                AND DATE(end_datetime) >= $2
+                AND status NOT IN ('cancelled')
+                ORDER BY start_datetime
+            `;
+
+            const result = await pool.query(query, [spaceId, date]);
+            return result.rows.map(row => ({
+                start_datetime: row.start_datetime,
+                end_datetime: row.end_datetime,
+                status: row.status
+            }));
+        } catch (error) {
+            throw AppError.internal('Errore durante la verifica disponibilità giornaliera', error);
+        }
+    }
+
+    /**
+     * Trova prenotazioni che si sovrappongono con un periodo specificato
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDatetime - Data/ora inizio
+     * @param {string} endDatetime - Data/ora fine
+     * @returns {Promise<Array<Booking>>} - Prenotazioni che si sovrappongono
+     */
+    static async findOverlappingBookings(spaceId, startDatetime, endDatetime) {
+        try {
+            const query = `
+                SELECT b.*, 
+                    u.name as user_name, 
+                    u.surname as user_surname,
+                    s.space_name
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                JOIN spaces s ON b.space_id = s.space_id
+                WHERE b.space_id = $1 
+                AND b.status NOT IN ('cancelled')
+                AND (
+                    (b.start_datetime < $3 AND b.end_datetime > $2) OR
+                    (b.start_datetime >= $2 AND b.start_datetime < $3) OR
+                    (b.end_datetime > $2 AND b.end_datetime <= $3)
+                )
+                ORDER BY b.start_datetime
+            `;
+
+            const result = await pool.query(query, [spaceId, startDatetime, endDatetime]);
+            return result.rows.map(row => new Booking(row));
+        } catch (error) {
+            throw AppError.internal('Errore durante la ricerca delle sovrapposizioni', error);
         }
     }
 
@@ -373,12 +497,12 @@ class Booking {
             }
 
             if (filters.date_from) {
-                baseQuery += ` AND b.booking_date >= $${paramCount++}`;
+                baseQuery += ` AND b.start_datetime >= $${paramCount++}`;
                 values.push(filters.date_from);
             }
 
             if (filters.date_to) {
-                baseQuery += ` AND b.booking_date <= $${paramCount++}`;
+                baseQuery += ` AND b.end_datetime <= $${paramCount++}`;
                 values.push(filters.date_to);
             }
 
@@ -392,7 +516,9 @@ class Booking {
                     COUNT(CASE WHEN b.status = 'completed' THEN 1 END) as completed_bookings,
                     COALESCE(SUM(CASE WHEN b.status != 'cancelled' THEN b.total_price ELSE 0 END), 0) as total_revenue,
                     COALESCE(SUM(CASE WHEN b.status != 'cancelled' THEN b.total_hours ELSE 0 END), 0) as total_hours,
-                    COALESCE(AVG(CASE WHEN b.status != 'cancelled' THEN b.total_price ELSE NULL END), 0) as avg_booking_price
+                    COALESCE(AVG(CASE WHEN b.status != 'cancelled' THEN b.total_price ELSE NULL END), 0) as avg_booking_price,
+                    COUNT(CASE WHEN EXTRACT(EPOCH FROM (b.end_datetime - b.start_datetime)) > 86400 THEN 1 END) as multi_day_bookings,
+                    COALESCE(AVG(CASE WHEN b.status != 'cancelled' THEN EXTRACT(EPOCH FROM (b.end_datetime - b.start_datetime)) / 3600 ELSE NULL END), 0) as avg_duration_hours
                 ${baseQuery}
             `;
 
@@ -403,19 +529,37 @@ class Booking {
             const spaceStatsQuery = `
                 SELECT 
                     s.space_id,
-                    s.name as space_name,
-                    l.name as location_name,
+                    s.space_name,
+                    l.location_name,
                     COUNT(*) as bookings_count,
                     COALESCE(SUM(b.total_price), 0) as revenue,
-                    COALESCE(SUM(b.total_hours), 0) as total_hours
+                    COALESCE(SUM(b.total_hours), 0) as total_hours,
+                    COALESCE(AVG(b.total_hours), 0) as avg_booking_duration
                 ${baseQuery}
                 AND b.status != 'cancelled'
-                GROUP BY s.space_id, s.name, l.name
+                GROUP BY s.space_id, s.space_name, l.location_name
                 ORDER BY revenue DESC
                 LIMIT 10
             `;
 
             const spaceStatsResult = await pool.query(spaceStatsQuery, values);
+
+            // Query per trend mensili
+            const trendQuery = `
+                SELECT 
+                    DATE_TRUNC('month', b.start_datetime) as month,
+                    COUNT(*) as bookings_count,
+                    COALESCE(SUM(b.total_price), 0) as revenue,
+                    COALESCE(SUM(b.total_hours), 0) as total_hours
+                ${baseQuery}
+                AND b.status != 'cancelled'
+                AND b.start_datetime >= CURRENT_DATE - INTERVAL '12 months'
+                GROUP BY DATE_TRUNC('month', b.start_datetime)
+                ORDER BY month DESC
+                LIMIT 12
+            `;
+
+            const trendResult = await pool.query(trendQuery, values);
 
             return {
                 overview: {
@@ -426,9 +570,12 @@ class Booking {
                     completedBookings: parseInt(stats.completed_bookings),
                     totalRevenue: parseFloat(stats.total_revenue),
                     totalHours: parseFloat(stats.total_hours),
-                    avgBookingPrice: parseFloat(stats.avg_booking_price)
+                    avgBookingPrice: parseFloat(stats.avg_booking_price),
+                    multiDayBookings: parseInt(stats.multi_day_bookings),
+                    avgDurationHours: parseFloat(stats.avg_duration_hours)
                 },
-                topSpaces: spaceStatsResult.rows
+                topSpaces: spaceStatsResult.rows,
+                monthlyTrend: trendResult.rows
             };
         } catch (error) {
             throw AppError.internal('Errore durante il calcolo delle statistiche', error);
@@ -445,34 +592,53 @@ class Booking {
      * @throws {AppError} - Se validazione fallisce
      */
     static validateBookingData(bookingData) {
-        const { user_id, space_id, booking_date, start_time, end_time, total_hours, total_price } = bookingData;
+        const { user_id, space_id, start_datetime, end_datetime, total_price } = bookingData;
 
-        if (!user_id || !space_id || !booking_date || !start_time || !end_time) {
-            throw AppError.badRequest('user_id, space_id, booking_date, start_time e end_time sono obbligatori');
+        if (!user_id || !space_id || !start_datetime || !end_datetime) {
+            throw AppError.badRequest('user_id, space_id, start_datetime e end_datetime sono obbligatori');
         }
 
-        // Validazione formato data
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(booking_date)) {
-            throw AppError.badRequest('Formato data non valido (deve essere YYYY-MM-DD)');
+        // Validazione formato datetime (deve essere ISO string o Date valida)
+        const startDate = new Date(start_datetime);
+        const endDate = new Date(end_datetime);
+
+        if (isNaN(startDate.getTime())) {
+            throw AppError.badRequest('Formato start_datetime non valido (deve essere ISO string)');
         }
 
-        // Validazione formato orario
-        const timeRegex = /^\d{2}:\d{2}:\d{2}$/;
-        if (!timeRegex.test(start_time) || !timeRegex.test(end_time)) {
-            throw AppError.badRequest('Formato orario non valido (deve essere HH:MM:SS)');
+        if (isNaN(endDate.getTime())) {
+            throw AppError.badRequest('Formato end_datetime non valido (deve essere ISO string)');
         }
 
-        // Validazione logica orari
-        if (start_time >= end_time) {
-            throw AppError.badRequest('L\'ora di inizio deve essere precedente all\'ora di fine');
+        // Validazione logica datetime
+        if (startDate >= endDate) {
+            throw AppError.badRequest('La data/ora di inizio deve essere precedente a quella di fine');
         }
 
-        // Validazione numeri positivi
-        if (total_hours && total_hours <= 0) {
-            throw AppError.badRequest('Le ore totali devono essere positive');
+        // Validazione che la prenotazione sia nel futuro (con tolleranza di 1 giorno)
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        
+        if (startDate < yesterday) {
+            throw AppError.badRequest('Non è possibile creare prenotazioni per date passate');
         }
 
+        // Validazione durata massima (es. max 30 giorni)
+        const diffTime = endDate.getTime() - startDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        
+        if (diffDays > 30) {
+            throw AppError.badRequest('La durata massima di una prenotazione è di 30 giorni');
+        }
+
+        // Validazione durata minima (es. min 1 ora)
+        const diffHours = diffTime / (1000 * 60 * 60);
+        
+        if (diffHours < 1) {
+            throw AppError.badRequest('La durata minima di una prenotazione è di 1 ora');
+        }
+
+        // Validazione numero positivo per prezzo
         if (total_price && total_price <= 0) {
             throw AppError.badRequest('Il prezzo totale deve essere positivo');
         }
@@ -483,10 +649,51 @@ class Booking {
             throw AppError.badRequest(`Status non valido. Valori ammessi: ${validStatuses.join(', ')}`);
         }
 
-        const validPaymentStatuses = ['pending', 'paid', 'failed', 'refunded'];
+        const validPaymentStatuses = ['pending', 'completed', 'failed', 'refunded'];
         if (bookingData.payment_status && !validPaymentStatuses.includes(bookingData.payment_status)) {
             throw AppError.badRequest(`Payment status non valido. Valori ammessi: ${validPaymentStatuses.join(', ')}`);
         }
+    }
+
+    /**
+     * Formatta datetime per il database PostgreSQL
+     * @param {string|Date} datetime - Datetime da formattare
+     * @returns {string} - Datetime formattato per PostgreSQL
+     */
+    static formatDateTimeForDB(datetime) {
+        const date = new Date(datetime);
+        return date.toISOString();
+    }
+
+    /**
+     * Converte i dati di input per compatibilità con il nuovo formato
+     * @param {Object} inputData - Dati in input (può avere formato vecchio o nuovo)
+     * @returns {Object} - Dati convertiti al nuovo formato
+     */
+    static convertLegacyBookingData(inputData) {
+        // Se ha già i nuovi campi, restituisci così com'è
+        if (inputData.start_datetime && inputData.end_datetime) {
+            return inputData;
+        }
+
+        // Se ha i campi vecchi, converti
+        if (inputData.booking_date && inputData.start_time && inputData.end_time) {
+            const bookingDate = inputData.booking_date;
+            const startTime = inputData.start_time;
+            const endTime = inputData.end_time;
+
+            return {
+                ...inputData,
+                start_datetime: `${bookingDate}T${startTime}`,
+                end_datetime: `${bookingDate}T${endTime}`,
+                // Rimuovi i campi vecchi
+                booking_date: undefined,
+                start_time: undefined,
+                end_time: undefined
+            };
+        }
+
+        return inputData;
     }
 }
 

@@ -3,7 +3,7 @@ const db = require('../config/db');
 const AppError = require('../utils/AppError');
 
 /**
- * Classe Space per gestire gli spazi di lavoro
+ * Classe Space per gestire gli spazi di lavoro con orari di disponibilità
  */
 class Space {
     constructor(data) {
@@ -16,6 +16,19 @@ class Space {
         this.price_per_hour = data.price_per_hour;
         this.price_per_day = data.price_per_day;
         
+        // Nuovi campi per orari di disponibilità
+        this.opening_time = data.opening_time;
+        this.closing_time = data.closing_time;
+        this.available_days = data.available_days; // Array di giorni [1,2,3,4,5]
+        this.min_booking_hours = data.min_booking_hours;
+        this.max_booking_hours = data.max_booking_hours;
+        this.booking_advance_days = data.booking_advance_days;
+        this.status = data.status;
+        
+        // Campi calcolati
+        this.daily_hours = data.daily_hours;
+        this.days_per_week = data.days_per_week;
+        
         // Campi aggiuntivi da JOIN queries
         if (data.location_name) {
             this.location = {
@@ -26,11 +39,11 @@ class Space {
             };
         }
         
-        if (data.type_name) {
+        if (data.type_name || data.space_type_name) {
             this.space_type = {
                 id: data.space_type_id,
-                name: data.type_name,
-                description: data.type_description
+                name: data.type_name || data.space_type_name,
+                description: data.type_description || data.space_type_description
             };
         }
     }
@@ -525,6 +538,313 @@ class Space {
             location: this.location,
             spaceType: this.space_type
         };
+    }
+
+    // ============================================================================
+    // METODI PER GESTIONE ORARI DI DISPONIBILITÀ
+    // ============================================================================
+
+    /**
+     * Verifica se uno spazio è disponibile per un determinato periodo considerando gli orari di apertura
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDatetime - Data/ora inizio (ISO string)
+     * @param {string} endDatetime - Data/ora fine (ISO string)
+     * @returns {Promise<Object>} - Risultato verifica con dettagli
+     */
+    static async checkAvailabilityWithSchedule(spaceId, startDatetime, endDatetime) {
+        try {
+            // 1. Ottieni informazioni spazio con orari
+            const space = await this.findById(spaceId);
+            if (!space) {
+                throw AppError.notFound('Spazio non trovato');
+            }
+
+            if (space.status !== 'active') {
+                return {
+                    available: false,
+                    reason: 'space_inactive',
+                    message: `Lo spazio è in stato: ${space.status}`
+                };
+            }
+
+            const startDate = new Date(startDatetime);
+            const endDate = new Date(endDatetime);
+
+            // 2. Verifica durata prenotazione
+            const durationHours = (endDate - startDate) / (1000 * 60 * 60);
+            
+            if (durationHours < space.min_booking_hours) {
+                return {
+                    available: false,
+                    reason: 'duration_too_short',
+                    message: `Durata minima prenotazione: ${space.min_booking_hours} ore`,
+                    min_hours: space.min_booking_hours
+                };
+            }
+
+            if (durationHours > space.max_booking_hours) {
+                return {
+                    available: false,
+                    reason: 'duration_too_long',
+                    message: `Durata massima prenotazione: ${space.max_booking_hours} ore`,
+                    max_hours: space.max_booking_hours
+                };
+            }
+
+            // 3. Verifica advance booking
+            const now = new Date();
+            const daysInAdvance = (startDate - now) / (1000 * 60 * 60 * 24);
+            
+            if (daysInAdvance > space.booking_advance_days) {
+                return {
+                    available: false,
+                    reason: 'too_far_in_advance',
+                    message: `Non è possibile prenotare con più di ${space.booking_advance_days} giorni di anticipo`,
+                    max_advance_days: space.booking_advance_days
+                };
+            }
+
+            // 4. Verifica orari di apertura per ogni giorno del periodo
+            const scheduleCheck = await this.checkScheduleCompatibility(space, startDate, endDate);
+            
+            if (!scheduleCheck.compatible) {
+                return {
+                    available: false,
+                    reason: 'outside_operating_hours',
+                    message: scheduleCheck.message,
+                    operating_hours: scheduleCheck.operating_hours,
+                    violations: scheduleCheck.violations
+                };
+            }
+
+            // 5. Verifica sovrapposizioni con altre prenotazioni
+            const Booking = require('./Booking');
+            const conflicts = await Booking.findOverlappingBookings(spaceId, startDatetime, endDatetime);
+            
+            if (conflicts.length > 0) {
+                return {
+                    available: false,
+                    reason: 'conflicting_bookings',
+                    message: 'Periodo in conflitto con altre prenotazioni',
+                    conflicting_bookings: conflicts
+                };
+            }
+
+            // Tutto ok!
+            return {
+                available: true,
+                message: 'Spazio disponibile per il periodo richiesto',
+                space_info: {
+                    name: space.space_name,
+                    opening_time: space.opening_time,
+                    closing_time: space.closing_time,
+                    available_days: space.available_days
+                },
+                duration_hours: durationHours
+            };
+
+        } catch (error) {
+            throw AppError.internal('Errore durante la verifica disponibilità', error);
+        }
+    }
+
+    /**
+     * Verifica compatibilità con orari di apertura per un periodo
+     * @param {Space} space - Oggetto spazio con orari
+     * @param {Date} startDate - Data inizio
+     * @param {Date} endDate - Data fine
+     * @returns {Promise<Object>} - Risultato verifica
+     */
+    static async checkScheduleCompatibility(space, startDate, endDate) {
+        const violations = [];
+        const currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+            const dayOfWeek = currentDate.getDay(); // 0=Domenica, 1=Lunedì, ...
+            const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek; // Converti a ISO (1=Lunedì, 7=Domenica)
+            
+            // Verifica se il giorno è disponibile
+            if (!space.available_days.includes(dayOfWeekISO)) {
+                violations.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    day_of_week: dayOfWeekISO,
+                    reason: 'day_not_available',
+                    message: `${this.getDayName(dayOfWeekISO)} non è un giorno disponibile`
+                });
+            }
+
+            // Verifica orari per questo giorno
+            const dayStart = new Date(currentDate);
+            const dayEnd = new Date(currentDate);
+            
+            // Se è il primo giorno, usa l'orario di inizio della prenotazione
+            if (currentDate.getTime() === startDate.getTime()) {
+                const requestedStartTime = startDate.toTimeString().split(' ')[0];
+                if (requestedStartTime < space.opening_time) {
+                    violations.push({
+                        date: currentDate.toISOString().split('T')[0],
+                        requested_time: requestedStartTime,
+                        opening_time: space.opening_time,
+                        reason: 'before_opening',
+                        message: `Orario richiesto ${requestedStartTime} è prima dell'apertura ${space.opening_time}`
+                    });
+                }
+            }
+
+            // Se è l'ultimo giorno, usa l'orario di fine della prenotazione
+            if (currentDate.toDateString() === endDate.toDateString()) {
+                const requestedEndTime = endDate.toTimeString().split(' ')[0];
+                if (requestedEndTime > space.closing_time) {
+                    violations.push({
+                        date: currentDate.toISOString().split('T')[0],
+                        requested_time: requestedEndTime,
+                        closing_time: space.closing_time,
+                        reason: 'after_closing',
+                        message: `Orario richiesto ${requestedEndTime} è dopo la chiusura ${space.closing_time}`
+                    });
+                }
+            }
+
+            // Vai al giorno successivo
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return {
+            compatible: violations.length === 0,
+            violations: violations,
+            message: violations.length === 0 ? 
+                'Orari compatibili con il calendario dello spazio' : 
+                `${violations.length} violazioni degli orari di apertura`,
+            operating_hours: {
+                opening_time: space.opening_time,
+                closing_time: space.closing_time,
+                available_days: space.available_days
+            }
+        };
+    }
+
+    /**
+     * Ottieni slot disponibili per uno spazio in una data specifica
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} date - Data nel formato YYYY-MM-DD
+     * @returns {Promise<Object>} - Slot disponibili
+     */
+    static async getAvailableSlots(spaceId, date) {
+        try {
+            const space = await this.findById(spaceId);
+            if (!space || space.status !== 'active') {
+                throw AppError.notFound('Spazio non trovato o non attivo');
+            }
+
+            const targetDate = new Date(date);
+            const dayOfWeek = targetDate.getDay();
+            const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+            // Verifica se il giorno è disponibile
+            if (!space.available_days.includes(dayOfWeekISO)) {
+                return {
+                    date: date,
+                    space_id: spaceId,
+                    available: false,
+                    reason: 'day_not_available',
+                    message: `${this.getDayName(dayOfWeekISO)} non è disponibile`,
+                    available_slots: []
+                };
+            }
+
+            // Ottieni prenotazioni esistenti per questa data
+            const Booking = require('./Booking');
+            const existingBookings = await Booking.getSpaceAvailabilityForDate(spaceId, date);
+
+            // Genera slot disponibili (esempio: slot da 1 ora)
+            const slots = [];
+            const openingTime = this.timeToMinutes(space.opening_time);
+            const closingTime = this.timeToMinutes(space.closing_time);
+            const slotDuration = 60; // 60 minuti per slot
+
+            for (let minutes = openingTime; minutes < closingTime; minutes += slotDuration) {
+                const slotStart = this.minutesToTime(minutes);
+                const slotEnd = this.minutesToTime(minutes + slotDuration);
+                
+                // Verifica se questo slot è libero
+                const isOccupied = existingBookings.some(booking => {
+                    const bookingStart = booking.start_datetime;
+                    const bookingEnd = booking.end_datetime;
+                    const slotStartDateTime = `${date}T${slotStart}`;
+                    const slotEndDateTime = `${date}T${slotEnd}`;
+                    
+                    return (bookingStart < slotEndDateTime && bookingEnd > slotStartDateTime);
+                });
+
+                slots.push({
+                    start_time: slotStart,
+                    end_time: slotEnd,
+                    available: !isOccupied,
+                    duration_minutes: slotDuration
+                });
+            }
+
+            return {
+                date: date,
+                space_id: spaceId,
+                space_name: space.space_name,
+                available: true,
+                operating_hours: {
+                    opening_time: space.opening_time,
+                    closing_time: space.closing_time
+                },
+                total_slots: slots.length,
+                available_slots: slots.filter(slot => slot.available),
+                occupied_slots: slots.filter(slot => !slot.available),
+                all_slots: slots
+            };
+
+        } catch (error) {
+            throw AppError.internal('Errore durante il calcolo degli slot disponibili', error);
+        }
+    }
+
+    // ============================================================================
+    // METODI UTILITY
+    // ============================================================================
+
+    /**
+     * Converte tempo in minuti
+     * @param {string} time - Tempo nel formato HH:MM:SS
+     * @returns {number} - Minuti dal midnight
+     */
+    static timeToMinutes(time) {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    /**
+     * Converte minuti in tempo
+     * @param {number} minutes - Minuti dal midnight
+     * @returns {string} - Tempo nel formato HH:MM:SS
+     */
+    static minutesToTime(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
+    }
+
+    /**
+     * Ottieni nome del giorno
+     * @param {number} dayOfWeek - Giorno della settimana (1=Lunedì, 7=Domenica)
+     * @returns {string} - Nome del giorno
+     */
+    static getDayName(dayOfWeek) {
+        const days = {
+            1: 'Lunedì',
+            2: 'Martedì', 
+            3: 'Mercoledì',
+            4: 'Giovedì',
+            5: 'Venerdì',
+            6: 'Sabato',
+            7: 'Domenica'
+        };
+        return days[dayOfWeek] || 'Sconosciuto';
     }
 }
 
