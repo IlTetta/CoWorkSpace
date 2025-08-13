@@ -94,6 +94,36 @@ class User {
     }
 
     /**
+     * Cerca utenti per email (ricerca parziale)
+     * @param {string} emailPattern - Pattern email da cercare
+     * @param {number} limit - Limite risultati (default 10)
+     * @returns {Promise<Array>} - Array di utenti trovati (senza dati sensibili)
+     */
+    static async searchByEmail(emailPattern, limit = 10) {
+        try {
+            const result = await pool.query(
+                `SELECT user_id, name, surname, email, role, created_at
+                 FROM users 
+                 WHERE LOWER(email) LIKE LOWER($1)
+                 ORDER BY email
+                 LIMIT $2`,
+                [`%${emailPattern}%`, limit]
+            );
+
+            return result.rows.map(row => ({
+                id: row.user_id,
+                name: row.name,
+                surname: row.surname,
+                email: row.email,
+                role: row.role,
+                created_at: row.created_at
+            }));
+        } catch (error) {
+            throw AppError.internal('Errore durante la ricerca utenti per email', error);
+        }
+    }
+
+    /**
      * Verifica password dell'utente
      * @param {string} password - Password in chiaro
      * @returns {Promise<boolean>} - True se password corretta

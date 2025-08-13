@@ -315,6 +315,46 @@ class AuthService {
     static async changePasswordOnReset(user, currentPassword, newPassword) {
         return await user.changePasswordOnReset(currentPassword, newPassword);
     }
+
+    /**
+     * Ottieni utente per ID
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<User|null>} - Utente trovato o null
+     */
+    static async getUserById(userId) {
+        return await User.findById(userId);
+    }
+
+    /**
+     * Verifica se un'email è già registrata
+     * @param {string} email - Email da verificare
+     * @returns {Promise<boolean>} - True se email esiste
+     */
+    static async checkEmailExists(email) {
+        if (!email) {
+            throw AppError.badRequest('Email è obbligatoria');
+        }
+
+        // Validazione formato email
+        User.validateEmail(email);
+
+        const user = await User.findByEmail(email);
+        return user !== null;
+    }
+
+    /**
+     * Cerca utenti per email (ricerca parziale)
+     * @param {string} emailPattern - Pattern email da cercare
+     * @param {number} limit - Limite risultati
+     * @returns {Promise<Array>} - Array di utenti trovati
+     */
+    static async searchUsersByEmail(emailPattern, limit = 10) {
+        if (!emailPattern || emailPattern.length < 3) {
+            throw AppError.badRequest('Pattern email deve contenere almeno 3 caratteri');
+        }
+
+        return await User.searchByEmail(emailPattern, limit);
+    }
 }
 
 module.exports = AuthService;
