@@ -166,3 +166,74 @@ exports.initiatePasswordChange = catchAsync(async (req, res, next) => {
         requiresPasswordReset: true
     });
 });
+
+/**
+ * Ottieni email di un utente per ID
+ * Solo admin può accedere a questa funzione per motivi di privacy
+ */
+exports.getUserEmail = catchAsync(async (req, res, next) => {
+    const userId = parseInt(req.params.user_id);
+    
+    if (!userId || userId <= 0) {
+        return next(AppError.badRequest('ID utente non valido'));
+    }
+
+    // Solo admin può recuperare email di altri utenti
+    if (req.user.role !== 'admin') {
+        return next(AppError.forbidden('Solo gli amministratori possono accedere alle email degli utenti'));
+    }
+
+    const user = await AuthService.getUserById(userId);
+    
+    if (!user) {
+        return next(AppError.notFound('Utente non trovato'));
+    }
+
+    return ApiResponse.success(res, 200, 'Email utente recuperata con successo', {
+        userId: user.user_id,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        role: user.role
+    });
+});
+
+/**
+ * Verifica se una email è già registrata nel sistema
+ * Funzione pubblica per validazione durante registrazione
+ */
+exports.checkEmailExists = catchAsync(async (req, res, next) => {
+    const { email } = req.query;
+    
+    if (!email) {
+        return next(AppError.badRequest('Email è obbligatoria'));
+    }
+
+    const exists = await AuthService.checkEmailExists(email);
+
+    return ApiResponse.success(res, 200, 'Verifica email completata', {
+        email,
+        exists
+    });
+});
+
+/**
+ * Cerca utenti per email (per admin)
+ * Permette ricerca parziale dell'email
+ */
+exports.searchUsersByEmail = catchAsync(async (req, res, next) => {
+    const { email, limit = 10 } = req.query;
+    
+    if (!email || email.length < 3) {
+        return next(AppError.badRequest('Email deve contenere almeno 3 caratteri per la ricerca'));
+    }
+
+    // Solo admin può cercare utenti per email
+    if (req.user.role !== 'admin') {
+        return next(AppError.forbidden('Solo gli amministratori possono cercare utenti per email'));
+    }
+
+    const users = await AuthService.searchUsersByEmail(email, parseInt(limit));
+
+    return ApiResponse.list(res, users, 'Ricerca utenti completata');
+});
