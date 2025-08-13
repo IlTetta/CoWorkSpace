@@ -34,6 +34,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_booking_id ON notifications(booking
 CREATE INDEX IF NOT EXISTS idx_notifications_payment_id ON notifications(payment_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);
 
+CREATE INDEX IF NOT EXISTS idx_users_password_reset ON users(is_password_reset_required);
+
 -- Constraint per prevenire sovrapposizioni di prenotazioni (richiede estensione btree_gist)
 -- CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- 
