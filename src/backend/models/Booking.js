@@ -695,6 +695,352 @@ class Booking {
 
         return inputData;
     }
+
+    // ============================================================================
+    // METODI PER GESTIONE PAGAMENTI
+    // ============================================================================
+
+    /**
+     * Ottieni l'importo totale da pagare per un utente (prenotazioni in attesa di pagamento)
+     * @param {number} userId - ID dell'utente
+     * @param {Object} filters - Filtri aggiuntivi
+     * @returns {Promise<Object>} - Importo totale e dettagli
+     */
+    static async getTotalAmountToPay(userId, filters = {}) {
+        try {
+            let query = `
+                SELECT 
+                    COUNT(*) as total_bookings,
+                    COALESCE(SUM(b.total_price), 0) as total_amount,
+                    COALESCE(SUM(b.total_hours), 0) as total_hours,
+                    MIN(b.start_datetime) as earliest_booking,
+                    MAX(b.start_datetime) as latest_booking
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN locations l ON s.location_id = l.location_id
+                WHERE b.user_id = $1 
+                AND b.payment_status = 'pending'
+                AND b.status NOT IN ('cancelled')
+            `;
+
+            const values = [userId];
+            let paramCount = 2;
+
+            // Filtri aggiuntivi
+            if (filters.location_id) {
+                if (Array.isArray(filters.location_id)) {
+                    const placeholders = filters.location_id.map(() => `$${paramCount++}`).join(',');
+                    query += ` AND l.location_id IN (${placeholders})`;
+                    values.push(...filters.location_id);
+                } else {
+                    query += ` AND l.location_id = $${paramCount++}`;
+                    values.push(filters.location_id);
+                }
+            }
+
+            if (filters.date_from) {
+                query += ` AND b.start_datetime >= $${paramCount++}`;
+                values.push(filters.date_from);
+            }
+
+            if (filters.date_to) {
+                query += ` AND b.end_datetime <= $${paramCount++}`;
+                values.push(filters.date_to);
+            }
+
+            if (filters.status) {
+                query += ` AND b.status = $${paramCount++}`;
+                values.push(filters.status);
+            }
+
+            const result = await pool.query(query, values);
+            const data = result.rows[0];
+
+            // Query per breakdown per location
+            let breakdownQuery = `
+                SELECT 
+                    l.location_id,
+                    l.location_name,
+                    l.city,
+                    COUNT(*) as bookings_count,
+                    COALESCE(SUM(b.total_price), 0) as amount,
+                    COALESCE(SUM(b.total_hours), 0) as hours
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN locations l ON s.location_id = l.location_id
+                WHERE b.user_id = $1 
+                AND b.payment_status = 'pending'
+                AND b.status NOT IN ('cancelled')
+            `;
+
+            const breakdownValues = [userId];
+            let breakdownParamCount = 2;
+
+            // Applica stessi filtri al breakdown
+            if (filters.location_id) {
+                if (Array.isArray(filters.location_id)) {
+                    const placeholders = filters.location_id.map(() => `$${breakdownParamCount++}`).join(',');
+                    breakdownQuery += ` AND l.location_id IN (${placeholders})`;
+                    breakdownValues.push(...filters.location_id);
+                } else {
+                    breakdownQuery += ` AND l.location_id = $${breakdownParamCount++}`;
+                    breakdownValues.push(filters.location_id);
+                }
+            }
+
+            if (filters.date_from) {
+                breakdownQuery += ` AND b.start_datetime >= $${breakdownParamCount++}`;
+                breakdownValues.push(filters.date_from);
+            }
+
+            if (filters.date_to) {
+                breakdownQuery += ` AND b.end_datetime <= $${breakdownParamCount++}`;
+                breakdownValues.push(filters.date_to);
+            }
+
+            if (filters.status) {
+                breakdownQuery += ` AND b.status = $${breakdownParamCount++}`;
+                breakdownValues.push(filters.status);
+            }
+
+            breakdownQuery += `
+                GROUP BY l.location_id, l.location_name, l.city
+                ORDER BY amount DESC
+            `;
+
+            const breakdownResult = await pool.query(breakdownQuery, breakdownValues);
+
+            return {
+                user_id: userId,
+                summary: {
+                    total_bookings: parseInt(data.total_bookings),
+                    total_amount: parseFloat(data.total_amount),
+                    total_hours: parseFloat(data.total_hours),
+                    earliest_booking: data.earliest_booking,
+                    latest_booking: data.latest_booking
+                },
+                breakdown_by_location: breakdownResult.rows.map(row => ({
+                    location_id: row.location_id,
+                    location_name: row.location_name,
+                    city: row.city,
+                    bookings_count: parseInt(row.bookings_count),
+                    amount: parseFloat(row.amount),
+                    hours: parseFloat(row.hours)
+                })),
+                has_pending_payments: parseInt(data.total_bookings) > 0
+            };
+
+        } catch (error) {
+            throw AppError.internal('Errore durante il calcolo dell\'importo totale da pagare', error);
+        }
+    }
+
+    /**
+     * Ottieni tutte le prenotazioni in attesa di pagamento per un utente
+     * @param {number} userId - ID dell'utente
+     * @param {Object} filters - Filtri aggiuntivi
+     * @returns {Promise<Array<Booking>>} - Array delle prenotazioni da pagare
+     */
+    static async getUnpaidBookings(userId, filters = {}) {
+        try {
+            let query = `
+                SELECT 
+                    b.*,
+                    u.name as user_name,
+                    u.surname as user_surname,
+                    u.email as user_email,
+                    s.space_name,
+                    s.capacity as space_capacity,
+                    s.price_per_hour,
+                    s.price_per_day,
+                    st.name as space_type_name,
+                    l.location_name,
+                    l.address as location_address,
+                    l.city as location_city,
+                    -- Calcola giorni rimasti per il pagamento (esempio: 7 giorni)
+                    EXTRACT(DAY FROM (b.start_datetime - CURRENT_TIMESTAMP)) as days_until_booking,
+                    -- Calcola se è in ritardo di pagamento (esempio: pagamento entro 3 giorni dalla prenotazione)
+                    CASE 
+                        WHEN b.created_at < CURRENT_TIMESTAMP - INTERVAL '3 days' THEN true
+                        ELSE false
+                    END as payment_overdue
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                WHERE b.user_id = $1 
+                AND b.payment_status = 'pending'
+                AND b.status NOT IN ('cancelled')
+            `;
+
+            const values = [userId];
+            let paramCount = 2;
+
+            // Filtri aggiuntivi
+            if (filters.location_id) {
+                if (Array.isArray(filters.location_id)) {
+                    const placeholders = filters.location_id.map(() => `$${paramCount++}`).join(',');
+                    query += ` AND l.location_id IN (${placeholders})`;
+                    values.push(...filters.location_id);
+                } else {
+                    query += ` AND l.location_id = $${paramCount++}`;
+                    values.push(filters.location_id);
+                }
+            }
+
+            if (filters.date_from) {
+                query += ` AND b.start_datetime >= $${paramCount++}`;
+                values.push(filters.date_from);
+            }
+
+            if (filters.date_to) {
+                query += ` AND b.end_datetime <= $${paramCount++}`;
+                values.push(filters.date_to);
+            }
+
+            if (filters.status) {
+                query += ` AND b.status = $${paramCount++}`;
+                values.push(filters.status);
+            }
+
+            if (filters.space_type_id) {
+                query += ` AND s.space_type_id = $${paramCount++}`;
+                values.push(filters.space_type_id);
+            }
+
+            // Filtro per prenotazioni in scadenza
+            if (filters.due_soon) {
+                query += ` AND b.start_datetime <= CURRENT_TIMESTAMP + INTERVAL '7 days'`;
+            }
+
+            // Filtro per pagamenti in ritardo
+            if (filters.overdue_only) {
+                query += ` AND b.created_at < CURRENT_TIMESTAMP - INTERVAL '3 days'`;
+            }
+
+            // Ordinamento
+            query += ` ORDER BY `;
+            
+            if (filters.sort_by === 'amount_desc') {
+                query += `b.total_price DESC`;
+            } else if (filters.sort_by === 'amount_asc') {
+                query += `b.total_price ASC`;
+            } else if (filters.sort_by === 'date_asc') {
+                query += `b.start_datetime ASC`;
+            } else if (filters.sort_by === 'overdue') {
+                query += `payment_overdue DESC, b.created_at ASC`;
+            } else {
+                // Default: prossime prenotazioni prima
+                query += `b.start_datetime ASC, b.created_at DESC`;
+            }
+
+            // Limite risultati
+            if (filters.limit) {
+                query += ` LIMIT $${paramCount++}`;
+                values.push(filters.limit);
+            }
+
+            const result = await pool.query(query, values);
+            
+            return result.rows.map(row => {
+                const booking = new Booking(row);
+                // Aggiungi campi calcolati
+                booking.days_until_booking = parseInt(row.days_until_booking) || 0;
+                booking.payment_overdue = row.payment_overdue || false;
+                booking.space_type_name = row.space_type_name;
+                booking.location_city = row.location_city;
+                
+                // Calcola urgenza pagamento
+                booking.payment_urgency = this.calculatePaymentUrgency(booking);
+                
+                return booking;
+            });
+
+        } catch (error) {
+            throw AppError.internal('Errore durante il recupero delle prenotazioni da pagare', error);
+        }
+    }
+
+    /**
+     * Calcola l'urgenza del pagamento per una prenotazione
+     * @param {Booking} booking - Prenotazione
+     * @returns {string} - Livello di urgenza (urgent, warning, normal)
+     */
+    static calculatePaymentUrgency(booking) {
+        if (booking.payment_overdue) {
+            return 'urgent'; // Pagamento già in ritardo
+        }
+        
+        if (booking.days_until_booking <= 1) {
+            return 'urgent'; // Prenotazione entro 24 ore
+        }
+        
+        if (booking.days_until_booking <= 3) {
+            return 'warning'; // Prenotazione entro 3 giorni
+        }
+        
+        return 'normal'; // Prenotazione con tempo sufficiente
+    }
+
+    /**
+     * Ottieni statistiche pagamenti per un utente
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<Object>} - Statistiche dettagliate
+     */
+    static async getUserPaymentStats(userId) {
+        try {
+            const query = `
+                SELECT 
+                    COUNT(*) FILTER (WHERE payment_status = 'pending') as pending_bookings,
+                    COUNT(*) FILTER (WHERE payment_status = 'completed') as paid_bookings,
+                    COUNT(*) FILTER (WHERE payment_status = 'failed') as failed_bookings,
+                    COUNT(*) FILTER (WHERE payment_status = 'refunded') as refunded_bookings,
+                    
+                    COALESCE(SUM(total_price) FILTER (WHERE payment_status = 'pending'), 0) as pending_amount,
+                    COALESCE(SUM(total_price) FILTER (WHERE payment_status = 'completed'), 0) as paid_amount,
+                    COALESCE(SUM(total_price) FILTER (WHERE payment_status = 'failed'), 0) as failed_amount,
+                    COALESCE(SUM(total_price) FILTER (WHERE payment_status = 'refunded'), 0) as refunded_amount,
+                    
+                    COUNT(*) FILTER (WHERE payment_status = 'pending' AND created_at < CURRENT_TIMESTAMP - INTERVAL '3 days') as overdue_bookings,
+                    COUNT(*) FILTER (WHERE payment_status = 'pending' AND start_datetime <= CURRENT_TIMESTAMP + INTERVAL '7 days') as due_soon_bookings,
+                    
+                    COALESCE(AVG(total_price) FILTER (WHERE payment_status = 'completed'), 0) as avg_booking_amount,
+                    COUNT(*) as total_bookings
+                FROM bookings 
+                WHERE user_id = $1 AND status != 'cancelled'
+            `;
+
+            const result = await pool.query(query, [userId]);
+            const stats = result.rows[0];
+
+            return {
+                user_id: userId,
+                payment_summary: {
+                    pending_bookings: parseInt(stats.pending_bookings),
+                    paid_bookings: parseInt(stats.paid_bookings),
+                    failed_bookings: parseInt(stats.failed_bookings),
+                    refunded_bookings: parseInt(stats.refunded_bookings),
+                    total_bookings: parseInt(stats.total_bookings)
+                },
+                amounts: {
+                    pending_amount: parseFloat(stats.pending_amount),
+                    paid_amount: parseFloat(stats.paid_amount),
+                    failed_amount: parseFloat(stats.failed_amount),
+                    refunded_amount: parseFloat(stats.refunded_amount),
+                    avg_booking_amount: parseFloat(stats.avg_booking_amount)
+                },
+                urgency_indicators: {
+                    overdue_bookings: parseInt(stats.overdue_bookings),
+                    due_soon_bookings: parseInt(stats.due_soon_bookings),
+                    needs_attention: parseInt(stats.overdue_bookings) > 0 || parseInt(stats.due_soon_bookings) > 0
+                }
+            };
+
+        } catch (error) {
+            throw AppError.internal('Errore durante il calcolo delle statistiche pagamenti', error);
+        }
+    }
 }
 
 module.exports = Booking;
