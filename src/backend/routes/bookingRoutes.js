@@ -470,6 +470,35 @@ router.get('/space/:spaceId/slots', BookingController.getAvailableSlots);
 router.post('/find-overlapping', BookingController.findOverlappingBookings);
 
 // ============================================================================
+// ROUTES PER GESTIONE PAGAMENTI
+// ============================================================================
+
+/**
+ * GET /api/bookings/my-payments
+ * Shortcut per i propri pagamenti (richiede solo autenticazione)
+ * Query params: type=summary|unpaid|stats
+ */
+router.get('/my-payments', BookingController.getMyPayments);
+
+/**
+ * GET /api/bookings/user/:userId/payment-summary
+ * Importo totale da pagare per un utente specifico
+ */
+router.get('/user/:userId/payment-summary', BookingController.getUserPaymentSummary);
+
+/**
+ * GET /api/bookings/user/:userId/unpaid
+ * Prenotazioni da pagare per un utente specifico
+ */
+router.get('/user/:userId/unpaid', BookingController.getUserUnpaidBookings);
+
+/**
+ * GET /api/bookings/user/:userId/payment-stats
+ * Statistiche pagamenti per un utente specifico
+ */
+router.get('/user/:userId/payment-stats', BookingController.getUserPaymentStats);
+
+// ============================================================================
 // ROUTES UTILITY (utenti autenticati)
 // ============================================================================
 

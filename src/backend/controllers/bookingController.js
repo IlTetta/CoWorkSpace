@@ -1,6 +1,7 @@
 // src/backend/controllers/bookingController.js
 const BookingService = require('../services/BookingService');
 const NotificationService = require('../services/NotificationService');
+const Booking = require('../models/Booking');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const ApiResponse = require('../utils/apiResponse');
@@ -299,6 +300,119 @@ exports.updatePaymentStatus = catchAsync(async (req, res) => {
         const booking = await BookingService.updateBooking(req.user, bookingId, { payment_status });
 
     return ApiResponse.updated(res, { booking }, `Stato pagamento aggiornato a '${payment_status}'`);
+});
+
+// ============================================================================
+// ENDPOINT PER GESTIONE PAGAMENTI
+// ============================================================================
+
+/**
+ * GET /api/bookings/user/:userId/payment-summary - Importo totale da pagare per un utente
+ */
+exports.getUserPaymentSummary = catchAsync(async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(userId)) {
+        throw AppError.badRequest('ID utente non valido');
+    }
+
+    // Verifica autorizzazione: solo se è il proprio profilo o admin/manager
+    if (req.user.user_id !== userId && !['admin', 'manager'].includes(req.user.role)) {
+        throw AppError.forbidden('Non autorizzato a visualizzare i pagamenti di questo utente');
+    }
+
+    // Filtri dalla query string
+    const filters = {};
+    if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
+    if (req.query.date_from) filters.date_from = req.query.date_from;
+    if (req.query.date_to) filters.date_to = req.query.date_to;
+    if (req.query.status) filters.status = req.query.status;
+
+    const paymentSummary = await Booking.getTotalAmountToPay(userId, filters);
+
+    return ApiResponse.success(res, 200, 'Riepilogo pagamenti recuperato con successo', paymentSummary);
+});
+
+/**
+ * GET /api/bookings/user/:userId/unpaid - Prenotazioni da pagare per un utente
+ */
+exports.getUserUnpaidBookings = catchAsync(async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(userId)) {
+        throw AppError.badRequest('ID utente non valido');
+    }
+
+    // Verifica autorizzazione: solo se è il proprio profilo o admin/manager
+    if (req.user.user_id !== userId && !['admin', 'manager'].includes(req.user.role)) {
+        throw AppError.forbidden('Non autorizzato a visualizzare le prenotazioni di questo utente');
+    }
+
+    // Filtri dalla query string
+    const filters = {};
+    if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
+    if (req.query.date_from) filters.date_from = req.query.date_from;
+    if (req.query.date_to) filters.date_to = req.query.date_to;
+    if (req.query.status) filters.status = req.query.status;
+    if (req.query.space_type_id) filters.space_type_id = parseInt(req.query.space_type_id);
+    if (req.query.limit) filters.limit = parseInt(req.query.limit);
+    
+    // Filtri speciali
+    if (req.query.due_soon === 'true') filters.due_soon = true;
+    if (req.query.overdue_only === 'true') filters.overdue_only = true;
+    
+    // Ordinamento
+    if (req.query.sort_by) {
+        const validSorts = ['amount_desc', 'amount_asc', 'date_asc', 'overdue'];
+        if (validSorts.includes(req.query.sort_by)) {
+            filters.sort_by = req.query.sort_by;
+        }
+    }
+
+    const unpaidBookings = await Booking.getUnpaidBookings(userId, filters);
+
+    return ApiResponse.list(res, unpaidBookings, 'Prenotazioni da pagare recuperate con successo', filters);
+});
+
+/**
+ * GET /api/bookings/user/:userId/payment-stats - Statistiche pagamenti per un utente
+ */
+exports.getUserPaymentStats = catchAsync(async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(userId)) {
+        throw AppError.badRequest('ID utente non valido');
+    }
+
+    // Verifica autorizzazione: solo se è il proprio profilo o admin/manager
+    if (req.user.user_id !== userId && !['admin', 'manager'].includes(req.user.role)) {
+        throw AppError.forbidden('Non autorizzato a visualizzare le statistiche di questo utente');
+    }
+
+    const paymentStats = await Booking.getUserPaymentStats(userId);
+
+    return ApiResponse.success(res, 200, 'Statistiche pagamenti recuperate con successo', paymentStats);
+});
+
+/**
+ * GET /api/bookings/my-payments - Endpoint shortcut per i propri pagamenti
+ */
+exports.getMyPayments = catchAsync(async (req, res) => {
+    // Reindirizza alla funzione generica usando l'ID dell'utente loggato
+    req.params.userId = req.user.user_id;
+    
+    // Determina quale tipo di informazioni vuole l'utente
+    const type = req.query.type || 'summary'; // summary, unpaid, stats
+    
+    switch (type) {
+        case 'unpaid':
+            return exports.getUserUnpaidBookings(req, res);
+        case 'stats':
+            return exports.getUserPaymentStats(req, res);
+        case 'summary':
+        default:
+            return exports.getUserPaymentSummary(req, res);
+    }
 });
 
 // ============================================================================
