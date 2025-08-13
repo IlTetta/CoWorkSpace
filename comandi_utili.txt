@@ -2,7 +2,7 @@ npm i -D vitest --> Test runner
 
 npm run dev --> rilancia il server ad ogni modifica dei file
 
-npm install jsonwebtoken bcryptjs cors express dotenv pg express-validator express-rate-limit nodemailer swagger-jsdoc swagger-ui-express
+npm install jsonwebtoken bcryptjs cors express dotenv pg express-validator express-rate-limit nodemailer swagger-jsdoc swagger-ui-express helmet
 npm install -D jest supertest
 
 
@@ -12,17 +12,7 @@ server.js non richiede test unitari
 controller si occupano solo di HTTP, modelli solo dei dati/SQL (repository pattern)
 
 TODO:
-7. bool user per reset password --> genera pass variabile nella mail --> login con bool=T --> cambia password --> bool = F
-8. query location con parametro per ordine 
-9. query con tutte info per location
 10. info base + tipi sapazio
-11. query per email utente
-12. setStatusPassword per utente loggato T/F
-13. modifica booking con più giorni 
-14. get total import da pagare
-15. get prenotazioni da pagare
-16. modificare static functions in exports?
-17. cookiw injection
 
 
 GMail coworkspace.webdev@gmail.com 

@@ -2,6 +2,7 @@
 
 const express = require('express'); 
 const cors = require('cors');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const db = require('./config/db');
 const ApiResponse = require('./utils/apiResponse');
@@ -42,8 +43,30 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-app.use(cors()); // Abilita CORS per tutte le rotte
-app.use(express.json()); // Per gestire il JSON nel corpo delle richieste
+// --- Security Middleware ---
+// Headers di sicurezza con Helmet
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    crossOriginEmbedderPolicy: false // Per Swagger UI
+}));
+
+// CORS configurato in modo sicuro
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : false),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' })); // Limite dimensione payload
 
 // Applica rate limiting generale a tutte le rotte API
 app.use('/api/', generalLimiter);
