@@ -119,6 +119,77 @@ const authMiddleware = require('../middleware/authMiddleware');
  */
 /**
  * @swagger
+ * /locations/filter:
+ *   get:
+ *     summary: Ottieni location con filtri avanzati e ordinamento
+ *     tags: [Locations]
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Filtra per nome (ricerca parziale, case-insensitive)
+ *         example: 'roma'
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: Filtra per città (ricerca esatta, case-insensitive)
+ *         example: 'Roma'
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, city, date]
+ *           default: name
+ *         description: Campo per ordinamento
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Ordine di ordinamento (asc = crescente, desc = decrescente)
+ *     responses:
+ *       200:
+ *         description: Location filtrate e ordinate
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         locations:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Location'
+ *                         filters:
+ *                           type: object
+ *                           properties:
+ *                             name:
+ *                               type: string
+ *                             city:
+ *                               type: string
+ *                         sorting:
+ *                           type: object
+ *                           properties:
+ *                             sortBy:
+ *                               type: string
+ *                             sortOrder:
+ *                               type: string
+ *       400:
+ *         description: Parametri non validi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+/**
+ * @swagger
  * /locations/alphabetical:
  *   get:
  *     summary: Ottieni location ordinate alfabeticamente
@@ -149,17 +220,18 @@ const authMiddleware = require('../middleware/authMiddleware');
  */
 // Rotte pubbliche (senza autenticazione)
 router.get('/search/available', locationController.searchAvailableLocations);
+router.get('/filter', locationController.getFilteredLocations);
 router.get('/alphabetical', locationController.getAllLocationsAlphabetically);
 router.get('/', locationController.getAllLocations);
 /**
  * @swagger
- * /locations/{id}:
+ * /locations/{location_id}:
  *   get:
  *     summary: Ottieni una location specifica
  *     tags: [Locations]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: location_id
  *         required: true
  *         schema:
  *           type: integer
@@ -187,6 +259,97 @@ router.get('/', locationController.getAllLocations);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/:location_id', locationController.getLocationById);
+
+/**
+ * @swagger
+ * /locations/{location_id}/complete:
+ *   get:
+ *     summary: Ottieni informazioni complete di una location
+ *     tags: [Locations]
+ *     parameters:
+ *       - in: path
+ *         name: location_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID numerico della location
+ *     responses:
+ *       200:
+ *         description: Informazioni complete della location
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         location:
+ *                           $ref: '#/components/schemas/Location'
+ *                         spaces:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                               name:
+ *                                 type: string
+ *                               description:
+ *                                 type: string
+ *                               capacity:
+ *                                 type: integer
+ *                               pricePerHour:
+ *                                 type: number
+ *                               pricePerDay:
+ *                                 type: number
+ *                               spaceType:
+ *                                 type: object
+ *                               statistics:
+ *                                 type: object
+ *                         statistics:
+ *                           type: object
+ *                           properties:
+ *                             totalSpaces:
+ *                               type: integer
+ *                             totalBookings:
+ *                               type: integer
+ *                             totalRevenue:
+ *                               type: number
+ *                             monthlyRevenue:
+ *                               type: array
+ *                             topSpaces:
+ *                               type: array
+ *                         recentBookings:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                         spaceTypes:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                         availableServices:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                         summary:
+ *                           type: object
+ *       404:
+ *         description: Location non trovata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (per manager che non gestiscono questa location)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/:location_id/complete', locationController.getLocationCompleteInfo);
 
 // Rotte protette - Dashboard manager
 router.get('/dashboard/manager', 

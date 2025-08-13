@@ -183,3 +183,49 @@ exports.getAllLocationsAlphabetically = catchAsync(async (req, res, next) => {
 
     return ApiResponse.list(res, sortedLocations, 'Locations ordinate recuperate con successo');
 });
+
+/**
+ * Ottieni locations con filtri avanzati e ordinamento
+ * Supporta filtri per nome, città e varie opzioni di ordinamento
+ */
+exports.getFilteredLocations = catchAsync(async (req, res, next) => {
+    const { 
+        name,           // Filtro per nome (ricerca parziale)
+        city,           // Filtro per città (ricerca esatta)
+        sortBy,         // Tipo di ordinamento: 'name', 'city', 'date'
+        sortOrder       // Ordine: 'asc', 'desc'
+    } = req.query;
+
+    // Costruisci i filtri
+    const filters = {};
+    if (name) filters.name = name;
+    if (city) filters.city = city;
+
+    // Ottieni le locations filtrate
+    const locations = await LocationService.getFilteredLocations(filters, {
+        sortBy: sortBy || 'name',
+        sortOrder: sortOrder || 'asc'
+    }, req.user || null);
+
+    return ApiResponse.list(res, locations, 'Locations filtrate recuperate con successo', {
+        filters: { name, city },
+        sorting: { sortBy: sortBy || 'name', sortOrder: sortOrder || 'asc' }
+    });
+});
+
+/**
+ * Ottieni informazioni complete di una location con tutti i dati associati
+ * Include spazi, prenotazioni, statistiche, servizi aggiuntivi e manager
+ */
+exports.getLocationCompleteInfo = catchAsync(async (req, res, next) => {
+    const location_id = parseInt(req.params.location_id);
+    
+    if (!location_id || location_id <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
+    }
+
+    // req.user può essere undefined per richieste pubbliche
+    const completeInfo = await LocationService.getLocationCompleteInfo(location_id, req.user || null);
+
+    return ApiResponse.success(res, 200, 'Informazioni complete location recuperate con successo', completeInfo);
+});
