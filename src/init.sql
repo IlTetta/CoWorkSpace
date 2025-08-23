@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_password_reset_required BOOLEAN DEFAULT FALSE,
   temp_password_hash VARCHAR(255),
   temp_password_expires_at TIMESTAMP,
+  fcm_token VARCHAR(255), 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
