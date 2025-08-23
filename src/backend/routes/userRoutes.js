@@ -448,6 +448,55 @@ router.post('/initiate-password-change', authMiddleware.protect, userController.
 
 /**
  * @swagger
+ * /users/fcm-token:
+ *   post:
+ *     summary: Salva il token FCM per le notifiche push
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fcm_token:
+ *                 type: string
+ *                 description: Il token FCM da salvare
+ *                 example: 'fcm_token_example'
+ *     responses:
+ *       200:
+ *         description: Token FCM salvato con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: "Token FCM salvato con successo"
+ *       400:
+ *         description: Richiesta non valida
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/fcm-token', authMiddleware.protect, userController.saveFcmToken);
+/**
+ * @swagger
  * /users/{user_id}/email:
  *   get:
  *     summary: Ottieni email di un utente specifico (Solo Admin)

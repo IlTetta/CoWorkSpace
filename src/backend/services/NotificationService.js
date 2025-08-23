@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs').promises;
 const path = require('path');
 const Notification = require('../models/Notification');
+const admin = require('../config/firebase'); 
 
 /**
  * Service per gestire l'invio di notifiche email e push
@@ -12,7 +13,6 @@ class NotificationService {
      * Configura il trasportatore email
      */
     static _createTransporter() {
-        // Se non ci sono credenziali email, usa modalità test
         if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.log('📧 Email credentials not found - using test mode');
             return {
@@ -46,27 +46,17 @@ class NotificationService {
     static async renderTemplate(templateName, templateData) {
         try {
             const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.html`);
-            
-            // Verifica se il template esiste
-            try {
-                await fs.access(templatePath);
-            } catch (error) {
-                console.warn(`Template ${templateName} non trovato, uso template di default`);
-                return this._getDefaultTemplate(templateData);
-            }
+            try { await fs.access(templatePath); } 
+            catch { return this._defaultTemplate(templateData); }
 
             let template = await fs.readFile(templatePath, 'utf-8');
-            
-            // Sostituisce i placeholder {{chiave}} con i valori
             for (const [key, value] of Object.entries(templateData)) {
-                const placeholder = new RegExp(`{{${key}}}`, 'g');
-                template = template.replace(placeholder, value || '');
+                template = template.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
             }
-            
             return template;
         } catch (error) {
             console.error('Errore rendering template:', error);
-            return this._getDefaultTemplate(templateData);
+            return this._defaultTemplate(templateData);
         }
     }
 
@@ -163,67 +153,49 @@ class NotificationService {
     }
 
     /**
-     * Invia notifica push (simulata)
-     * @param {Object} pushData - Dati push notification
-     * @returns {Promise<Object>} - Risultato invio
+     * Invia notifica push tramite Firebase
      */
-    static async sendPushNotification(pushData) {
-        const { fcmToken, title, templateName, templateData, user_id, booking_id, payment_id } = pushData;
-        let notification = null;
+    static async sendPushNotification({fcmToken, title, body, data = {}, user_id, booking_id, payment_id}) {
+        if (!fcmToken) {
+            console.warn('[FCM] Token FCM mancante, notifica saltata');
+            return {success: false, reason: 'missing_fcm_token'};
+        }
 
+        let notification = null;
         try {
-            // Crea record notifica
             notification = await Notification.create({
                 user_id,
-                type: 'push',
-                channel: templateName,
+                type:'push',
+                channel: 'push',
                 recipient: fcmToken,
                 subject: title,
-                content: JSON.stringify(templateData),
-                template_name: templateName,
-                template_data: templateData,
+                content: JSON.stringify({title, body, data}),
+                template_name: 'push',
+                template_data: {title, body, ...data},
                 status: 'pending',
                 booking_id,
                 payment_id
             });
 
-            // Simula invio push notification
-            console.log('📱 [SIMULATED] Push notification:', {
-                token: fcmToken,
-                title,
-                body: templateData.message || 'Hai ricevuto una notifica',
-                data: templateData
-            });
+            const message = {token: fcmToken, notification: {title, body }, data};
+            const response = await admin.messaging().send(message);
 
-            // Aggiorna stato notifica
-            await Notification.updateStatus(notification.notification_id, 'sent', {
-                simulated: true,
-                timestamp: new Date().toISOString()
-            });
+            await Notification.updateStatus(notification.notification_id, 'sent', {fcmResponse: response});
+            console.log('[FCM] Notifica inviata con successo:', response);
 
             return {
                 success: true,
-                messageId: `push-${Date.now()}`,
-                notification_id: notification.notification_id,
-                fcmToken,
-                title
+                messageId: `push_${Date.now()}`,
+                notification_id: notification.notification_id
             };
-
         } catch (error) {
-            console.error('❌ Errore invio push:', error);
-
-            // Aggiorna stato notifica come fallita
-            if (notification?.notification_id) {
-                await Notification.updateStatus(notification.notification_id, 'failed', {
-                    error: error.message
-                });
+            console.error('[FCM] Errore invio notifica:', error);
+            if(notification?.notification_id) {
+                await Notification.updateStatus(notification.notification_id, 'failed', {error: error.message});
             }
-
             return {
                 success: false,
-                error: error.message,
-                fcmToken,
-                title
+                error: error.message
             };
         }
     }
@@ -251,6 +223,16 @@ class NotificationService {
             user_id: user.user_id,
             booking_id: booking.booking_id
         });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `Prenotazione confermata dal ${templateData.startDate} al ${templateData.endDate}`,
+                user_id: user.user_id,
+                booking_id: booking.booking_id
+            });
+        }
     }
 
     /**
@@ -273,6 +255,16 @@ class NotificationService {
             user_id: user.user_id,
             booking_id: booking.booking_id
         });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `Prenotazione cancellata dal ${templateData.startDate} al ${templateData.endDate}`,
+                user_id: user.user_id,
+                booking_id: booking.booking_id
+            });
+        }
     }
 
     /**
@@ -298,6 +290,16 @@ class NotificationService {
             booking_id: booking.booking_id,
             payment_id: payment.payment_id
         });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `Pagamento confermato per la prenotazione #${booking.booking_id}`,
+                user_id: user.user_id,
+                booking_id: booking.booking_id
+            });
+        }
     }
 
     /**
@@ -318,6 +320,15 @@ class NotificationService {
             templateData,
             user_id: user.id || user.user_id
         });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `Benvenuto in CoWorkSpace, ${user.name}!`,
+                user_id: user.id || user.user_id
+            });
+        }
     }
 
     /**
@@ -340,6 +351,15 @@ class NotificationService {
             templateData,
             user_id: user.id || user.user_id
         });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `Una password temporanea è stata inviata alla tua email.`,
+                user_id: user.id || user.user_id
+            });
+        }
     }
 
     /**

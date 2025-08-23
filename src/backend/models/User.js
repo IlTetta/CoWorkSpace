@@ -15,6 +15,7 @@ class User {
         this.is_password_reset_required = userData.is_password_reset_required || false;
         this.temp_password_hash = userData.temp_password_hash;
         this.temp_password_expires_at = userData.temp_password_expires_at;
+        this.fcm_token = userData.fcm_token;
     }
 
     /**
@@ -120,6 +121,19 @@ class User {
             }));
         } catch (error) {
             throw AppError.internal('Errore durante la ricerca utenti per email', error);
+        }
+    }
+
+    static async updateFcmToken(user) {
+        try {
+            const result = await pool.query(
+                `UPDATE users SET fcm_token = $1 WHERE user_id = $2 RETURNING user_id, fcm_token`,
+                [user.fcm_token, user.user_id]
+            );
+
+            return result.rows[0];
+        } catch (error) {
+            throw AppError.internal('Errore durante l\'aggiornamento del token FCM', error);
         }
     }
 

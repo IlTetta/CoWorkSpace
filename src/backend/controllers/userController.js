@@ -237,3 +237,16 @@ exports.searchUsersByEmail = catchAsync(async (req, res, next) => {
 
     return ApiResponse.list(res, users, 'Ricerca utenti completata');
 });
+
+exports.saveFcmToken = catchAsync(async (req, res, next) => {
+    const { fcm_token } = req.body;
+
+    if (!fcm_token) {
+        return next(AppError.badRequest('Il token FCM è obbligatorio'));
+    }
+
+    // Salva il token FCM nel database
+    await AuthService.updateFcmToken(req.user.id, fcm_token);
+
+    return ApiResponse.success(res, 200, 'Token FCM salvato con successo');
+});

@@ -355,6 +355,22 @@ class AuthService {
 
         return await User.searchByEmail(emailPattern, limit);
     }
+
+    static async updateFcmToken(userId, fcmToken) {
+        if (!userId || !fcmToken) {
+            throw AppError.badRequest('ID utente e token FCM sono obbligatori');
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw AppError.notFound('Utente non trovato');
+        }
+
+        user.fcm_token = fcmToken;
+        await User.updateFcmToken(user);
+
+        return user;
+    }
 }
 
 module.exports = AuthService;
