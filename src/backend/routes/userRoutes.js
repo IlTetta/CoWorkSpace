@@ -358,4 +358,92 @@ router.put('/profile', authMiddleware.protect, updateProfileValidation, validate
 // Cambio password (protetto)
 router.put('/change-password', authMiddleware.protect, userController.changePassword);
 
+/**
+ * @swagger
+ * /users/request-password-reset:
+ *   post:
+ *     summary: Richiede reset password (password dimenticata)
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email dell'utente che vuole resettare la password
+ *                 example: 'mario.rossi@email.com'
+ *     responses:
+ *       200:
+ *         description: Richiesta di reset password inviata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: "Se l'email è registrata, riceverai le istruzioni per il reset"
+ *       400:
+ *         description: Email non fornita
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: Troppi tentativi di reset
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Richiesta reset password (pubblica)
+router.post('/request-password-reset', loginLimiter, userController.requestPasswordReset);
+
+/**
+ * @swagger
+ * /users/initiate-password-change:
+ *   post:
+ *     summary: Inizia procedura cambio password dal profilo
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Procedura cambio password iniziata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         requiresPasswordReset:
+ *                           type: boolean
+ *                           example: true
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Inizia cambio password dal profilo (protetto)
+router.post('/initiate-password-change', authMiddleware.protect, userController.initiatePasswordChange);
+
 module.exports = router;

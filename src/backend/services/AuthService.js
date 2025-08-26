@@ -39,9 +39,13 @@ class AuthService {
             throw AppError.invalidCredentials();
         }
 
-        // Verifica password
-        const isPasswordValid = await user.verifyPassword(password);
-        if (!isPasswordValid) {
+        // Verifica password (normale o temporanea)
+        const passwordCheck = await user.verifyPasswordForLogin(password);
+        
+        if (!passwordCheck.isValid) {
+            if (passwordCheck.expired) {
+                throw AppError.badRequest('Password temporanea scaduta. Richiedi un nuovo reset password');
+            }
             throw AppError.invalidCredentials();
         }
 
@@ -50,7 +54,8 @@ class AuthService {
 
         return {
             token,
-            user: user.toJSON()
+            user: user.toJSON(),
+            requiresPasswordReset: passwordCheck.requiresReset
         };
     }
 
@@ -255,6 +260,60 @@ class AuthService {
      */
     static async updateProfile(user, updateData) {
         return await user.updateProfile(updateData);
+    }
+
+    /**
+     * Richiede reset password (password dimenticata)
+     * @param {string} email - Email utente
+     * @returns {Promise<Object>} - Dati per l'invio email
+     */
+    static async requestPasswordReset(email) {
+        if (!email) {
+            throw AppError.badRequest('Email è obbligatoria');
+        }
+
+        // Trova utente per email
+        const user = await User.findByEmail(email);
+        if (!user) {
+            // Per sicurezza, non rivelare se l'email esiste o meno
+            return { success: true, message: 'Se l\'email è registrata, riceverai le istruzioni per il reset' };
+        }
+
+        // Genera password temporanea
+        const tempPassword = await user.generateTemporaryPassword();
+
+        return {
+            success: true,
+            user: user.toJSON(),
+            tempPassword: tempPassword,
+            message: 'Password temporanea generata con successo'
+        };
+    }
+
+    /**
+     * Imposta flag reset password (da profilo utente)
+     * @param {User} user - Utente autenticato
+     * @returns {Promise<Object>} - Risultato operazione
+     */
+    static async initiatePasswordChange(user) {
+        await user.requirePasswordReset();
+        
+        return {
+            success: true,
+            user: user.toJSON(),
+            message: 'Richiesta cambio password impostata. Verrai reindirizzato al cambio password'
+        };
+    }
+
+    /**
+     * Cambia password durante reset
+     * @param {User} user - Utente autenticato
+     * @param {string} currentPassword - Password attuale o temporanea
+     * @param {string} newPassword - Nuova password
+     * @returns {Promise<boolean>} - True se cambio riuscito
+     */
+    static async changePasswordOnReset(user, currentPassword, newPassword) {
+        return await user.changePasswordOnReset(currentPassword, newPassword);
     }
 }
 

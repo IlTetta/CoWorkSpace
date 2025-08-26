@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const AppError = require('../utils/AppError');
 
 class User {
@@ -11,6 +12,9 @@ class User {
         this.password_hash = userData.password_hash;
         this.role = userData.role;
         this.created_at = userData.created_at;
+        this.is_password_reset_required = userData.is_password_reset_required || false;
+        this.temp_password_hash = userData.temp_password_hash;
+        this.temp_password_expires_at = userData.temp_password_expires_at;
     }
 
     /**
@@ -77,7 +81,9 @@ class User {
     static async findById(id) {
         try {
             const result = await pool.query(
-                'SELECT user_id, name, surname, email, role, created_at FROM users WHERE user_id = $1',
+                `SELECT user_id, name, surname, email, role, created_at, 
+                        is_password_reset_required, temp_password_hash, temp_password_expires_at 
+                 FROM users WHERE user_id = $1`,
                 [id]
             );
 
@@ -183,6 +189,159 @@ class User {
     }
 
     /**
+     * Cambia password durante il reset (con password temporanea)
+     * @param {string} currentPassword - Password attuale o temporanea
+     * @param {string} newPassword - Nuova password
+     * @returns {Promise<boolean>} - True se aggiornamento riuscito
+     */
+    async changePasswordOnReset(currentPassword, newPassword) {
+        // Se l'utente deve resettare la password, verifica prima la password temporanea
+        if (this.is_password_reset_required && this.temp_password_hash) {
+            const isTempPasswordValid = await bcrypt.compare(currentPassword, this.temp_password_hash);
+            
+            // Verifica se la password temporanea è scaduta
+            if (this.temp_password_expires_at && new Date() > new Date(this.temp_password_expires_at)) {
+                throw AppError.badRequest('Password temporanea scaduta. Richiedi un nuovo reset password');
+            }
+            
+            if (!isTempPasswordValid) {
+                // Prova anche con la password normale per compatibilità
+                const isCurrentPasswordValid = await bcrypt.compare(currentPassword, this.password_hash);
+                if (!isCurrentPasswordValid) {
+                    throw AppError.badRequest('Password attuale non corretta');
+                }
+            }
+        } else {
+            // Verifica password attuale normale
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword, this.password_hash);
+            if (!isCurrentPasswordValid) {
+                throw AppError.badRequest('Password attuale non corretta');
+            }
+        }
+
+        // Validazione nuova password
+        User.validatePassword(newPassword);
+
+        // Hash nuova password
+        const salt = await bcrypt.genSalt(12);
+        const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+        try {
+            await pool.query(
+                `UPDATE users SET 
+                    password_hash = $1, 
+                    is_password_reset_required = FALSE, 
+                    temp_password_hash = NULL, 
+                    temp_password_expires_at = NULL 
+                 WHERE user_id = $2`,
+                [newPasswordHash, this.user_id]
+            );
+
+            this.password_hash = newPasswordHash;
+            this.is_password_reset_required = false;
+            this.temp_password_hash = null;
+            this.temp_password_expires_at = null;
+            return true;
+        } catch (error) {
+            throw AppError.internal('Errore durante il cambio password', error);
+        }
+    }
+
+    /**
+     * Genera password temporanea per reset
+     * @returns {Promise<string>} - Password temporanea in chiaro
+     */
+    async generateTemporaryPassword() {
+        // Genera password temporanea di 12 caratteri
+        const tempPassword = crypto.randomBytes(6).toString('hex') + 'Aa1!';
+        
+        // Hash della password temporanea
+        const salt = await bcrypt.genSalt(12);
+        const tempPasswordHash = await bcrypt.hash(tempPassword, salt);
+        
+        // Scadenza password temporanea (24 ore)
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        try {
+            await pool.query(
+                `UPDATE users SET 
+                    temp_password_hash = $1, 
+                    temp_password_expires_at = $2, 
+                    is_password_reset_required = TRUE 
+                 WHERE user_id = $3`,
+                [tempPasswordHash, expiresAt, this.user_id]
+            );
+
+            this.temp_password_hash = tempPasswordHash;
+            this.temp_password_expires_at = expiresAt;
+            this.is_password_reset_required = true;
+
+            return tempPassword;
+        } catch (error) {
+            throw AppError.internal('Errore durante la generazione password temporanea', error);
+        }
+    }
+
+    /**
+     * Imposta flag per richiedere reset password (per cambio da profilo)
+     * @returns {Promise<boolean>} - True se aggiornamento riuscito
+     */
+    async requirePasswordReset() {
+        try {
+            await pool.query(
+                'UPDATE users SET is_password_reset_required = TRUE WHERE user_id = $1',
+                [this.user_id]
+            );
+
+            this.is_password_reset_required = true;
+            return true;
+        } catch (error) {
+            throw AppError.internal('Errore durante l\'impostazione reset password', error);
+        }
+    }
+
+    /**
+     * Verifica password dell'utente (normale o temporanea per login)
+     * @param {string} password - Password in chiaro
+     * @returns {Promise<Object>} - Oggetto con validità e necessità di reset
+     */
+    async verifyPasswordForLogin(password) {
+        try {
+            // Prima verifica password normale
+            const isNormalPasswordValid = await bcrypt.compare(password, this.password_hash);
+            
+            // Se la password normale è valida e non è richiesto reset, ritorna true
+            if (isNormalPasswordValid && !this.is_password_reset_required) {
+                return { isValid: true, requiresReset: false };
+            }
+            
+            // Se è richiesto reset e c'è una password temporanea
+            if (this.is_password_reset_required && this.temp_password_hash) {
+                // Verifica se la password temporanea è scaduta
+                if (this.temp_password_expires_at && new Date() > new Date(this.temp_password_expires_at)) {
+                    return { isValid: false, requiresReset: true, expired: true };
+                }
+                
+                // Verifica password temporanea
+                const isTempPasswordValid = await bcrypt.compare(password, this.temp_password_hash);
+                if (isTempPasswordValid) {
+                    return { isValid: true, requiresReset: true };
+                }
+            }
+            
+            // Se è richiesto reset ma non c'è password temporanea, usa password normale
+            if (this.is_password_reset_required && !this.temp_password_hash && isNormalPasswordValid) {
+                return { isValid: true, requiresReset: true };
+            }
+            
+            return { isValid: isNormalPasswordValid, requiresReset: this.is_password_reset_required };
+        } catch (error) {
+            throw AppError.internal('Errore durante la verifica password', error);
+        }
+    }
+
+    /**
      * Validazione dati utente
      * @param {Object} userData - Dati da validare
      * @throws {AppError} - Se validazione fallisce
@@ -262,7 +421,8 @@ class User {
             surname: this.surname,
             email: this.email,
             role: this.role,
-            created_at: this.created_at
+            created_at: this.created_at,
+            is_password_reset_required: this.is_password_reset_required
         };
     }
 

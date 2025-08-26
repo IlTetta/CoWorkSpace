@@ -319,7 +319,8 @@ class Notification {
             'payment_failed',
             'payment_refund',
             'booking_reminder',
-            'user_registration'
+            'user_registration',
+            'password_reset'
         ];
         if (!validChannels.includes(channel)) {
             throw AppError.badRequest(`Channel non valido. Valori ammessi: ${validChannels.join(', ')}`);
