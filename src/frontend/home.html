@@ -7,14 +7,19 @@
     <link rel="stylesheet" href="styles/home.css">
     <link rel="stylesheet" href="styles/home-header.css">
     <link rel="stylesheet" href="styles/bottom-buttons.css">
+    <link rel="stylesheet" href="styles/messages.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 
 <body>
+    <!-- Message containers for notifications -->
+    <div id="error-container" class="message-container"></div>
+    <div id="success-container" class="message-container"></div>
+    
     <div class="header">
         <div class="left-section">
-            <input class="search-bar" type="text" placeholder="Search">
-            <button class="search-button">
+            <input class="search-bar" id="search-input" type="text" placeholder="Search">
+            <button class="search-button" id="search-btn">
                 <span class="material-symbols-outlined">
                     search
                 </span>
@@ -89,6 +94,14 @@
 	}
 	// ]]>
 </script>
+
+<!-- JavaScript Files -->
+<script src="js/apiService.js"></script>
+<script src="js/authService.js"></script>
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script src="js/grid.js"></script>
+
 </body>
 
 </html>
