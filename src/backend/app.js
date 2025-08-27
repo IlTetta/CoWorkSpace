@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./config/db');
 const ApiResponse = require('./utils/apiResponse');
 const { specs, swaggerUi } = require('./config/swagger');
+const path = require('path');
 const app = express();
 
 // --- Importazione dei moduli delle rotte ---
@@ -67,6 +68,12 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Limite dimensione payload
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/home.html'));
+});
+
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Applica rate limiting generale a tutte le rotte API
 app.use('/api/', generalLimiter);

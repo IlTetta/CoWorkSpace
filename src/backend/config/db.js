@@ -2,27 +2,41 @@
 
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
-dotenv.config();
 
-// Configurazione pool con parametri ottimizzati
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT || 5432,
-  
-  // Configurazione pool avanzata
-  max: parseInt(process.env.DB_POOL_MAX) || 20, // max connessioni
-  min: parseInt(process.env.DB_POOL_MIN) || 2,  // min connessioni
-  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT) || 30000,
-  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000,
-  
-  // SSL per produzione
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Conditionally load .env file only if not in production.
+// This prevents local .env variables from overriding Docker Compose's.
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
-// Event listeners per monitoring
+let poolConfig = {};
+
+// Prioritize the connection string (provided by Docker Compose)
+if (process.env.DATABASE_URL) {
+  poolConfig.connectionString = process.env.DATABASE_URL;
+} else {
+  // Otherwise, use separate parameters (for local development)
+  poolConfig = {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_DATABASE,
+    password: process.env.DB_PASSWORD,
+    port: parseInt(process.env.DB_PORT) || 5432,
+  };
+}
+
+// Add advanced pool configuration
+poolConfig.max = parseInt(process.env.DB_POOL_MAX) || 20;
+poolConfig.min = parseInt(process.env.DB_POOL_MIN) || 2;
+poolConfig.idleTimeoutMillis = parseInt(process.env.DB_IDLE_TIMEOUT) || 30000;
+poolConfig.connectionTimeoutMillis = parseInt(process.env.DB_CONNECTION_TIMEOUT) || 10000;
+
+// SSL for production
+poolConfig.ssl = process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false;
+
+const pool = new Pool(poolConfig);
+
+// Event listeners for monitoring
 pool.on('connect', (client) => {
   console.log(`[DB] Nuova connessione stabilita: ${client.processID}`);
 });
@@ -44,7 +58,7 @@ pool.on('remove', (client) => {
   }
 });
 
-// Funzione per testare la connessione
+// Function to test the connection
 const testConnection = async () => {
   try {
     const client = await pool.connect();
@@ -60,30 +74,30 @@ const testConnection = async () => {
   }
 };
 
-// Wrapper per query con retry logic e performance monitoring
+// Wrapper for queries with retry logic and performance monitoring
 const queryWithRetry = async (text, params, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const start = Date.now();
       const result = await pool.query(text, params);
       const duration = Date.now() - start;
-      
-      // Log query lente
+
+      // Log slow queries
       if (duration > 1000) {
         console.warn(`[DB] Query lenta (${duration}ms): ${text.substring(0, 100)}...`);
       }
-      
-      // Log query in development
+
+      // Log queries in development
       if (process.env.NODE_ENV === 'development' && duration > 100) {
         console.log(`[DB] Query executed in ${duration}ms`);
       }
-      
+
       return result;
     } catch (error) {
       console.error(`[DB] Tentativo ${attempt}/${retries} fallito:`, error.message);
-      
+
       if (attempt === retries) {
-        // Log dettagli errore per debugging
+        // Log detailed error for debugging
         console.error('[DB] Query fallita definitivamente:', {
           query: text.substring(0, 200),
           params: params ? JSON.stringify(params) : 'none',
@@ -91,14 +105,14 @@ const queryWithRetry = async (text, params, retries = 3) => {
         });
         throw error;
       }
-      
-      // Aspetta prima del retry (exponential backoff)
+
+      // Wait before retrying (exponential backoff)
       await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
     }
   }
 };
 
-// Funzione per eseguire transazioni con retry automatico
+// Function for transactions with automatic retry
 const transaction = async (callback) => {
   const client = await pool.connect();
   try {
@@ -114,7 +128,7 @@ const transaction = async (callback) => {
   }
 };
 
-// Funzione per graceful shutdown
+// Function for graceful shutdown
 const closePool = async () => {
   try {
     await pool.end();
@@ -124,15 +138,15 @@ const closePool = async () => {
   }
 };
 
-// Health check del database
+// Database health check
 const healthCheck = async () => {
   try {
     const start = Date.now();
     const result = await pool.query('SELECT 1 as health');
     const responseTime = Date.now() - start;
-    
-    return { 
-      status: 'healthy', 
+
+    return {
+      status: 'healthy',
       responseTime: `${responseTime}ms`,
       timestamp: new Date().toISOString(),
       totalConnections: pool.totalCount,
@@ -140,15 +154,15 @@ const healthCheck = async () => {
       waitingClients: pool.waitingCount
     };
   } catch (error) {
-    return { 
-      status: 'unhealthy', 
+    return {
+      status: 'unhealthy',
       error: error.message,
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString()
     };
   }
 };
 
-// Funzione per ottenere statistiche del pool
+// Function to get pool stats
 const getPoolStats = () => {
   return {
     totalConnections: pool.totalCount,
@@ -163,19 +177,19 @@ const getPoolStats = () => {
   };
 };
 
-// Inizializzazione e test connessione all'avvio
+// Initialization and connection test on startup
 const initialize = async () => {
   console.log('[DB] Inizializzazione database...');
   const connected = await testConnection();
-  
+
   if (!connected) {
     console.error('[DB] ERRORE: Impossibile connettersi al database');
     process.exit(1);
   }
-  
+
   console.log('[DB] Database inizializzato correttamente');
   console.log('[DB] Pool stats:', getPoolStats());
-  
+
   return true;
 };
 
