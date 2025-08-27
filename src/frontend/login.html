@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles/login.css">
     <link rel="stylesheet" href="styles/login-header.css">
-    <link rel="stylesheet" href="styles/background.css">
+    <link rel="stylesheet" href="styles/login-background.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=person" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock" />
@@ -56,11 +56,25 @@
                 <label for="remember-me" class="remember-me-label">Remember Me</label>
             </div>
             
-            <a href="#" class="forgot-password-link">Forgot the password?</a>
+            <a href="#" class="forgot-password-link" id="forgot-password-action">Forgot the password?</a>
         </div>
 
         <button class="login-button">Login</button>
     </div>
+
+    <div id="forgot-password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-modal">&times;</span>
+            <h2>Password Dimenticata?</h2>
+            <p>Inserisci la tua email e ti invieremo un link per resettare la password.</p>
+            <input type="email" id="forgot-password-email" placeholder="La tua email" required>
+            <button id="send-reset-link-button">Invia link di reset</button>
+            <p id="modal-message" class="message"></p>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+    <script src="js/reset-password-modal.js"></script>
     
 </body>
 </html>
