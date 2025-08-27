@@ -13,6 +13,7 @@ controller si occupano solo di HTTP, modelli solo dei dati/SQL (repository patte
 
 TODO:
 10. info base + tipi sapazio
+11. Da fixare seed.sql
 
 
 GMail coworkspace.webdev@gmail.com 
