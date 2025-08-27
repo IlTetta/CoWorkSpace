@@ -50,12 +50,14 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            // Fix this line
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:", "https:"],
         },
     },
-    crossOriginEmbedderPolicy: false // Per Swagger UI
+    crossOriginEmbedderPolicy: false // For Swagger UI
 }));
 
 // CORS configurato in modo sicuro
