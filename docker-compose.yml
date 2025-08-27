@@ -23,7 +23,8 @@ services:
       FIREBASE_SERVICE_ACCOUNT_PATH: /usr/src/app/src/firebase-service-account.json
 
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:15
@@ -39,6 +40,11 @@ services:
     ports:
       - "5432:5432"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coworkspace_user -d coworkspace_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db-data:
