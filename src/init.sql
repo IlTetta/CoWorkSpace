@@ -1,7 +1,8 @@
 -- Tipi ENUM personalizzati per PostgreSQL
 CREATE TYPE user_role_enum AS ENUM ('user', 'manager', 'admin');
 CREATE TYPE booking_status_enum AS ENUM ('confirmed', 'pending', 'cancelled', 'completed');
-CREATE TYPE payment_status_enum AS ENUM ('completed', 'failed', 'refunded');
+CREATE TYPE payment_status_enum AS ENUM ('pending', 'completed', 'failed', 'refunded');
+CREATE TYPE payment_method_enum AS ENUM ('credit_card', 'paypal', 'bank_transfer', 'cash');
 
 
 -- Tabella Utenti
@@ -9,9 +10,13 @@ CREATE TABLE IF NOT EXISTS users (
   user_id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   surname VARCHAR(100) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
   password_hash VARCHAR(255) NOT NULL,
   role user_role_enum NOT NULL,
+  is_password_reset_required BOOLEAN DEFAULT FALSE,
+  temp_password_hash VARCHAR(255),
+  temp_password_expires_at TIMESTAMP,
+  fcm_token VARCHAR(255), 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -43,6 +48,16 @@ CREATE TABLE IF NOT EXISTS spaces (
   capacity INT NOT NULL,
   price_per_hour DECIMAL(10, 2) NOT NULL,
   price_per_day DECIMAL(10, 2) NOT NULL,
+  -- Orari di disponibilità standard
+  opening_time TIME DEFAULT '09:00:00',
+  closing_time TIME DEFAULT '18:00:00',
+  -- Giorni della settimana disponibili (1=Lunedì, 7=Domenica)
+  available_days INTEGER[] DEFAULT ARRAY[1,2,3,4,5], -- Lunedì-Venerdì di default
+  -- Configurazioni avanzate
+  min_booking_hours DECIMAL(3,1) DEFAULT 1.0,
+  max_booking_hours DECIMAL(4,1) DEFAULT 24.0,
+  booking_advance_days INTEGER DEFAULT 30,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'inactive')),
   FOREIGN KEY (location_id) REFERENCES locations(location_id) ON DELETE CASCADE,
   FOREIGN KEY (space_type_id) REFERENCES space_types(space_type_id) ON DELETE CASCADE
 );
@@ -64,15 +79,19 @@ CREATE TABLE IF NOT EXISTS bookings (
   booking_id SERIAL PRIMARY KEY,
   user_id INT NOT NULL, -- Riferimento all'utente che prenota
   space_id INT NOT NULL,
-  booking_date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
-  total_hours DECIMAL(5, 2) NOT NULL,
+  start_datetime TIMESTAMP NOT NULL,
+  end_datetime TIMESTAMP NOT NULL,
+  total_hours DECIMAL(5, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_datetime - start_datetime)) / 3600) STORED,
   total_price DECIMAL(10, 2) NOT NULL,
   status booking_status_enum NOT NULL DEFAULT 'pending',
+  payment_status payment_status_enum DEFAULT 'pending',
+  notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-  FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE
+  FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
+  -- Constraint per validazione datetime
+  CONSTRAINT booking_datetime_order CHECK (start_datetime < end_datetime),
+  CONSTRAINT booking_future_date CHECK (start_datetime > CURRENT_TIMESTAMP - INTERVAL '1 day')
 );
 
 -- Tabella Pagamenti
@@ -81,7 +100,7 @@ CREATE TABLE IF NOT EXISTS payments (
   booking_id INT UNIQUE NOT NULL, -- Ogni prenotazioni ha un solo pagamento associato
   amount DECIMAL(10, 2) NOT NULL,
   payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  payment_method VARCHAR(50) NOT NULL, --! Da vedere se ENUM o VARCHAR !
+  payment_method payment_method_enum NOT NULL,
   status payment_status_enum NOT NULL DEFAULT 'completed',
   transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gataway di pagamento (es. Stripe, PayPal, ecc.)
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE CASCADE
@@ -103,4 +122,40 @@ CREATE TABLE IF NOT EXISTS space_services (
   PRIMARY KEY (space_id, service_id),
   FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
   FOREIGN KEY (service_id) REFERENCES additional_services(service_id) ON DELETE CASCADE
+);
+
+-- Tabella Notifiche
+CREATE TABLE IF NOT EXISTS notifications (
+  notification_id BIGSERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('email', 'push', 'sms')),
+  channel VARCHAR(50) NOT NULL CHECK (channel IN (
+    'booking_confirmation',
+    'booking_cancellation', 
+    'payment_success',
+    'payment_failed',
+    'payment_refund',
+    'booking_reminder',
+    'user_registration',
+    'password_reset'
+  )),
+  recipient VARCHAR(255) NOT NULL,
+  subject VARCHAR(255),
+  content TEXT,
+  template_name VARCHAR(100),
+  template_data JSONB,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'delivered', 'read')),
+  metadata JSONB,
+  booking_id INT,
+  payment_id INT,
+  sent_at TIMESTAMP,
+  delivered_at TIMESTAMP,
+  read_at TIMESTAMP,
+  error_message TEXT,
+  retry_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE SET NULL,
+  FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE SET NULL
 );

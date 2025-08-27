@@ -1,0 +1,12 @@
+# Files da ignorare per nodemon
+*.log
+*.pid
+.git
+node_modules
+.env
+test-api.ps1
+.vscode
+docs
+tests
+README.md
+*.md
