@@ -46,6 +46,7 @@ document.getElementById("send-reset-link-button").addEventListener("click", func
     }
 
     // Invio richiesta al backend
+    // Da ricontrollare, non sono sicuro l'indirizzo sia gusto
     const apiEndpoint = 'http://localhost:3000/api/users/request-password-reset';
     
     fetch(apiEndpoint, {
