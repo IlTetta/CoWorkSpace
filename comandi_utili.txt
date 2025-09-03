@@ -19,3 +19,13 @@ TODO:
 GMail coworkspace.webdev@gmail.com 
 pass BM7oh1,0o9]>
 AppPass (CoWorkSpace): vknf nbmg oaoh ryww
+
+AWS credential
+Mail coworkspace.webdev@gmail.com
+Username CacheMeIfYouCan
+Password jzbSs7K?68/j
+
+Nome tutente master
+coworkspaceadmin
+coworkspacepass01
+Endpoint: coworkspace-db.czeuw4ciefji.eu-north-1.rds.amazonaws.com
