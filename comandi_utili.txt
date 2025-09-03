@@ -26,6 +26,7 @@ AWS credential
 Mail coworkspace.webdev@gmail.com
 Username CacheMeIfYouCan
 Password jzbSs7K?68/j
+ID account 267259336945
 
 Nome tutente master
 coworkspaceadmin
