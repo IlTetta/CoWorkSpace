@@ -11,6 +11,8 @@ server.js non richiede test unitari
 
 controller si occupano solo di HTTP, modelli solo dei dati/SQL (repository pattern)
 
+pattern AAA (Arrange, Act, Assert) per test
+
 TODO:
 10. info base + tipi sapazio
 11. Da fixare seed.sql

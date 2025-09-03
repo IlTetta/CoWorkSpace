@@ -12,7 +12,7 @@ class NotificationService {
     /**
      * Configura il trasportatore email
      */
-    static _createTransporter() {
+    static createTransporter() {
         if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.log('📧 Email credentials not found - using test mode');
             return {
@@ -47,7 +47,7 @@ class NotificationService {
         try {
             const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.html`);
             try { await fs.access(templatePath); } 
-            catch { return this._defaultTemplate(templateData); }
+            catch { return this.getDefaultTemplate(templateData); }
 
             let template = await fs.readFile(templatePath, 'utf-8');
             for (const [key, value] of Object.entries(templateData)) {
@@ -56,14 +56,14 @@ class NotificationService {
             return template;
         } catch (error) {
             console.error('Errore rendering template:', error);
-            return this._defaultTemplate(templateData);
+            return this.getDefaultTemplate(templateData);
         }
     }
 
     /**
      * Template HTML di default quando i file non esistono
      */
-    static _getDefaultTemplate(templateData) {
+    static getDefaultTemplate(templateData) {
         return `
             <html>
                 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -114,7 +114,7 @@ class NotificationService {
             });
 
             // Invia email
-            const transporter = this._createTransporter();
+            const transporter = this.createTransporter();
             const info = await transporter.sendMail(mailOptions);
 
             // Aggiorna stato notifica

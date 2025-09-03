@@ -379,17 +379,8 @@ class AvailabilityService {
             }
 
             // Verifica che non ci siano prenotazioni nel periodo
-            const query = `
-                SELECT COUNT(*) as booking_count
-                FROM bookings
-                WHERE space_id = $1
-                AND booking_date >= $2
-                AND booking_date <= $3
-                AND status IN ('confirmed', 'pending')
-            `;
-            const bookingCheck = await client.query(query, [spaceId, startDate, endDate]);
-            
-            if (parseInt(bookingCheck.rows[0].booking_count) > 0) {
+            const hasBookings = await Availability.hasBookingsInPeriod(spaceId, startDate, endDate);
+            if (hasBookings) {
                 throw new AppError('Esistono prenotazioni nel periodo selezionato', 400);
             }
 
@@ -548,25 +539,7 @@ class AvailabilityService {
         }
     }
 
-    /**
-     * Disabilita disponibilità per un periodo (manutenzione, etc.)
-     * @param {number} spaceId - ID dello spazio
-     * @param {string} startDate - Data inizio
-     * @param {string} endDate - Data fine
-     * @param {string} reason - Motivo della disabilitazione
-     * @returns {Promise<Array>} Blocchi aggiornati
-     */
-    async disableAvailabilityPeriod(spaceId, startDate, endDate, reason = 'Manutenzione') {
-        try {
-            await this.verifySpaceExists(spaceId);
-            this.validateDateRange(startDate, endDate);
 
-            return await Availability.disablePeriod(spaceId, startDate, endDate, reason);
-        } catch (error) {
-            if (error instanceof AppError) throw error;
-            throw new AppError('Errore nella disabilitazione del periodo', 500);
-        }
-    }
 
     // Metodi di validazione privati
 

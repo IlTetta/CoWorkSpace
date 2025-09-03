@@ -463,6 +463,27 @@ class Availability {
         const result = await pool.query(query, [spaceIds, date, startTime, endTime]);
         return result.rows;
     }
+
+    /**
+     * Verifica se ci sono prenotazioni in un periodo specifico
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDate - Data inizio
+     * @param {string} endDate - Data fine
+     * @returns {Promise<boolean>} True se ci sono prenotazioni
+     */
+    static async hasBookingsInPeriod(spaceId, startDate, endDate) {
+        const query = `
+            SELECT COUNT(*) as booking_count
+            FROM bookings
+            WHERE space_id = $1
+            AND booking_date >= $2
+            AND booking_date <= $3
+            AND status IN ('confirmed', 'pending')
+        `;
+
+        const result = await pool.query(query, [spaceId, startDate, endDate]);
+        return parseInt(result.rows[0].booking_count) > 0;
+    }
 }
 
 module.exports = Availability;
