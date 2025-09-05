@@ -71,6 +71,20 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Limite dimensione payload
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Pagina principale dell'applicazione
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Restituisce la pagina HTML principale
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ */
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/home.html'));
 });
@@ -100,6 +114,82 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
     }
 }));
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Endpoint di health check del sistema
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: Sistema funzionante
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: 'OK'
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 uptime:
+ *                   type: number
+ *                   description: Tempo di attività in secondi
+ *                 memory:
+ *                   type: object
+ *                   properties:
+ *                     rss:
+ *                       type: number
+ *                     heapTotal:
+ *                       type: number
+ *                     heapUsed:
+ *                       type: number
+ *                     external:
+ *                       type: number
+ *                 database:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       example: 'healthy'
+ *                     responseTime:
+ *                       type: number
+ *                     connections:
+ *                       type: number
+ *                 connectionPool:
+ *                   type: object
+ *                   properties:
+ *                     totalConnections:
+ *                       type: number
+ *                     idleConnections:
+ *                       type: number
+ *                     waitingCount:
+ *                       type: number
+ *                 version:
+ *                   type: string
+ *                   example: '1.0.0'
+ *                 environment:
+ *                   type: string
+ *                   example: 'development'
+ *       503:
+ *         description: Sistema non funzionante
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: 'ERROR'
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 error:
+ *                   type: string
+ *                   description: Dettagli dell'errore
+ */
 // --- Health Check Endpoint ---
 app.get('/health', async (req, res) => {
     try {
@@ -128,6 +218,68 @@ app.get('/health', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api:
+ *   get:
+ *     summary: Informazioni generali sull'API
+ *     tags: [API Info]
+ *     responses:
+ *       200:
+ *         description: Informazioni API e lista degli endpoint disponibili
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   example: 'CoWorkSpace API'
+ *                 version:
+ *                   type: string
+ *                   example: '1.0.0'
+ *                 description:
+ *                   type: string
+ *                   example: 'API per la gestione di spazi co-working'
+ *                 endpoints:
+ *                   type: object
+ *                   properties:
+ *                     auth:
+ *                       type: string
+ *                       example: '/api/users'
+ *                     locations:
+ *                       type: string
+ *                       example: '/api/locations'
+ *                     spaces:
+ *                       type: string
+ *                       example: '/api/spaces'
+ *                     space-types:
+ *                       type: string
+ *                       example: '/api/space-types'
+ *                     availability:
+ *                       type: string
+ *                       example: '/api/availability'
+ *                     bookings:
+ *                       type: string
+ *                       example: '/api/bookings'
+ *                     payments:
+ *                       type: string
+ *                       example: '/api/payments'
+ *                     additional-services:
+ *                       type: string
+ *                       example: '/api/additional-services'
+ *                     notifications:
+ *                       type: string
+ *                       example: '/api/notifications'
+ *                 docs:
+ *                   type: string
+ *                   example: '/api-docs'
+ *                   description: 'URL della documentazione Swagger'
+ *                 health:
+ *                   type: string
+ *                   example: '/health'
+ *                   description: 'URL del health check'
+ */
 // --- API Info Endpoint ---
 app.get('/api', (req, res) => {
     res.json({

@@ -109,6 +109,38 @@ router.get('/', availabilityController.getSpaceAvailability);
  *     responses:
  *       200:
  *         description: Risultato della verifica disponibilità
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         available:
+ *                           type: boolean
+ *                           description: Se lo spazio è disponibile nel periodo richiesto
+ *                         conflictingBookings:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Booking'
+ *                           description: Prenotazioni in conflitto (se presenti)
+ *                         spaceInfo:
+ *                           $ref: '#/components/schemas/Space'
+ *       400:
+ *         description: Parametri mancanti o non validi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Spazio non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/check', availabilityController.checkBookingAvailability);
 
@@ -116,7 +148,7 @@ router.get('/check', availabilityController.checkBookingAvailability);
  * @swagger
  * /availability/statistics:
  *   get:
- *     summary: Ottieni statistiche sulla disponibilità
+ *     summary: Ottieni statistiche sulla disponibilità (Manager/Admin)
  *     tags: [Availability]
  *     security:
  *       - bearerAuth: []
@@ -140,7 +172,80 @@ router.get('/check', availabilityController.checkBookingAvailability);
  *         required: true
  *     responses:
  *       200:
- *         description: Statistiche sulla disponibilità
+ *         description: Statistiche sulla disponibilità dello spazio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         space:
+ *                           $ref: '#/components/schemas/Space'
+ *                         period:
+ *                           type: object
+ *                           properties:
+ *                             start_date:
+ *                               type: string
+ *                               format: date
+ *                             end_date:
+ *                               type: string
+ *                               format: date
+ *                         statistics:
+ *                           type: object
+ *                           properties:
+ *                             totalSlots:
+ *                               type: integer
+ *                               description: Numero totale di slot disponibili
+ *                             bookedSlots:
+ *                               type: integer
+ *                               description: Numero di slot prenotati
+ *                             availableSlots:
+ *                               type: integer
+ *                               description: Numero di slot ancora disponibili
+ *                             occupancyRate:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Tasso di occupazione (0-1)
+ *                             averageBookingDuration:
+ *                               type: number
+ *                               description: Durata media delle prenotazioni in ore
+ *                             peakHours:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   hour:
+ *                                     type: integer
+ *                                   bookingCount:
+ *                                     type: integer
+ *       400:
+ *         description: Parametri mancanti o non validi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Spazio non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/statistics', 
     authMiddleware.protect, 

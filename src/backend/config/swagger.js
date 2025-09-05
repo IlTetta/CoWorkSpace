@@ -19,12 +19,62 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000/api',
+        url: 'http://localhost:3000',
         description: 'Development server',
       },
       {
-        url: 'https://api.coworkspace.com/api',
+        url: 'https://api.coworkspace.com',
         description: 'Production server',
+      }
+    ],
+    tags: [
+      {
+        name: 'General',
+        description: 'Endpoint generali dell\'applicazione'
+      },
+      {
+        name: 'System',
+        description: 'Endpoint di sistema e monitoraggio'
+      },
+      {
+        name: 'API Info',
+        description: 'Informazioni generali sull\'API'
+      },
+      {
+        name: 'Users',
+        description: 'Gestione utenti e autenticazione'
+      },
+      {
+        name: 'Locations',
+        description: 'Gestione delle location coworking'
+      },
+      {
+        name: 'Spaces',
+        description: 'Gestione degli spazi coworking'
+      },
+      {
+        name: 'SpaceTypes',
+        description: 'Gestione dei tipi di spazio'
+      },
+      {
+        name: 'Bookings',
+        description: 'Gestione delle prenotazioni'
+      },
+      {
+        name: 'Availability',
+        description: 'Gestione della disponibilità degli spazi'
+      },
+      {
+        name: 'Payments',
+        description: 'Gestione dei pagamenti'
+      },
+      {
+        name: 'AdditionalServices',
+        description: 'Gestione dei servizi aggiuntivi'
+      },
+      {
+        name: 'Notifications',
+        description: 'Gestione delle notifiche (email, push, SMS)'
       }
     ],
     components: {
@@ -546,7 +596,8 @@ const options = {
   },
   apis: [
     './src/backend/routes/*.js',
-    './src/backend/controllers/*.js'
+    './src/backend/controllers/*.js',
+    './src/backend/app.js'
   ],
 };
 

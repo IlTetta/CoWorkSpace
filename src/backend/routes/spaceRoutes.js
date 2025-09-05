@@ -638,6 +638,40 @@ router.delete('/:id',
   spaceController.deleteSpace
 );
 
+/**
+ * @swagger
+ * /spaces/user/owned:
+ *   get:
+ *     summary: Ottieni spazi posseduti dall'utente corrente (Manager)
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista degli spazi gestiti dall'utente corrente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         ownedSpaces:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Space'
+ *                         totalCount:
+ *                           type: integer
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Lista spazi posseduti dall'utente
 router.get('/user/owned', 
   authMiddleware.protect, 
@@ -648,6 +682,66 @@ router.get('/user/owned',
 // MANAGER ROUTES - Richiedono ruolo manager o admin
 // ============================================================================
 
+/**
+ * @swagger
+ * /spaces/dashboard/manager:
+ *   get:
+ *     summary: Dashboard per manager degli spazi
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard con statistiche degli spazi gestiti
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         managedSpaces:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Space'
+ *                         totalSpaces:
+ *                           type: integer
+ *                         totalBookings:
+ *                           type: integer
+ *                         totalRevenue:
+ *                           type: number
+ *                           format: decimal
+ *                         occupancyRate:
+ *                           type: number
+ *                           format: decimal
+ *                           description: Tasso di occupazione medio
+ *                         topPerformingSpaces:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               space:
+ *                                 $ref: '#/components/schemas/Space'
+ *                               bookingCount:
+ *                                 type: integer
+ *                               revenue:
+ *                                 type: number
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Dashboard per manager
 router.get('/dashboard/manager', 
   authMiddleware.protect, 
@@ -655,6 +749,86 @@ router.get('/dashboard/manager',
   spaceController.getManagerDashboard
 );
 
+/**
+ * @swagger
+ * /spaces/statistics/manager:
+ *   get:
+ *     summary: Statistiche dettagliate per manager degli spazi
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di inizio periodo
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di fine periodo
+ *     responses:
+ *       200:
+ *         description: Statistiche dettagliate degli spazi gestiti
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         periodStats:
+ *                           type: object
+ *                           properties:
+ *                             totalBookings:
+ *                               type: integer
+ *                             totalRevenue:
+ *                               type: number
+ *                             averageBookingValue:
+ *                               type: number
+ *                         spacePerformance:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               space:
+ *                                 $ref: '#/components/schemas/Space'
+ *                               bookings:
+ *                                 type: integer
+ *                               revenue:
+ *                                 type: number
+ *                               occupancyRate:
+ *                                 type: number
+ *                         monthlyTrends:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               month:
+ *                                 type: string
+ *                               bookings:
+ *                                 type: integer
+ *                               revenue:
+ *                                 type: number
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Statistiche per manager
 router.get('/statistics/manager', 
   authMiddleware.protect, 
@@ -662,6 +836,85 @@ router.get('/statistics/manager',
   spaceController.getManagerStatistics
 );
 
+/**
+ * @swagger
+ * /spaces/bulk/status:
+ *   post:
+ *     summary: Aggiornamento bulk dello stato degli spazi (Manager/Admin)
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - space_ids
+ *               - is_active
+ *             properties:
+ *               space_ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Lista degli ID degli spazi da aggiornare
+ *                 example: [1, 2, 3, 4]
+ *               is_active:
+ *                 type: boolean
+ *                 description: Nuovo stato attivo per tutti gli spazi
+ *                 example: false
+ *               reason:
+ *                 type: string
+ *                 description: Motivo del cambiamento di stato
+ *                 example: 'Manutenzione programmata'
+ *     responses:
+ *       200:
+ *         description: Stato degli spazi aggiornato con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         updatedSpaces:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Space'
+ *                         totalUpdated:
+ *                           type: integer
+ *                         failedUpdates:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               space_id:
+ *                                 type: integer
+ *                               error:
+ *                                 type: string
+ *       400:
+ *         description: Dati non validi o spazi non trovati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Aggiornamento bulk dello status degli spazi
 router.post('/bulk/status', 
   authMiddleware.protect, 
@@ -673,6 +926,61 @@ router.post('/bulk/status',
 // ADMIN ROUTES - Richiedono ruolo admin
 // ============================================================================
 
+/**
+ * @swagger
+ * /spaces/admin/all:
+ *   get:
+ *     summary: Lista completa di tutti gli spazi (Solo Admin)
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: includeInactive
+ *         schema:
+ *           type: boolean
+ *         description: Includere anche spazi inattivi
+ *       - in: query
+ *         name: locationId
+ *         schema:
+ *           type: integer
+ *         description: Filtra per location
+ *     responses:
+ *       200:
+ *         description: Lista completa di tutti gli spazi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         allSpaces:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Space'
+ *                         totalCount:
+ *                           type: integer
+ *                         activeCount:
+ *                           type: integer
+ *                         inactiveCount:
+ *                           type: integer
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Lista completa per admin
 router.get('/admin/all', 
   authMiddleware.protect, 
@@ -680,6 +988,89 @@ router.get('/admin/all',
   spaceController.getAdminSpacesList
 );
 
+/**
+ * @swagger
+ * /spaces/admin/dashboard:
+ *   get:
+ *     summary: Dashboard completa per amministratori
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di inizio per statistiche
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di fine per statistiche
+ *     responses:
+ *       200:
+ *         description: Dashboard completa con tutte le statistiche del sistema
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         globalStats:
+ *                           type: object
+ *                           properties:
+ *                             totalSpaces:
+ *                               type: integer
+ *                             totalLocations:
+ *                               type: integer
+ *                             totalBookings:
+ *                               type: integer
+ *                             totalRevenue:
+ *                               type: number
+ *                               format: decimal
+ *                             averageOccupancy:
+ *                               type: number
+ *                         locationBreakdown:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               location:
+ *                                 $ref: '#/components/schemas/Location'
+ *                               spacesCount:
+ *                                 type: integer
+ *                               bookings:
+ *                                 type: integer
+ *                               revenue:
+ *                                 type: number
+ *                         performanceMetrics:
+ *                           type: object
+ *                           properties:
+ *                             topPerformingSpaces:
+ *                               type: array
+ *                             underperformingSpaces:
+ *                               type: array
+ *                             monthlyTrends:
+ *                               type: array
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Dashboard completa per admin
 router.get('/admin/dashboard', 
   authMiddleware.protect, 
@@ -687,6 +1078,98 @@ router.get('/admin/dashboard',
   spaceController.getAdminDashboard
 );
 
+/**
+ * @swagger
+ * /spaces/admin/bulk/assign:
+ *   post:
+ *     summary: Assegnazione bulk di spazi a location (Solo Admin)
+ *     tags: [Spaces]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - space_ids
+ *               - target_location_id
+ *             properties:
+ *               space_ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Lista degli ID degli spazi da riassegnare
+ *                 example: [1, 2, 3]
+ *               target_location_id:
+ *                 type: integer
+ *                 description: ID della location di destinazione
+ *                 example: 5
+ *               transfer_reason:
+ *                 type: string
+ *                 description: Motivo del trasferimento
+ *                 example: 'Riorganizzazione spazi per nuova sede'
+ *               effective_date:
+ *                 type: string
+ *                 format: date
+ *                 description: Data di effettivazione del trasferimento
+ *                 example: '2024-02-01'
+ *     responses:
+ *       200:
+ *         description: Spazi riassegnati con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         reassignedSpaces:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Space'
+ *                         targetLocation:
+ *                           $ref: '#/components/schemas/Location'
+ *                         totalReassigned:
+ *                           type: integer
+ *                         failedAssignments:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               space_id:
+ *                                 type: integer
+ *                               error:
+ *                                 type: string
+ *       400:
+ *         description: Dati non validi o location/spazi non trovati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Location di destinazione non trovata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Assegnazione bulk spazi a location
 router.post('/admin/bulk/assign', 
   authMiddleware.protect, 

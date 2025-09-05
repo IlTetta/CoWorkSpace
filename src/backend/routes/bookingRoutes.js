@@ -452,14 +452,175 @@ router.put('/:id', BookingController.updateBooking);
 router.delete('/:id', BookingController.deleteBooking);
 
 /**
- * GET /api/bookings/space/:spaceId/schedule
- * Programma prenotazioni per uno spazio specifico
+ * @swagger
+ * /bookings/space/{spaceId}/schedule:
+ *   get:
+ *     summary: Ottieni programma prenotazioni per uno spazio specifico
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dello spazio
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di inizio del periodo
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di fine del periodo
+ *     responses:
+ *       200:
+ *         description: Programma prenotazioni dello spazio
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         space:
+ *                           $ref: '#/components/schemas/Space'
+ *                         schedule:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               date:
+ *                                 type: string
+ *                                 format: date
+ *                               bookings:
+ *                                 type: array
+ *                                 items:
+ *                                   $ref: '#/components/schemas/Booking'
+ *                               availableSlots:
+ *                                 type: array
+ *                                 items:
+ *                                   type: object
+ *                                   properties:
+ *                                     start_time:
+ *                                       type: string
+ *                                       format: time
+ *                                     end_time:
+ *                                       type: string
+ *                                       format: time
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Spazio non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/space/:spaceId/schedule', BookingController.getSpaceSchedule);
 
 /**
- * GET /api/bookings/space/:spaceId/slots
- * Ottieni slot disponibili per uno spazio in una data specifica
+ * @swagger
+ * /bookings/space/{spaceId}/slots:
+ *   get:
+ *     summary: Ottieni slot disponibili per uno spazio in una data specifica
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: spaceId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dello spazio
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data per cui ottenere gli slot
+ *       - in: query
+ *         name: duration
+ *         schema:
+ *           type: integer
+ *         description: Durata desiderata in ore (per trovare slot compatibili)
+ *     responses:
+ *       200:
+ *         description: Slot disponibili per la data specificata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         space:
+ *                           $ref: '#/components/schemas/Space'
+ *                         date:
+ *                           type: string
+ *                           format: date
+ *                         availableSlots:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               start_time:
+ *                                 type: string
+ *                                 format: time
+ *                               end_time:
+ *                                 type: string
+ *                                 format: time
+ *                               duration:
+ *                                 type: number
+ *                                 description: Durata in ore
+ *                         occupiedSlots:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               start_time:
+ *                                 type: string
+ *                                 format: time
+ *                               end_time:
+ *                                 type: string
+ *                                 format: time
+ *                               booking_id:
+ *                                 type: integer
+ *       400:
+ *         description: Data non valida
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Spazio non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/space/:spaceId/slots', BookingController.getAvailableSlots);
 
@@ -474,27 +635,243 @@ router.post('/find-overlapping', BookingController.findOverlappingBookings);
 // ============================================================================
 
 /**
- * GET /api/bookings/my-payments
- * Shortcut per i propri pagamenti (richiede solo autenticazione)
- * Query params: type=summary|unpaid|stats
+ * @swagger
+ * /bookings/my-payments:
+ *   get:
+ *     summary: Ottieni i propri pagamenti (shortcut per utente corrente)
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [summary, unpaid, stats]
+ *         description: Tipo di informazioni sui pagamenti richieste
+ *         example: 'summary'
+ *     responses:
+ *       200:
+ *         description: Informazioni sui pagamenti dell'utente corrente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         summary:
+ *                           type: object
+ *                           properties:
+ *                             totalAmount:
+ *                               type: number
+ *                               format: decimal
+ *                               description: Importo totale da pagare
+ *                             unpaidBookings:
+ *                               type: integer
+ *                               description: Numero di prenotazioni non pagate
+ *                         payments:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/Payment'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/my-payments', BookingController.getMyPayments);
 
 /**
- * GET /api/bookings/user/:userId/payment-summary
- * Importo totale da pagare per un utente specifico
+ * @swagger
+ * /bookings/user/{userId}/payment-summary:
+ *   get:
+ *     summary: Ottieni riepilogo pagamenti per un utente specifico
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente
+ *     responses:
+ *       200:
+ *         description: Riepilogo pagamenti dell'utente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         userId:
+ *                           type: integer
+ *                         totalAmount:
+ *                           type: number
+ *                           format: decimal
+ *                         paidAmount:
+ *                           type: number
+ *                           format: decimal
+ *                         unpaidAmount:
+ *                           type: number
+ *                           format: decimal
+ *                         totalBookings:
+ *                           type: integer
+ *                         unpaidBookings:
+ *                           type: integer
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/user/:userId/payment-summary', BookingController.getUserPaymentSummary);
 
 /**
- * GET /api/bookings/user/:userId/unpaid
- * Prenotazioni da pagare per un utente specifico
+ * @swagger
+ * /bookings/user/{userId}/unpaid:
+ *   get:
+ *     summary: Ottieni prenotazioni non pagate per un utente specifico
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente
+ *     responses:
+ *       200:
+ *         description: Lista delle prenotazioni non pagate
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         userId:
+ *                           type: integer
+ *                         unpaidBookings:
+ *                           type: array
+ *                           items:
+ *                             allOf:
+ *                               - $ref: '#/components/schemas/Booking'
+ *                               - type: object
+ *                                 properties:
+ *                                   space:
+ *                                     $ref: '#/components/schemas/Space'
+ *                         totalUnpaidAmount:
+ *                           type: number
+ *                           format: decimal
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/user/:userId/unpaid', BookingController.getUserUnpaidBookings);
 
 /**
- * GET /api/bookings/user/:userId/payment-stats
- * Statistiche pagamenti per un utente specifico
+ * @swagger
+ * /bookings/user/{userId}/payment-stats:
+ *   get:
+ *     summary: Ottieni statistiche pagamenti per un utente specifico
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente
+ *     responses:
+ *       200:
+ *         description: Statistiche pagamenti dell'utente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         userId:
+ *                           type: integer
+ *                         totalSpent:
+ *                           type: number
+ *                           format: decimal
+ *                         totalBookings:
+ *                           type: integer
+ *                         averageBookingValue:
+ *                           type: number
+ *                           format: decimal
+ *                         paymentMethods:
+ *                           type: object
+ *                           properties:
+ *                             credit_card:
+ *                               type: number
+ *                             paypal:
+ *                               type: number
+ *                             bank_transfer:
+ *                               type: number
+ *                             cash:
+ *                               type: number
+ *                         monthlySpending:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               month:
+ *                                 type: string
+ *                               amount:
+ *                                 type: number
+ *                                 format: decimal
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/user/:userId/payment-stats', BookingController.getUserPaymentStats);
 
@@ -509,8 +886,98 @@ router.get('/user/:userId/payment-stats', BookingController.getUserPaymentStats)
 // ============================================================================
 
 /**
- * GET /api/bookings/dashboard
- * Dashboard statistiche prenotazioni per manager/admin
+ * @swagger
+ * /bookings/dashboard:
+ *   get:
+ *     summary: Dashboard statistiche prenotazioni (Manager/Admin)
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di inizio per periodo statistiche
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data di fine per periodo statistiche
+ *       - in: query
+ *         name: locationId
+ *         schema:
+ *           type: integer
+ *         description: ID location per filtrare statistiche (solo admin)
+ *     responses:
+ *       200:
+ *         description: Dashboard con statistiche delle prenotazioni
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         totalBookings:
+ *                           type: integer
+ *                           description: Numero totale di prenotazioni
+ *                         totalRevenue:
+ *                           type: number
+ *                           format: decimal
+ *                           description: Ricavi totali
+ *                         bookingsByStatus:
+ *                           type: object
+ *                           properties:
+ *                             confirmed:
+ *                               type: integer
+ *                             pending:
+ *                               type: integer
+ *                             cancelled:
+ *                               type: integer
+ *                             completed:
+ *                               type: integer
+ *                         topSpaces:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               space:
+ *                                 $ref: '#/components/schemas/Space'
+ *                               bookingCount:
+ *                                 type: integer
+ *                               revenue:
+ *                                 type: number
+ *                                 format: decimal
+ *                         monthlyTrends:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               month:
+ *                                 type: string
+ *                               bookings:
+ *                                 type: integer
+ *                               revenue:
+ *                                 type: number
+ *                                 format: decimal
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/dashboard', 
     authMiddleware.authorize('manager', 'admin'),
@@ -518,8 +985,77 @@ router.get('/dashboard',
 );
 
 /**
- * PATCH /api/bookings/:id/status
- * Aggiorna solo status prenotazione (manager/admin)
+ * @swagger
+ * /bookings/{id}/status:
+ *   patch:
+ *     summary: Aggiorna solo lo stato di una prenotazione (Manager/Admin)
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID della prenotazione
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [confirmed, pending, cancelled, completed]
+ *                 description: Nuovo stato della prenotazione
+ *                 example: 'confirmed'
+ *               cancellation_reason:
+ *                 type: string
+ *                 description: Motivo della cancellazione (obbligatorio se status = cancelled)
+ *                 example: 'Richiesta del cliente'
+ *     responses:
+ *       200:
+ *         description: Stato della prenotazione aggiornato con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         booking:
+ *                           $ref: '#/components/schemas/Booking'
+ *       400:
+ *         description: Stato non valido o transizione non consentita
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Prenotazione non trovata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.patch('/:id/status', 
     authMiddleware.authorize('manager', 'admin'),
@@ -527,8 +1063,77 @@ router.patch('/:id/status',
 );
 
 /**
- * PATCH /api/bookings/:id/payment-status
- * Aggiorna solo payment_status prenotazione (manager/admin)
+ * @swagger
+ * /bookings/{id}/payment-status:
+ *   patch:
+ *     summary: Aggiorna solo lo stato del pagamento di una prenotazione (Manager/Admin)
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID della prenotazione
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - payment_status
+ *             properties:
+ *               payment_status:
+ *                 type: string
+ *                 enum: [pending, paid, failed, refunded]
+ *                 description: Nuovo stato del pagamento
+ *                 example: 'paid'
+ *               payment_notes:
+ *                 type: string
+ *                 description: Note sul pagamento
+ *                 example: 'Pagamento confermato via bonifico'
+ *     responses:
+ *       200:
+ *         description: Stato del pagamento aggiornato con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         booking:
+ *                           $ref: '#/components/schemas/Booking'
+ *       400:
+ *         description: Stato del pagamento non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (richiede ruolo Manager o Admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Prenotazione non trovata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.patch('/:id/payment-status', 
     authMiddleware.authorize('manager', 'admin'),
