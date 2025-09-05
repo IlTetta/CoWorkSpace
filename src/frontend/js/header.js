@@ -25,7 +25,7 @@
             const logo = document.querySelector('.logo');
             if (logo) {
                 logo.addEventListener('click', () => {
-                    window.location.href = '/home.html';
+                    window.location.href = 'home.html';
                 });
             }
 
@@ -63,13 +63,13 @@
             
             if (loginBtn) {
                 loginBtn.addEventListener('click', () => {
-                    window.location.href = '/login.html';
+                    window.location.href = 'login.html';
                 });
             }
             
             if (signupBtn) {
                 signupBtn.addEventListener('click', () => {
-                    window.location.href = '/register.html';
+                    window.location.href = 'signup.html';
                 });
             }
         }
@@ -94,17 +94,10 @@
         }
 
         async performSearch(query) {
-            if (!query.trim()) {
-                if (window.FrontendUtils) {
-                    FrontendUtils.showError('Inserisci un termine di ricerca');
-                } else {
-                    alert('Inserisci un termine di ricerca');
-                }
-                return;
-            }
-
+            const trimmedQuery = query.trim();
+            
             try {
-                console.log('Performing search for:', query);
+                console.log('Performing search for:', trimmedQuery || '(empty - showing all locations)');
                 
                 // Check if apiService is available
                 if (!window.apiService) {
@@ -112,27 +105,55 @@
                     return;
                 }
                 
-                // Search in locations by city or name
-                const locations = await window.apiService.getAllLocations({ city: query });
+                // Get all locations
+                const allLocations = await window.apiService.getAllLocations();
+                console.log('Total locations retrieved:', allLocations.length);
                 
-                if (locations.length === 0) {
-                    // Try searching by location name
-                    const allLocations = await window.apiService.getAllLocations();
-                    const filteredLocations = allLocations.filter(location => 
-                        location.location_name.toLowerCase().includes(query.toLowerCase())
-                    );
-                    
-                    if (filteredLocations.length > 0) {
-                        this.displaySearchResults(filteredLocations);
+                if (!Array.isArray(allLocations) || allLocations.length === 0) {
+                    if (window.FrontendUtils) {
+                        FrontendUtils.showError('Nessuna location disponibile');
                     } else {
-                        if (window.FrontendUtils) {
-                            FrontendUtils.showError('Nessuna location trovata per la ricerca');
-                        } else {
-                            alert('Nessuna location trovata');
-                        }
+                        alert('Nessuna location disponibile');
                     }
+                    return;
+                }
+                
+                // If query is empty, show all locations
+                if (!trimmedQuery) {
+                    console.log('Empty search - displaying all locations');
+                    this.displaySearchResults(allLocations);
+                    return;
+                }
+                
+                // Normalize query for better matching
+                const normalizedQuery = trimmedQuery.toLowerCase();
+                
+                // Filter locations by multiple criteria
+                const filteredLocations = allLocations.filter(location => {
+                    // Get location name (handle both formats)
+                    const locationName = (location.location_name || location.name || '').toLowerCase();
+                    const city = (location.city || '').toLowerCase();
+                    const address = (location.address || '').toLowerCase();
+                    
+                    // Check if query matches any field
+                    return locationName.includes(normalizedQuery) ||
+                           city.includes(normalizedQuery) ||
+                           address.includes(normalizedQuery) ||
+                           // Also check for word-based matching (e.g., "Milano Centro" can be found with "Centro")
+                           locationName.split(' ').some(word => word.includes(normalizedQuery)) ||
+                           city.split(' ').some(word => word.includes(normalizedQuery));
+                });
+                
+                console.log('Filtered locations:', filteredLocations.length);
+                
+                if (filteredLocations.length > 0) {
+                    this.displaySearchResults(filteredLocations);
                 } else {
-                    this.displaySearchResults(locations);
+                    if (window.FrontendUtils) {
+                        FrontendUtils.showError(`Nessuna location trovata per "${trimmedQuery}"`);
+                    } else {
+                        alert(`Nessuna location trovata per "${trimmedQuery}"`);
+                    }
                 }
                 
             } catch (error) {
@@ -152,24 +173,24 @@
             } else {
                 // Redirect alla home con risultati
                 sessionStorage.setItem('searchResults', JSON.stringify(locations));
-                window.location.href = '/home.html';
+                window.location.href = 'home.html';
             }
         }
 
         navigateTo(page) {
             const routes = {
-                'home': '/home.html',
-                'locations': '/locations.html',
-                'bookings': '/bookings.html',
-                'profile': '/profile.html',
-                'admin': '/admin.html'
+                'home': 'home.html',
+                'locations': 'locations.html',
+                'bookings': 'bookings.html',
+                'profile': 'profile.html',
+                'admin': 'admin.html'
             };
 
             if (routes[page]) {
                 // Check authentication for protected pages
                 const protectedPages = ['bookings', 'profile', 'admin'];
                 if (protectedPages.includes(page) && window.authService && !window.authService.isAuthenticated()) {
-                    window.location.href = '/login.html';
+                    window.location.href = 'login.html';
                     return;
                 }
                 
