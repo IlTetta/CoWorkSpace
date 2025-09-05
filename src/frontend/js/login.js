@@ -4,6 +4,7 @@ function showModalMessage(message, type) {
     if (messageElement) {
         messageElement.textContent = message;
         messageElement.className = `message ${type}-message`;
+        if (type === "error") messageElement.style.color = "red";
     }
 }
 
@@ -11,7 +12,7 @@ function showModalMessage(message, type) {
 document.querySelector(".forgot-password-link").addEventListener("click", function(e) {
     e.preventDefault();
     document.getElementById("forgot-password-modal").style.display = "block";
-    showModalMessage("", ""); // Pulisce i messaggi precedenti
+    showModalMessage("", "");
 });
 
 // Funzione per chiudere il modal con la X
@@ -32,10 +33,7 @@ document.getElementById("send-reset-link-button").addEventListener("click", func
     const email = emailInput.value.trim();
     const messageEl = document.getElementById("modal-message");
 
-    // Reset messaggio
-    if (messageEl) {
-        messageEl.textContent = "";
-    }
+    if (messageEl) messageEl.textContent = "";
 
     if (!email) {
         if (messageEl) {
@@ -45,116 +43,147 @@ document.getElementById("send-reset-link-button").addEventListener("click", func
         return;
     }
 
-    // Invio richiesta al backend
-    // Da ricontrollare, non sono sicuro l'indirizzo sia gusto
     const apiEndpoint = 'http://localhost:3000/api/users/request-password-reset';
     
     fetch(apiEndpoint, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            if (messageEl) {
-                messageEl.textContent = "Link di reset inviato con successo!";
-                messageEl.style.color = "green";
-            }
+            messageEl.textContent = "Link di reset inviato con successo!";
+            messageEl.style.color = "green";
         } else {
-            if (messageEl) {
-                messageEl.textContent = data.message || "Si è verificato un errore.";
-                messageEl.style.color = "red";
-            }
+            messageEl.textContent = data.message || "Si è verificato un errore.";
+            messageEl.style.color = "red";
         }
     })
     .catch(err => {
-        if (messageEl) {
-            messageEl.textContent = "Errore di connessione al server.";
-            messageEl.style.color = "red";
-        }
+        messageEl.textContent = "Errore di connessione al server.";
+        messageEl.style.color = "red";
         console.error(err);
     });
 });
 
-// gestione di reset
-
-// Ottieni riferimenti agli elementi del DOM
+// gestione di reset e login
 const loginButton = document.querySelector('.login-button');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
-
-// Endpoint API (da sostituire con il tuo URL reale)
+const rememberMeCheckbox = document.getElementById('remember-me');
 const API_URL = 'http://localhost:3000';
 
-// Funzione di utilità per mostrare messaggi
-function showLoginMessage(message, type) {
-    const messageContainer = document.querySelector('.panel');
-    if (!messageContainer) return;
-    
-    let messageBox = messageContainer.querySelector('.message-box');
-    if (!messageBox) {
-        messageBox = document.createElement('div');
-        messageBox.className = 'message-box';
-        messageContainer.prepend(messageBox);
+// Carica username salvato se presente
+window.addEventListener('DOMContentLoaded', () => {
+    const savedUsername = localStorage.getItem('rememberedUsername');
+    if (savedUsername) {
+        usernameInput.value = savedUsername;
+        rememberMeCheckbox.checked = true;
     }
-    messageBox.textContent = message;
-    messageBox.className = `message-box message-${type}`;
+});
+
+// Messaggi sotto i campi input
+function showFieldError(input, message) {
+    let errorEl = input.parentElement.nextElementSibling;
+    if (!errorEl || !errorEl.classList.contains('field-error')) {
+        errorEl = document.createElement('span');
+        errorEl.className = 'field-error';
+        input.parentElement.parentElement.insertBefore(errorEl, input.parentElement.nextSibling);
+    }
+    errorEl.textContent = message;
+    errorEl.style.color = 'red';
+    errorEl.style.display = 'block';
+    errorEl.style.marginTop = '5px';
+    errorEl.style.fontSize = '14px';
 }
 
-// Evento per gestire la sottomissione del form di login
-loginButton.addEventListener('click', async () => {
-    const username = usernameInput.value;
+function clearFieldError(input) {
+    const errorEl = input.parentElement.nextElementSibling;
+    if (errorEl && errorEl.classList.contains('field-error')) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+    }
+}
+
+// Messaggi generali sotto il pulsante login
+function showGeneralError(message) {
+    let errorContainer = document.querySelector('.login-error-container');
+    if (!errorContainer) {
+        errorContainer = document.createElement('div');
+        errorContainer.className = 'login-error-container';
+        errorContainer.style.color = 'red';
+        errorContainer.style.marginTop = '10px';
+        errorContainer.style.fontSize = '14px';
+        loginButton.parentElement.appendChild(errorContainer);
+    }
+    errorContainer.textContent = message;
+}
+
+function clearGeneralError() {
+    const errorContainer = document.querySelector('.login-error-container');
+    if (errorContainer) errorContainer.textContent = '';
+}
+
+// Gestione login con fetch e form
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFieldError(usernameInput);
+    clearFieldError(passwordInput);
+    clearGeneralError();
+
+    const username = usernameInput.value.trim();
     const password = passwordInput.value;
 
-    if (!username || !password) {
-        showLoginMessage('Per favore, inserisci username e password.', 'error');
-        return;
+    let hasError = false;
+    if (!username) {
+        showFieldError(usernameInput, 'Per favore inserisci lo username.');
+        hasError = true;
     }
+    if (!password) {
+        showFieldError(passwordInput, 'Per favore inserisci la password.');
+        hasError = true;
+    }
+    if (hasError) return;
 
-    // Disabilita il pulsante per evitare click multipli
     loginButton.disabled = true;
     loginButton.textContent = 'Accesso...';
-    showLoginMessage('Accesso in corso...', 'message-info');
 
     try {
         const response = await fetch(`${API_URL}/api/users/login`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: username, password }),
         });
 
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            // Login riuscito
-            showLoginMessage(result.message, 'success');
-            
-            // Gestisci il caso in cui il backend richiede il reset della password
+            // Salva username se "Remember Me" selezionato
+            if (rememberMeCheckbox.checked) {
+                localStorage.setItem('rememberedUsername', username);
+            } else {
+                localStorage.removeItem('rememberedUsername');
+            }
+
             if (result.data && result.data.requiresPasswordReset) {
-                console.log('Login riuscito, ma la password deve essere resettata. Reindirizzamento...');
-                // Salva il token JWT per la prossima pagina, ad esempio in localStorage
                 localStorage.setItem('jwtToken', result.data.token);
-                // Reindirizza l'utente alla pagina di cambio password
                 window.location.href = `/reset-password.html?requiresPasswordReset=true`;
             } else {
-                // Login riuscito, l'utente può accedere alla dashboard
-                console.log('Login riuscito. Reindirizzamento alla dashboard...');
-                // Salva il token e reindirizza
                 localStorage.setItem('jwtToken', result.data.token);
                 window.location.href = '/dashboard.html';
             }
         } else {
-            // Login fallito
-            showLoginMessage(result.message || 'Credenziali non valide.', 'error');
+            if (result.errors) {
+                if (result.errors.email) showFieldError(usernameInput, result.errors.email);
+                if (result.errors.password) showFieldError(passwordInput, result.errors.password);
+            } else {
+                showGeneralError(result.message || 'Credenziali non valide.');
+            }
         }
     } catch (error) {
         console.error('Errore API:', error);
-        showLoginMessage('Errore di rete. Riprova più tardi.', 'error');
+        showGeneralError('Errore di rete. Riprova più tardi.');
     } finally {
         loginButton.disabled = false;
         loginButton.textContent = 'Login';

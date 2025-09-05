@@ -19,23 +19,20 @@
         <div class="middle-section">
             <div class="logo">CoWorkSpace</div>
         </div>
-
         <div class="right-section">
-            <button class="signup-button">Sign Up</button>
+            <button class="signup-button">Log In</button>
         </div>
     </div>
 
     <div class="people-icon">
-        <span class="material-symbols-outlined account-icon">
-            account_circle
-        </span>
+        <span class="material-symbols-outlined account-icon">account_circle</span>
     </div>
 
-    <div class="panel">
+    <form id="login-form" class="panel" autocomplete="on">
         <div>
             <label for="username">Username</label>
             <div class="input-container">
-                <input class="username-bar" type="text" id="username">
+                <input class="username-bar" type="text" id="username" name="username" autocomplete="username">
                 <span class="material-symbols-outlined input-icon">person</span>
             </div>
         </div>
@@ -43,10 +40,8 @@
         <div>
             <label for="password">Password</label>
             <div class="input-container">
-                <input class="password-bar" id="password" type="password">
-                <span class="material-symbols-outlined input-icon">
-                    lock
-                </span>
+                <input class="password-bar" id="password" type="password" name="password" autocomplete="current-password">
+                <span class="material-symbols-outlined input-icon">lock</span>
             </div>
         </div>
 
@@ -55,12 +50,11 @@
                 <input type="checkbox" id="remember-me" class="remember-me-checkbox">
                 <label for="remember-me" class="remember-me-label">Remember Me</label>
             </div>
-            
             <a href="#" class="forgot-password-link" id="forgot-password-action">Forgot the password?</a>
         </div>
 
-        <button class="login-button">Login</button>
-    </div>
+        <button type="submit" class="login-button">Login</button>
+    </form>
 
     <div id="forgot-password-modal" class="modal">
         <div class="modal-content">
@@ -75,6 +69,5 @@
 
     <script src="js/login.js"></script>
     <script src="js/reset-password-modal.js"></script>
-    
 </body>
 </html>

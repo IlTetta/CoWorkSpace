@@ -6,8 +6,21 @@ body {
     padding-top: 100px;
     background: radial-gradient(circle at top left, rgba(60, 52, 200, 0.5), rgba(40, 35, 150, 0.9));
     background-size: 100% 100%;
+    overflow-x: hidden; /* evita scroll orizzontale */
 }
 
+.input-container {
+    position: relative; /* necessario per posizionare errori assoluti */
+}
+
+.field-error {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px; /* spazio sopra il messaggio */
+    display: block;   /* messaggio visibile occupa spazio solo quando presente */
+}
+
+/* Modal */
 .modal {
     display: none; 
     position: fixed; 
@@ -24,18 +37,24 @@ body {
     margin: 15% auto; 
     padding: 20px;
     width: 400px; 
-    border-radius: 10px;
+    border-radius: 10px; 
 }
 
 .close-button {
     float: right; 
     font-size: 24px;
-    cursor: pointer; 
+    cursor: pointer;
 }
-
 
 @media (max-width: 1000px) {
     body {
         padding-top: 150px;
+    }
+
+    .modal-content {
+        width: 90%;       
+        max-width: 350px; 
+        margin: 20% auto; 
+        padding: 15px;    
     }
 }
