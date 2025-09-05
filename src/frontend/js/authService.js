@@ -41,6 +41,13 @@ class AuthService {
         return !!this.getToken();
     }
 
+    // Metodo centralizzato per redirect dopo login
+    redirectAfterLogin() {
+        setTimeout(() => {
+            window.location.href = 'home.html';
+        }, 1000);
+    }
+
     // Login
     async login(email, password) {
         try {
@@ -135,10 +142,8 @@ function handleLoginForm() {
                 const response = await authService.login(email, password);
                 FrontendUtils.showSuccess('Login effettuato con successo!');
                 
-                // Redirect alla dashboard o homepage
-                setTimeout(() => {
-                    window.location.href = '/home.html';
-                }, 1000);
+                // Usa il metodo centralizzato per il redirect
+                authService.redirectAfterLogin();
                 
             } catch (error) {
                 FrontendUtils.showError('Errore nel login: ' + error.message);

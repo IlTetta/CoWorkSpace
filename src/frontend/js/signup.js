@@ -133,6 +133,24 @@ signupForm.addEventListener('submit', async (e) => {
 
         if (response.ok && result.status === 'success') {
             showGeneralMessage(result.message || 'Registrazione avvenuta con successo!', 'success');
+            
+            // Salva token se presente nella risposta
+            if (result.data && result.data.token) {
+                localStorage.setItem('jwtToken', result.data.token);
+                if (result.data.user) {
+                    localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
+                }
+                
+                // Redirect a home.html dopo registrazione con login automatico
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 1500);
+            } else {
+                // Redirect a login se non c'è auto-login
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+            }
         } else {
             // Gestione errori specifici dal backend
             if (result.errors) {

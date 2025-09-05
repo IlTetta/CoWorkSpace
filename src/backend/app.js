@@ -45,6 +45,12 @@ const authLimiter = rateLimit({
 app.use(cors()); // Abilita CORS per tutte le rotte
 app.use(express.json()); // Per gestire il JSON nel corpo delle richieste
 
+// Serve i file statici del frontend
+const path = require('path');
+const frontendPath = path.join(__dirname, '../frontend');
+console.log('[STATIC] Serving static files from:', frontendPath);
+app.use(express.static(frontendPath));
+
 // Applica rate limiting generale a tutte le rotte API
 app.use('/api/', generalLimiter);
 

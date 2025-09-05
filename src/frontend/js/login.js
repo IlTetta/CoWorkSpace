@@ -150,13 +150,18 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     loginButton.textContent = 'Accesso...';
 
     try {
+        console.log('Tentativo di login con:', { email: username, password: '***' });
+        console.log('URL API:', `${API_URL}/api/users/login`);
+        
         const response = await fetch(`${API_URL}/api/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: username, password }),
         });
 
+        console.log('Risposta ricevuta:', response.status, response.statusText);
         const result = await response.json();
+        console.log('Dati della risposta:', result);
 
         if (response.ok && result.status === 'success') {
             // Salva username se "Remember Me" selezionato
@@ -170,8 +175,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
                 localStorage.setItem('jwtToken', result.data.token);
                 window.location.href = `/reset-password.html?requiresPasswordReset=true`;
             } else {
+                // Salva token direttamente
                 localStorage.setItem('jwtToken', result.data.token);
-                window.location.href = '/dashboard.html';
+                if (result.data.user) {
+                    localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
+                }
+                
+                // Redirect diretto
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 1000);
             }
         } else {
             if (result.errors) {
@@ -182,10 +195,24 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             }
         }
     } catch (error) {
-        console.error('Errore API:', error);
-        showGeneralError('Errore di rete. Riprova più tardi.');
+        console.error('Errore API completo:', error);
+        console.error('Tipo di errore:', error.name);
+        console.error('Messaggio errore:', error.message);
+        console.error('Stack trace:', error.stack);
+        showGeneralError(`Errore di rete: ${error.message}`);
     } finally {
         loginButton.disabled = false;
         loginButton.textContent = 'Login';
+    }
+});
+
+// Gestione del pulsante Signup per redirect a signup.html
+document.addEventListener('DOMContentLoaded', () => {
+    const signupButton = document.querySelector('.signup-button');
+    if (signupButton) {
+        signupButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'signup.html';
+        });
     }
 });
