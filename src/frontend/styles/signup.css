@@ -126,7 +126,6 @@ label {
     position: relative; /* necessario per posizionare errori assoluti */
 }
 
-/* Messaggi di errore sotto input senza spostare icona */
 .field-error {
     color: red;
     font-size: 14px;
