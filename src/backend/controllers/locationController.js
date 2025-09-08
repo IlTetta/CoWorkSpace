@@ -5,7 +5,7 @@ const AppError = require('../utils/AppError');
 const ApiResponse = require('../utils/apiResponse');
 
 /**
- * Ottieni tutte le locations con filtri opzionali
+ * Ottieni tutte le locations con filtri opzionali e tipi di spazio associati
  */
 exports.getAllLocations = catchAsync(async (req, res, next) => {
     const filters = {
@@ -14,15 +14,24 @@ exports.getAllLocations = catchAsync(async (req, res, next) => {
         manager_id: req.query.manager_id
     };
 
+    // Parametri di ordinamento
+    const sorting = {
+        sortBy: req.query.sortBy || 'name', // 'name', 'city', 'spaceType'
+        sortOrder: req.query.sortOrder || 'asc' // 'asc', 'desc'
+    };
+
     // Rimuovi filtri vuoti
     Object.keys(filters).forEach(key => {
         if (!filters[key]) delete filters[key];
     });
 
     // req.user può essere undefined per richieste pubbliche
-    const locations = await LocationService.getLocations(filters, req.user || null);
+    const locations = await LocationService.getLocationsWithSpaceTypes(filters, sorting, req.user || null);
 
-    return ApiResponse.list(res, locations.map(location => location.toJSON()), 'Locations recuperate con successo', filters);
+    return ApiResponse.list(res, locations, 'Locations con tipi di spazio recuperate con successo', {
+        filters,
+        sorting
+    });
 });
 
 /**

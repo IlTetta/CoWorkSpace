@@ -107,6 +107,37 @@ class LocationService {
     }
 
     /**
+     * Ottieni locations con tipi di spazio associati e supporto per ordinamento avanzato
+     * @param {Object} filters - Filtri di ricerca
+     * @param {Object} sorting - Opzioni di ordinamento (sortBy, sortOrder)
+     * @param {Object} currentUser - Utente che fa la richiesta (può essere null per richieste pubbliche)
+     * @returns {Promise<Object[]>} - Array di locations con tipi di spazio
+     */
+    static async getLocationsWithSpaceTypes(filters, sorting = {}, currentUser = null) {
+        // I manager possono vedere solo le loro locations
+        if (currentUser && currentUser.role === 'manager') {
+            filters.manager_id = currentUser.user_id;
+        }
+
+        const { sortBy = 'name', sortOrder = 'asc' } = sorting;
+
+        // Validazione parametri di ordinamento
+        const validSortFields = ['name', 'city', 'spaceType'];
+        const validSortOrders = ['asc', 'desc'];
+
+        if (!validSortFields.includes(sortBy)) {
+            throw AppError.badRequest(`Campo di ordinamento non valido. Usa: ${validSortFields.join(', ')}`);
+        }
+
+        if (!validSortOrders.includes(sortOrder)) {
+            throw AppError.badRequest(`Ordine non valido. Usa: ${validSortOrders.join(', ')}`);
+        }
+
+        // Usa il metodo ottimizzato del modello che fa una singola query
+        return await Location.findAllWithSpaceTypes(filters, sortBy, sortOrder);
+    }
+
+    /**
      * Ottieni dettagli completi di una location
      * @param {number} locationId - ID della location
      * @param {Object} currentUser - Utente che fa la richiesta (può essere null per richieste pubbliche)
