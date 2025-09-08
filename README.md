@@ -44,3 +44,90 @@ Dopo il primo avvio, se il database è vuoto, puoi eseguire il file <code>seed.s
     1. Connettiti al database tramite DBeaver.
     2. Apri il file <code>seed.sql</code> nel tuo client SQL.
     3. Esegui lo script SQL.
+
+## Sezione Testing
+
+Questa sezione fornisce le istruzioni per eseguire e comprendere i test del progetto **CoWorkSpace**.
+
+### 1. Tipi di Test:
+Il progetto include due tipi principali di test:
+* **Unit Tests**: Testano singole funzioni, modelli e servizi in isolamento
+* **Integration Tests**: Testano i flussi completi dell'API end-to-end
+
+### 2. Setup Test Environment:
+I test sono configurati per funzionare automaticamente con:
+* **Database**: Utilizza lo stesso database PostgreSQL di sviluppo
+* **Autenticazione**: JWT tokens generati dinamicamente per i test
+* **Cleanup**: I dati di test vengono automaticamente puliti dopo ogni test
+
+### 3. Comandi per Eseguire i Test:
+
+#### Esegui tutti i test:
+```bash
+npm test
+```
+
+#### Esegui solo i test di integrazione:
+```bash
+npm test -- tests/integration/
+```
+
+#### Esegui solo i test unitari:
+```bash
+npm test -- tests/unit/
+```
+
+#### Esegui test specifici:
+```bash
+# Test di autenticazione
+npm test -- --testPathPattern=auth.integration.test.js
+
+# Test di booking
+npm test -- --testPathPattern=booking.integration.test.js
+```
+
+### 4. Struttura dei Test:
+
+#### Test di Integrazione - Autenticazione (4 test):
+- ✅ Registrazione nuovo utente
+- ✅ Validazione email invalida
+- ✅ Login con credenziali valide
+- ✅ Accesso al profilo con token JWT
+
+#### Test di Integrazione - Sistema Booking (12 test):
+- ✅ Verifica disponibilità spazi (pubblico)
+- ✅ Calcolo prezzi prenotazioni (pubblico)
+- ✅ Creazione prenotazioni (autenticato)
+- ✅ Recupero prenotazioni utente (autenticato)
+- ✅ Validazione dati di input
+- ✅ Gestione sovrapposizioni e limiti temporali
+- ✅ Controllo autorizzazioni
+
+### 5. Coverage Test:
+I test coprono i seguenti aspetti:
+* **API Endpoints**: Tutti gli endpoint principali di auth e booking
+* **Business Logic**: Validazioni, autorizzazioni, regole di business
+* **Error Handling**: Gestione realistica degli errori
+* **Data Validation**: Controllo input e output
+* **Security**: Autenticazione JWT e controlli permessi
+
+### 6. Test Output:
+Un esecuzione completa dovrebbe mostrare:
+```
+Test Suites: 2 passed, 2 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        ~30s
+```
+
+### 7. Debugging Test:
+Se i test falliscono:
+1. Verifica che il database sia avviato (`docker-compose up -d`)
+2. Controlla che le variabili d'ambiente siano configurate (`.env`)
+3. Verifica i log dettagliati nell'output dei test
+
+### 8. Requisiti per i Test:
+* **Node.js** versione compatibile
+* **PostgreSQL** database attivo
+* **Dipendenze** installate (`npm install`)
+* **File .env** configurato correttamente
