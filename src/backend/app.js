@@ -22,17 +22,6 @@ const additionalServiceRoutes = require('./routes/additionalServiceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
 // --- Rate Limiting ---
-// Rate limiting generale per tutte le API
-const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minuti
-    max: 100, // 100 richieste per IP ogni 15 minuti
-    message: {
-        error: 'Troppe richieste da questo IP, riprova più tardi.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
 // Rate limiting stricter per operazioni di autenticazione
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minuti
@@ -90,9 +79,6 @@ app.get('/', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, '../frontend')));
-
-// Applica rate limiting generale a tutte le rotte API
-app.use('/api/', generalLimiter);
 
 // Applica rate limiting specifico per auth
 app.use('/api/users/login', authLimiter);
