@@ -107,6 +107,37 @@ class LocationService {
     }
 
     /**
+     * Ottieni locations con tipi di spazio associati e supporto per ordinamento avanzato
+     * @param {Object} filters - Filtri di ricerca
+     * @param {Object} sorting - Opzioni di ordinamento (sortBy, sortOrder)
+     * @param {Object} currentUser - Utente che fa la richiesta (può essere null per richieste pubbliche)
+     * @returns {Promise<Object[]>} - Array di locations con tipi di spazio
+     */
+    static async getLocationsWithSpaceTypes(filters, sorting = {}, currentUser = null) {
+        // I manager possono vedere solo le loro locations
+        if (currentUser && currentUser.role === 'manager') {
+            filters.manager_id = currentUser.user_id;
+        }
+
+        const { sortBy = 'name', sortOrder = 'asc' } = sorting;
+
+        // Validazione parametri di ordinamento
+        const validSortFields = ['name', 'city', 'spaceType'];
+        const validSortOrders = ['asc', 'desc'];
+
+        if (!validSortFields.includes(sortBy)) {
+            throw AppError.badRequest(`Campo di ordinamento non valido. Usa: ${validSortFields.join(', ')}`);
+        }
+
+        if (!validSortOrders.includes(sortOrder)) {
+            throw AppError.badRequest(`Ordine non valido. Usa: ${validSortOrders.join(', ')}`);
+        }
+
+        // Usa il metodo ottimizzato del modello che fa una singola query
+        return await Location.findAllWithSpaceTypes(filters, sortBy, sortOrder);
+    }
+
+    /**
      * Ottieni dettagli completi di una location
      * @param {number} locationId - ID della location
      * @param {Object} currentUser - Utente che fa la richiesta (può essere null per richieste pubbliche)
@@ -299,6 +330,84 @@ class LocationService {
         }
 
         return dashboard;
+    }
+
+    /**
+     * Ottieni locations filtrate con ordinamento avanzato
+     * @param {Object} filters - Filtri di ricerca (name, city, manager_id)
+     * @param {Object} sorting - Opzioni di ordinamento (sortBy, sortOrder)
+     * @param {Object} currentUser - Utente che fa la richiesta (può essere null per richieste pubbliche)
+     * @returns {Promise<Location[]>} - Array di locations filtrate e ordinate
+     */
+    static async getFilteredLocations(filters, sorting = {}, currentUser = null) {
+        // I manager possono vedere solo le loro locations
+        if (currentUser && currentUser.role === 'manager') {
+            filters.manager_id = currentUser.user_id;
+        }
+
+        const { sortBy = 'name', sortOrder = 'asc' } = sorting;
+
+        // Validazione parametri di ordinamento
+        const validSortFields = ['name', 'city', 'date'];
+        const validSortOrders = ['asc', 'desc'];
+
+        if (!validSortFields.includes(sortBy)) {
+            throw AppError.badRequest(`Campo di ordinamento non valido. Usa: ${validSortFields.join(', ')}`);
+        }
+
+        if (!validSortOrders.includes(sortOrder)) {
+            throw AppError.badRequest(`Ordine non valido. Usa: ${validSortOrders.join(', ')}`);
+        }
+
+        return await Location.findAllWithSorting(filters, sortBy, sortOrder);
+    }
+
+    /**
+     * Ottieni informazioni complete di una location con tutti i dati associati
+     * @param {number} locationId - ID della location
+     * @param {Object} currentUser - Utente che fa la richiesta (può essere null per richieste pubbliche)
+     * @returns {Promise<Object>} - Informazioni complete della location
+     */
+    static async getLocationCompleteInfo(locationId, currentUser = null) {
+        const location = await Location.findById(locationId);
+        if (!location) {
+            throw AppError.notFound('Location non trovata');
+        }
+
+        // I manager possono vedere solo le loro locations (controllo di sicurezza)
+        if (currentUser && currentUser.role === 'manager' && location.manager_id !== currentUser.user_id) {
+            throw AppError.forbidden('Non hai accesso a questa location');
+        }
+
+        // Recupera tutte le informazioni associate
+        const [
+            spaces,
+            statistics,
+            recentBookings,
+            spaceTypes,
+            availableServices
+        ] = await Promise.all([
+            Location.getLocationSpaces(locationId),
+            Location.getLocationStatistics(locationId),
+            Location.getLocationRecentBookings(locationId),
+            Location.getLocationSpaceTypes(locationId),
+            Location.getLocationAvailableServices(locationId)
+        ]);
+
+        return {
+            location: location.toJSON(),
+            spaces,
+            statistics,
+            recentBookings,
+            spaceTypes,
+            availableServices,
+            summary: {
+                totalSpaces: spaces.length,
+                totalSpaceTypes: spaceTypes.length,
+                totalServices: availableServices.length,
+                ...statistics
+            }
+        };
     }
 }
 
