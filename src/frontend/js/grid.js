@@ -45,22 +45,18 @@ function extractLocationTypes(location) {
             return 'Spazio generico';
         }
         
-        // Se c'è un solo tipo, restituiscilo direttamente
-        if (typeNames.length === 1) {
-            return typeNames[0];
+        // Restituisci tutti i tipi di spazio separati da a capo
+        // Ordina alfabeticamente per consistenza
+        const sortedTypes = typeNames.sort();
+        
+        // Se ci sono più di 4 tipi, mostra i primi 3 e aggiungi "e altri X"
+        if (sortedTypes.length > 4) {
+            const remaining = sortedTypes.length - 3;
+            return `${sortedTypes.slice(0, 3).join('<br>')}<br>e altri ${remaining}`;
         }
         
-        // Se ci sono più tipi, conta le occorrenze e restituisci il più comune
-        const typeCount = {};
-        typeNames.forEach(type => {
-            typeCount[type] = (typeCount[type] || 0) + 1;
-        });
-        
-        const mostCommonType = Object.keys(typeCount).reduce((a, b) => 
-            typeCount[a] > typeCount[b] ? a : b, 'Spazio generico'
-        );
-        
-        return mostCommonType;
+        // Altrimenti mostra tutti i tipi separati da a capo
+        return sortedTypes.join('<br>');
     } catch (error) {
         console.error('Errore nell\'estrazione dei tipi di spazio:', error);
         return 'Spazio generico';

@@ -6,6 +6,7 @@
     let currentSortOrder = 'asc'; // 'asc' o 'desc'
     let availableSpaceTypes = new Set(); // Set per i tipi di spazio disponibili
     let activeFilters = new Set(['all']); // Filtri attivi
+    let currentSearchQuery = ''; // Query di ricerca corrente
 
     // Funzione principale per caricare le locations con le impostazioni correnti
     async function loadLocationsWithCurrentSettings() {
@@ -22,6 +23,13 @@
             locations = await window.apiService.getLocationsAlphabetical(currentSortOrder);
             
             console.log(`Loaded ${locations.length} locations from API`);
+
+            // Se c'è una ricerca attiva, applica il filtro di ricerca
+            if (currentSearchQuery.trim()) {
+                console.log('Applying search filter:', currentSearchQuery);
+                locations = applySearchFilter(locations, currentSearchQuery);
+                console.log(`After search filtering: ${locations.length} locations remaining`);
+            }
 
             // Se ci sono filtri specifici per tipo di spazio, applica filtro lato client  
             if (!activeFilters.has('all') && activeFilters.size > 0) {
@@ -95,6 +103,9 @@
 
     // Gestisce il click sul pulsante di ordinamento
     async function handleSortingClick() {
+        // Cattura la query di ricerca corrente prima di ordinare
+        currentSearchQuery = getCurrentSearchQuery();
+        
         // Cambia l'ordine
         currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
         
@@ -389,8 +400,15 @@
 
             // Controlla se almeno uno dei tipi della location è nei filtri attivi
             return spaceTypes.some(type => {
-                const typeName = type.name || type.type_name || type.typeName || 'Spazio generico';
-                return activeFilters.has(typeName);
+                const typeName = (type.name || type.type_name || type.typeName || 'Spazio generico').trim();
+                
+                // Confronto diretto con i filtri attivi
+                for (const activeFilter of activeFilters) {
+                    if (activeFilter.trim() === typeName) {
+                        return true;
+                    }
+                }
+                return false;
             });
         });
     }
@@ -454,6 +472,37 @@
         }
     }
 
+    // Applica filtro di ricerca alle locations
+    function applySearchFilter(locations, query) {
+        if (!query || !query.trim()) {
+            return locations;
+        }
+
+        const normalizedQuery = query.trim().toLowerCase();
+        return locations.filter(location => {
+            const locationName = (location.location_name || location.name || '').toLowerCase();
+            const city = (location.city || '').toLowerCase();
+            const address = (location.address || '').toLowerCase();
+            
+            return locationName.includes(normalizedQuery) ||
+                   city.includes(normalizedQuery) ||
+                   address.includes(normalizedQuery) ||
+                   locationName.split(' ').some(word => word.includes(normalizedQuery)) ||
+                   city.split(' ').some(word => word.includes(normalizedQuery));
+        });
+    }
+
+    // Cattura la query di ricerca corrente dall'input
+    function getCurrentSearchQuery() {
+        const searchInput = document.getElementById('search-input');
+        return searchInput ? searchInput.value.trim() : '';
+    }
+
+    // Aggiorna la query di ricerca corrente
+    function updateSearchQuery(query) {
+        currentSearchQuery = query || '';
+    }
+
     // Avvia inizializzazione
     initialize();
 
@@ -462,7 +511,8 @@
         sortLocationsByName,
         filterLocationsByType,
         getCurrentSortOrder: () => currentSortOrder,
-        getActiveFilters: () => Array.from(activeFilters)
+        getActiveFilters: () => Array.from(activeFilters),
+        updateSearchQuery: updateSearchQuery
     };
 
 })();

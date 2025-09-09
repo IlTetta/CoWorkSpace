@@ -29,6 +29,10 @@
     border-bottom-left-radius: 20px;
     border-top-left-radius: 20px;
     padding: 0px 20px 0px 20px;
+    color: black;
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: normal;
 }
 
 .search-bar::placeholder {

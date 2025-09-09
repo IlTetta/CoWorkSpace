@@ -216,6 +216,13 @@ function showMessage(message, type) {
         displaySearchResults(locations) {
             // Se siamo nella pagina home, aggiorna la griglia
             if (window.location.pathname.includes('home') && typeof renderGrid === 'function') {
+                // Notifica al bottom-buttons della nuova query di ricerca
+                if (window.bottomButtons && window.bottomButtons.updateSearchQuery) {
+                    const searchInput = document.getElementById('search-input');
+                    const currentQuery = searchInput ? searchInput.value.trim() : '';
+                    window.bottomButtons.updateSearchQuery(currentQuery);
+                }
+                
                 renderGrid(locations);
             } else {
                 // Redirect alla home con risultati
