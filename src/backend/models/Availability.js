@@ -219,9 +219,9 @@ class Availability {
         const query = `
             SELECT * FROM bookings
             WHERE space_id = $1
-            AND booking_date = $2
-            AND start_time < $4
-            AND end_time > $3
+            AND DATE(start_datetime) = $2
+            AND TIME(start_datetime) < $4
+            AND TIME(end_datetime) > $3
             AND status IN ('confirmed', 'pending')
         `;
 
@@ -251,9 +251,9 @@ class Availability {
         const bookingsQuery = `
             SELECT COUNT(*) as count FROM bookings
             WHERE space_id = $1
-            AND booking_date = $2
-            AND start_time < $4
-            AND end_time > $3
+            AND DATE(start_datetime) = $2
+            AND TIME(start_datetime) < $4
+            AND TIME(end_datetime) > $3
             AND status IN ('confirmed', 'pending')
         `;
 
@@ -290,15 +290,15 @@ class Availability {
             // Prenotazioni nel periodo
             `SELECT COUNT(*) as total_bookings
              FROM bookings
-             WHERE space_id = $1 AND booking_date >= $2 AND booking_date <= $3`,
+             WHERE space_id = $1 AND DATE(start_datetime) >= $2 AND DATE(end_datetime) <= $3`,
 
             // Tasso di occupazione
             `SELECT 
-                COUNT(DISTINCT b.booking_date) as booked_days,
+                COUNT(DISTINCT DATE(b.start_datetime)) as booked_days,
                 COUNT(DISTINCT a.availability_date) as available_days
              FROM availability a
              LEFT JOIN bookings b ON a.space_id = b.space_id 
-                AND a.availability_date = b.booking_date
+                AND a.availability_date = DATE(b.start_datetime)
                 AND b.status IN ('confirmed', 'completed')
              WHERE a.space_id = $1 
                 AND a.availability_date >= $2 
@@ -452,9 +452,9 @@ class Availability {
             AND NOT EXISTS (
                 SELECT 1 FROM bookings b
                 WHERE b.space_id = s.space_id
-                AND b.booking_date = $2
-                AND b.start_time < $4
-                AND b.end_time > $3
+                AND DATE(b.start_datetime) = $2
+                AND TIME(b.start_datetime) < $4
+                AND TIME(b.end_datetime) > $3
                 AND b.status IN ('confirmed', 'pending')
             )
             ORDER BY l.location_name, s.space_name
@@ -476,8 +476,8 @@ class Availability {
             SELECT COUNT(*) as booking_count
             FROM bookings
             WHERE space_id = $1
-            AND booking_date >= $2
-            AND booking_date <= $3
+            AND DATE(start_datetime) >= $2
+            AND DATE(end_datetime) <= $3
             AND status IN ('confirmed', 'pending')
         `;
 

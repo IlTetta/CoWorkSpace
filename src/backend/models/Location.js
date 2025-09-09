@@ -116,9 +116,13 @@ class Location {
         }
 
         // Filtro per manager
-        if (filters.manager_id) {
-            conditions.push(`l.manager_id = $${values.length + 1}`);
-            values.push(filters.manager_id);
+        if (filters.manager_id !== undefined) {
+            if (filters.manager_id === null) {
+                conditions.push(`l.manager_id IS NULL`);
+            } else {
+                conditions.push(`l.manager_id = $${values.length + 1}`);
+                values.push(filters.manager_id);
+            }
         }
 
         if (conditions.length > 0) {
@@ -173,9 +177,13 @@ class Location {
         }
 
         // Filtro per manager
-        if (filters.manager_id) {
-            conditions.push(`l.manager_id = $${values.length + 1}`);
-            values.push(filters.manager_id);
+        if (filters.manager_id !== undefined) {
+            if (filters.manager_id === null) {
+                conditions.push(`l.manager_id IS NULL`);
+            } else {
+                conditions.push(`l.manager_id = $${values.length + 1}`);
+                values.push(filters.manager_id);
+            }
         }
 
         if (conditions.length > 0) {
@@ -291,9 +299,13 @@ class Location {
             values.push(`%${filters.name}%`);
         }
 
-        if (filters.manager_id) {
-            conditions.push(`l.manager_id = $${values.length + 1}`);
-            values.push(filters.manager_id);
+        if (filters.manager_id !== undefined) {
+            if (filters.manager_id === null) {
+                conditions.push(`l.manager_id IS NULL`);
+            } else {
+                conditions.push(`l.manager_id = $${values.length + 1}`);
+                values.push(filters.manager_id);
+            }
         }
 
         if (conditions.length > 0) {

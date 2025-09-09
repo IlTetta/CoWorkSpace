@@ -295,44 +295,6 @@ class LocationService {
     }
 
     /**
-     * Ottieni dashboard per manager
-     * @param {Object} currentUser - Manager corrente
-     * @returns {Promise<Object>} - Dati dashboard
-     */
-    static async getManagerDashboard(currentUser) {
-        if (currentUser.role !== 'manager' && currentUser.role !== 'admin') {
-            throw AppError.forbidden('Accesso riservato ai manager');
-        }
-
-        const locations = await Location.findByManager(currentUser.user_id);
-        const dashboard = {
-            totalLocations: locations.length,
-            locations: [],
-            totalStats: {
-                totalSpaces: 0,
-                totalBookings: 0,
-                totalRevenue: 0
-            }
-        };
-
-        // Raccogli statistiche per ogni location
-        for (const location of locations) {
-            const stats = await Location.getStats(location.location_id);
-            dashboard.locations.push({
-                ...location.toJSON(),
-                statistics: stats
-            });
-
-            // Aggrega le statistiche totali
-            dashboard.totalStats.totalSpaces += parseInt(stats.totalSpaces);
-            dashboard.totalStats.totalBookings += parseInt(stats.totalBookings);
-            dashboard.totalStats.totalRevenue += parseFloat(stats.revenue);
-        }
-
-        return dashboard;
-    }
-
-    /**
      * Ottieni locations filtrate con ordinamento avanzato
      * @param {Object} filters - Filtri di ricerca (name, city, manager_id)
      * @param {Object} sorting - Opzioni di ordinamento (sortBy, sortOrder)
