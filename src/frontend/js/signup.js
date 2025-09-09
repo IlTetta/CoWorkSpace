@@ -1,7 +1,7 @@
 // Riferimenti ai campi input
 const signupForm = document.getElementById('signup-form');
 const signupButton = document.querySelector('.signup-button');
-const nameInput = document.getElementById('username');
+const nameInput = document.getElementById('name'); // Corretto: da 'username' a 'name'
 const surnameInput = document.getElementById('surname');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
@@ -31,20 +31,6 @@ function clearFieldError(input) {
     }
 }
 
-// Funzione per mostrare un messaggio generale (successo/errore)
-function showGeneralMessage(message, type) {
-    const messageContainer = document.getElementById('message-container') || signupForm;
-    let messageBox = messageContainer.querySelector('.message-box');
-    if (!messageBox) {
-        messageBox = document.createElement('div');
-        messageBox.className = 'message-box';
-        // Inserisce il messaggio prima del form
-        signupForm.prepend(messageBox);
-    }
-    messageBox.textContent = message;
-    messageBox.className = `message-box ${type}-message`;
-}
-
 // Messaggi generali sotto il pulsante signup
 function showGeneralError(message) {
     let errorContainer = document.querySelector('.signup-error-container');
@@ -68,10 +54,8 @@ function clearGeneralError() {
 function clearAllMessages() {
     const fieldErrors = document.querySelectorAll('.field-error');
     fieldErrors.forEach(el => el.remove());
-    
-    const generalMessages = document.querySelectorAll('.message-box');
-    generalMessages.forEach(el => el.remove());
-    
+
+    // Rimuovi anche i messaggi di errore generali
     clearGeneralError();
 }
 
@@ -107,7 +91,7 @@ signupForm.addEventListener('submit', async (e) => {
         hasError = true;
     }
     if (!role) {
-        showFieldError(roleInput, 'Per favore inserisci il tuo ruolo.');
+        showFieldError(roleInput, 'Per favora inserisci il tuo ruolo.');
         hasError = true;
     }
 
@@ -118,7 +102,8 @@ signupForm.addEventListener('submit', async (e) => {
     // Disabilita il pulsante e mostra un messaggio di caricamento
     signupButton.disabled = true;
     signupButton.textContent = 'Registrazione in corso...';
-    showGeneralMessage('Registrazione in corso...', 'message-info');
+    // Visualizza il messaggio di caricamento sotto il pulsante
+    showGeneralError('Registrazione in corso...');
 
     try {
         const response = await fetch(API_ENDPOINT, {
@@ -128,19 +113,20 @@ signupForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({ name, surname, email, password, role })
         });
-        
+
         const result = await response.json();
 
         if (response.ok && result.status === 'success') {
-            showGeneralMessage(result.message || 'Registrazione avvenuta con successo!', 'success');
-            
+            // Visualizza il messaggio di successo sotto il pulsante
+            showGeneralError(result.message || 'Registrazione avvenuta con successo!');
+
             // Salva token se presente nella risposta
             if (result.data && result.data.token) {
                 localStorage.setItem('jwtToken', result.data.token);
                 if (result.data.user) {
                     localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
                 }
-                
+
                 // Redirect a home.html dopo registrazione con login automatico
                 setTimeout(() => {
                     window.location.href = 'home.html';
@@ -159,9 +145,11 @@ signupForm.addEventListener('submit', async (e) => {
                 if (result.errors.email) showFieldError(emailInput, result.errors.email);
                 if (result.errors.password) showFieldError(passwordInput, result.errors.password);
                 if (result.errors.role) showFieldError(roleInput, result.errors.role);
-                showGeneralMessage('Si sono verificati degli errori. Per favore, correggi i campi.', 'error');
+                // Visualizza un messaggio generale sotto il pulsante
+                showGeneralError('Si sono verificati degli errori. Per favore, correggi i campi.');
             } else {
-                showGeneralMessage(result.message || 'Errore durante la registrazione. Riprova più tardi.', 'error');
+                // Visualizza un messaggio di errore generale sotto il pulsante
+                showGeneralError(result.message || 'Errore durante la registrazione. Riprova più tardi.');
             }
         }
     } catch (error) {
@@ -170,5 +158,26 @@ signupForm.addEventListener('submit', async (e) => {
     } finally {
         signupButton.disabled = false;
         signupButton.textContent = 'Signup';
+    }
+});
+
+// Gestione del pulsante Login per redirect a login.html e del logo per redirect a home.html
+document.addEventListener('DOMContentLoaded', () => {
+    // Gestisce il click sul pulsante di login
+    const loginButton = document.querySelector('.login-button');
+    if (loginButton) {
+        loginButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'login.html';
+        });
+    }
+
+    // Gestisce il click sul logo per reindirizzare a home.html
+    const logo = document.querySelector('.logo');
+    if (logo) {
+        logo.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'home.html';
+        });
     }
 });

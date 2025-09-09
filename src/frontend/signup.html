@@ -6,17 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles/signup.css">
     <link rel="stylesheet" href="styles/signup-header.css">
-    <link rel="stylesheet" href="styles/login-background.css">
+    <link rel="stylesheet" href="styles/background.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=person" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock_person" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@40,400,1,0&icon_names=visibility_off" />
 </head>
 
 <body>
     <div class="header">
+        <div class="left-section"></div>
         <div class="middle-section">
-            <div class="logo">CoworkSpace</div>
+            <div class="logo">CoWorkSpace</div>
+        </div>
+        <div class="right-section">
+            <button class="login-button">Login</button>
         </div>
     </div>
 
@@ -26,9 +31,9 @@
 
     <form id="signup-form" class="panel">
         <div>
-            <label for="username">Username</label>
+            <label for="username">Name</label>
             <div class="input-container">
-                <input class="username-bar" type="text" id="username" name="username">
+                <input class="name-bar" type="text" id="name" name="name">
                 <!--<span class="material-symbols-outlined input-icon">person</span>-->
             </div>
         </div>
@@ -51,21 +56,30 @@
             <label for="password">Password</label>
             <div class="input-container">
                 <input class="password-bar" id="password" type="password" name="password">
-                <!--<span class="material-symbols-outlined input-icon">lock</span>-->
+                <span class="material-symbols-outlined input-icon">
+                    visibility_off
+                </span>
             </div>
         </div>
 
         <div>
             <label for="role">Role</label>
             <div class="input-container">
-                <input class="role-bar" type="text" id="role" name="role">
+                <select class="role-bar" id="role" name="role">
+                    <option value="" disabled selected></option>
+                    <option value="client">Client</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                </select>
             </div>
         </div>
 
         <button type="submit" class="signup-button">Signup</button>
     </form>
 
-
+    <script src="js/apiService.js"></script>
+    <script src="js/authService.js"></script>
     <script src="js/signup.js"></script>
+    <script src="js/reset-password-icon.js"></script>
 </body>
 </html>

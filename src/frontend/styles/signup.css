@@ -63,11 +63,11 @@ label {
     right: 15px;
     transform: translateY(-50%);
     color: rgb(79, 70, 229);
-    pointer-events: none;
+    cursor: pointer;
     font-variation-settings: 'FILL' 1;
 }
 
-.username-bar,
+.name-bar,
 .surname-bar,
 .email-bar,
 .password-bar,
@@ -85,7 +85,7 @@ label {
     color: #000;
 }
 
-.username-bar:focus,
+.name-bar:focus,
 .surname-bar:focus,
 .email-bar:focus,
 .password-bar:focus
@@ -152,4 +152,6 @@ label {
         min-width: max-content;
         transform: scale(0.8);
     }
+
+
 }
