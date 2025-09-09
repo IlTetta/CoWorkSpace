@@ -1,4 +1,7 @@
-// Header functionality and navigation
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { showMessage } from "./main.js";
+
+// Funzionalità dell'header e navigazione
 (function() {
     'use strict';
     
@@ -17,7 +20,25 @@
             this.setupNavigation();
             this.setupUserMenu();
             this.setupSearch();
-            this.updateHeaderUI();
+            // NUOVO: Avvia l'ascoltatore di autenticazione di Firebase all'inizializzazione del servizio.
+            this.setupAuthListener(); 
+        }
+        
+        // NUOVO METODO: Gestisce l'ascoltatore di autenticazione di Firebase.
+        // Questo listener è fondamentale perché reagisce a ogni cambiamento dello stato di login.
+        setupAuthListener() {
+            const auth = getAuth();
+            onAuthStateChanged(auth, (user) => {
+                // Chiama il metodo per aggiornare l'interfaccia utente in base allo stato di login.
+                this.updateHeaderUI(user);
+                
+                // Opzionale: mostra un messaggio di benvenuto o di logout.
+                if (user) {
+                    showMessage(`Benvenuto, ${user.displayName || 'Utente'}!`, 'success');
+                } else {
+                    showMessage('Sei stato disconnesso con successo.', 'success');
+                }
+            });
         }
 
         setupNavigation() {
@@ -41,22 +62,39 @@
         }
 
         setupUserMenu() {
-            // User menu dropdown
-            const userMenuBtn = document.getElementById('user-menu-btn');
-            const userMenuDropdown = document.getElementById('user-menu-dropdown');
+            // Riferimento agli elementi per gestire il menu utente
+            const userIcon = document.getElementById('user-icon');
+            const userDropdown = document.getElementById('user-dropdown');
             
-            if (userMenuBtn && userMenuDropdown) {
-                userMenuBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    userMenuDropdown.classList.toggle('show');
+            // LOGICA DEL MENU A TENDINA E DEL LOGOUT:
+            // L'icona del profilo utente ora apre/chiude il menu a tendina.
+            if (userIcon && userDropdown) {
+                userIcon.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Impedisce che il click si propaghi al documento
+                    userDropdown.style.display = userDropdown.style.display === 'block' ? 'none' : 'block';
                 });
 
-                // Close dropdown when clicking outside
-                document.addEventListener('click', () => {
-                    userMenuDropdown.classList.remove('show');
+                // Chiudi il menu a tendina quando si clicca al di fuori di esso.
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('#user-profile') === null) {
+                        userDropdown.style.display = 'none';
+                    }
                 });
             }
 
+            // LOGICA DEL PULSANTE DI LOGOUT:
+            // Aggiunto il gestore per il pulsante di logout
+            const logoutBtn = document.getElementById('logout-button');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    const auth = getAuth();
+                    signOut(auth)
+                        .catch((error) => {
+                            showMessage(`Errore durante il logout: ${error.message}`, 'error');
+                        });
+                });
+            }
+            
             // Login/Signup buttons
             const loginBtn = document.getElementById('login-btn');
             const signupBtn = document.getElementById('signup-btn');
@@ -111,9 +149,10 @@
                 
                 if (!Array.isArray(allLocations) || allLocations.length === 0) {
                     if (window.FrontendUtils) {
-                        FrontendUtils.showError('Nessuna location disponibile');
+                        window.FrontendUtils.showError('Nessuna location disponibile');
                     } else {
-                        alert('Nessuna location disponibile');
+                        // Utilizza showMessage al posto di alert
+                        showMessage('Nessuna location disponibile', 'error');
                     }
                     return;
                 }
@@ -150,18 +189,18 @@
                     this.displaySearchResults(filteredLocations);
                 } else {
                     if (window.FrontendUtils) {
-                        FrontendUtils.showError(`Nessuna location trovata per "${trimmedQuery}"`);
+                        window.FrontendUtils.showError(`Nessuna location trovata per "${trimmedQuery}"`);
                     } else {
-                        alert(`Nessuna location trovata per "${trimmedQuery}"`);
+                         showMessage(`Nessuna location trovata per "${trimmedQuery}"`, 'error');
                     }
                 }
                 
             } catch (error) {
                 console.error('Search error:', error);
                 if (window.FrontendUtils) {
-                    FrontendUtils.showError('Errore nella ricerca');
+                    window.FrontendUtils.showError('Errore nella ricerca');
                 } else {
-                    alert('Errore nella ricerca');
+                    showMessage('Errore nella ricerca', 'error');
                 }
             }
         }
@@ -189,71 +228,38 @@
             if (routes[page]) {
                 // Check authentication for protected pages
                 const protectedPages = ['bookings', 'profile', 'admin'];
-                if (protectedPages.includes(page) && window.authService && !window.authService.isAuthenticated()) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                // Check admin role for admin page
-                if (page === 'admin' && window.authService && !window.authService.isAdmin()) {
-                    if (window.FrontendUtils) {
-                        FrontendUtils.showError('Accesso non autorizzato');
-                    } else {
-                        alert('Accesso non autorizzato');
-                    }
-                    return;
-                }
-                
+                // La logica di reindirizzamento deve essere gestita da un listener globale per la pagina
+                // e non direttamente qui per evitare conflitti.
                 window.location.href = routes[page];
             }
         }
 
-        updateHeaderUI() {
-            const isAuthenticated = window.authService ? window.authService.isAuthenticated() : false;
-            const user = window.authService ? window.authService.getUser() : null;
-
-            // Show/hide authentication elements
-            const authElements = document.querySelectorAll('[data-auth="true"]');
-            const noAuthElements = document.querySelectorAll('[data-auth="false"]');
-            
-            authElements.forEach(el => {
-                el.style.display = isAuthenticated ? 'flex' : 'none';
-            });
-            
-            noAuthElements.forEach(el => {
-                el.style.display = isAuthenticated ? 'none' : 'flex';
-            });
-
-            // Update user information
-            if (isAuthenticated && user) {
-                const userNameElement = document.getElementById('user-name');
-                const userEmailElement = document.getElementById('user-email');
-                const userAvatarElement = document.getElementById('user-avatar');
-                
-                if (userNameElement) {
-                    userNameElement.textContent = `${user.name} ${user.surname}`;
-                }
-                
-                if (userEmailElement) {
-                    userEmailElement.textContent = user.email;
-                }
-                
-                if (userAvatarElement) {
-                    // Set user initials as avatar
-                    const initials = `${user.name[0]}${user.surname[0]}`.toUpperCase();
-                    userAvatarElement.textContent = initials;
-                }
-
-                // Show admin menu if user is admin
-                const adminMenuItems = document.querySelectorAll('[data-role="admin"]');
-                adminMenuItems.forEach(item => {
-                    item.style.display = (window.authService && window.authService.isAdmin()) ? 'block' : 'none';
-                });
+        // METODO AGGIUNTO: Aggiorna l'interfaccia utente in base allo stato di autenticazione.
+        // A differenza del tuo codice originale, questo metodo è chiamato dal listener di Firebase
+        // ogni volta che lo stato di login cambia, rendendolo più dinamico.
+        updateHeaderUI(user) {
+            // Riferimenti agli elementi HTML
+            const authButtons = document.getElementById('auth-buttons');
+            const userProfile = document.getElementById('user-profile');
+            const userDropdown = document.getElementById('user-dropdown');
+        
+            if (user) {
+                // L'utente è loggato: mostra l'icona e nasconde i pulsanti.
+                authButtons.style.display = 'none';
+                userProfile.style.display = 'flex';
+                // Chiudi il dropdown quando l'utente si autentica
+                userDropdown.style.display = 'none';
+            } else {
+                // L'utente non è loggato: mostra i pulsanti e nasconde l'icona.
+                authButtons.style.display = 'flex';
+                userProfile.style.display = 'none';
+                // Chiudi il dropdown se non c'è un utente loggato
+                userDropdown.style.display = 'none';
             }
         }
     }
 
-    // Mobile menu functionality
+    // Funzionalità del menu mobile
     class MobileMenuService {
         constructor() {
             this.initializeMobileMenu();
@@ -278,7 +284,7 @@
                 });
             }
 
-            // Close menu when clicking on links
+            // Chiude il menu quando si clicca sui link
             const mobileNavLinks = mobileMenu?.querySelectorAll('a');
             mobileNavLinks?.forEach(link => {
                 link.addEventListener('click', () => {
@@ -289,11 +295,11 @@
         }
     }
 
-    // Expose to global scope
+    // Esponi al campo di applicazione globale
     window.HeaderService = HeaderService;
     window.MobileMenuService = MobileMenuService;
 
-    // Initialize header services when DOM is loaded
+    // Inizializza i servizi dell'header quando il DOM è caricato
     function initializeHeader() {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -309,13 +315,13 @@
     }
 
     function handleSearchResults() {
-        // Handle search results from session storage
+        // Gestisce i risultati di ricerca dalla session storage
         const searchResults = sessionStorage.getItem('searchResults');
         if (searchResults && window.location.pathname.includes('home')) {
             const locations = JSON.parse(searchResults);
             sessionStorage.removeItem('searchResults');
             
-            // Wait for grid.js to load then display results
+            // Attendi che grid.js sia caricato e poi visualizza i risultati
             setTimeout(() => {
                 if (typeof renderGrid === 'function') {
                     renderGrid(locations);
@@ -324,7 +330,6 @@
         }
     }
 
-    // Initialize immediately
+    // Inizializza immediatamente
     initializeHeader();
-
 })();
