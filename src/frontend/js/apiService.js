@@ -147,6 +147,55 @@
             return this.delete(`/locations/${id}`);
         }
 
+        // Ottieni locations ordinate alfabeticamente
+        async getLocationsAlphabetical(order = 'asc', filters = {}) {
+            try {
+                const cleanFilters = Object.keys(filters).reduce((acc, key) => {
+                    const value = filters[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+
+                // Usa l'endpoint alphabetical con il parametro corretto
+                const data = await this.get('/locations/alphabetical', {
+                    ...cleanFilters,
+                    sortOrder: order
+                });
+                
+                return Array.isArray(data.data.items) ? data.data.items : [];
+            } catch (error) {
+                console.error('Error in getLocationsAlphabetical:', error);
+                return [];
+            }
+        }
+
+        // Ottieni locations filtrate per tipo di spazio
+        async getFilteredLocations(filters = {}, sortOptions = {}) {
+            try {
+                const params = {
+                    ...filters,
+                    sortBy: sortOptions.sortBy || 'name',
+                    sortOrder: sortOptions.sortOrder || 'asc'
+                };
+
+                const cleanParams = Object.keys(params).reduce((acc, key) => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+
+                const data = await this.get('/locations/filter', cleanParams);
+                return Array.isArray(data.data.items) ? data.data.items : [];
+            } catch (error) {
+                console.error('Error in getFilteredLocations:', error);
+                return [];
+            }
+        }
+
         // --- SPACES ---
         async getAllSpaces(filters = {}) {
             try {

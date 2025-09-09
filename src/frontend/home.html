@@ -68,12 +68,35 @@
         </button>
     </div>
 
+    <!-- Filter Menu -->
+    <div id="filter-menu" class="filter-menu" style="display: none;">
+        <div class="filter-menu-header">
+            <h3>Filtra per tipo di spazio</h3>
+            <button id="close-filter" class="close-filter-button">×</button>
+        </div>
+        <div class="filter-options">
+            <label class="filter-option">
+                <input type="checkbox" value="all" checked>
+                <span class="checkmark"></span>
+                Tutti i tipi
+            </label>
+            <div id="space-type-filters">
+                <!-- I filtri per tipo verranno inseriti dinamicamente -->
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button id="apply-filters" class="apply-filters-button">Applica Filtri</button>
+            <button id="clear-filters" class="clear-filters-button">Cancella Filtri</button>
+        </div>
+    </div>
+
     <!-- JavaScript Files -->
     <script src="js/apiService.js"></script>
     <script src="js/authService.js"></script>
     <script src="js/main.js"></script>
     <script src="js/header.js"></script>
     <script src="js/grid.js"></script>
+    <script src="js/bottom-buttons.js"></script>
 
 </body>
 
