@@ -1,7 +1,7 @@
 // tests/controllers/userController.test.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../../src/backend/config/db');
+const db = require('../../../src/backend/config/db');
 
 // Setup mock
 jest.mock('../../src/backend/config/db');
@@ -41,8 +41,8 @@ jest.mock('../../src/backend/utils/AppError', () => {
     });
 });
 
-const AppError = require('../../src/backend/utils/AppError');
-const userController = require('../../src/backend/controllers/userController');
+const AppError = require('../../../src/backend/utils/AppError');
+const userController = require('../../../src/backend/controllers/userController');
 
 describe('userController.register', () => {
     let req, res, next;
