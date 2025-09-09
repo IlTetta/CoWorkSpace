@@ -405,6 +405,20 @@ class AuthService {
                 paramIndex++;
             }
 
+            // Filtro per email (ricerca parziale)
+            if (filters.email) {
+                whereConditions.push(`LOWER(email) LIKE LOWER($${paramIndex})`);
+                params.push(`%${filters.email}%`);
+                paramIndex++;
+            }
+
+            // Filtro per nome (ricerca parziale)
+            if (filters.name) {
+                whereConditions.push(`(LOWER(name) LIKE LOWER($${paramIndex}) OR LOWER(surname) LIKE LOWER($${paramIndex}))`);
+                params.push(`%${filters.name}%`);
+                paramIndex++;
+            }
+
             // Filtro per location (per manager)
             if (filters.location_id) {
                 whereConditions.push(`location_id = $${paramIndex}`);
@@ -413,7 +427,8 @@ class AuthService {
             }
 
             let query = `
-                SELECT user_id, name, surname, email, role, location_id, created_at
+                SELECT user_id, name, surname, email, role, location_id, created_at, updated_at,
+                       manager_request_pending, manager_request_date
                 FROM users
             `;
 
@@ -421,7 +436,45 @@ class AuthService {
                 query += ` WHERE ${whereConditions.join(' AND ')}`;
             }
 
-            query += ' ORDER BY created_at DESC';
+            // Ordinamento
+            let orderBy = 'created_at DESC'; // Default
+
+            if (filters.sort_by) {
+                switch (filters.sort_by) {
+                    case 'name_asc':
+                        orderBy = 'name ASC, surname ASC';
+                        break;
+                    case 'name_desc':
+                        orderBy = 'name DESC, surname DESC';
+                        break;
+                    case 'email_asc':
+                        orderBy = 'email ASC';
+                        break;
+                    case 'email_desc':
+                        orderBy = 'email DESC';
+                        break;
+                    case 'role_asc':
+                        orderBy = 'role ASC, name ASC';
+                        break;
+                    case 'role_desc':
+                        orderBy = 'role DESC, name ASC';
+                        break;
+                    case 'created_asc':
+                        orderBy = 'created_at ASC';
+                        break;
+                    case 'created_desc':
+                    default:
+                        orderBy = 'created_at DESC';
+                        break;
+                }
+            }
+
+            query += ` ORDER BY ${orderBy}`;
+
+            // Limite risultati se specificato
+            if (filters.limit && parseInt(filters.limit) > 0) {
+                query += ` LIMIT ${parseInt(filters.limit)}`;
+            }
 
             return await User.query(query, params);
         } catch (error) {
@@ -507,6 +560,24 @@ class AuthService {
         }
 
         return await User.rejectManagerRequest(userId);
+    }
+
+    /**
+     * Ottieni dashboard completa per utente normale
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<Object>} - Dati dashboard
+     */
+    static async getUserDashboard(userId) {
+        return await User.getDashboard(userId);
+    }
+
+    /**
+     * Ottieni dashboard completa per manager
+     * @param {number} managerId - ID del manager
+     * @returns {Promise<Object>} - Dati dashboard manager
+     */
+    static async getManagerDashboard(managerId) {
+        return await User.getManagerDashboard(managerId);
     }
 }
 
