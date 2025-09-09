@@ -484,27 +484,3 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
     });
 });
 
-module.exports = {
-    // Dashboard
-    getSystemDashboard,
-    
-    // Gestione Utenti (CRUD completo)
-    getAllUsers,
-    getUserById,
-    createUser,
-    updateUser,
-    updateUserRole,
-    
-    // Gestione Location (CRUD completo)
-    getAllLocations,
-    createLocation,
-    updateLocation,
-    deleteLocation,
-    assignManagerToLocation,
-    
-    // Override Manager (Controllo completo sistema)
-    getAllSpaces,
-    createSpace,
-    getAllBookings,
-    getAllPayments
-};

@@ -6,12 +6,12 @@
 
 const express = require('express');
 const managerController = require('../controllers/managerController');
-const AuthService = require('../services/AuthService');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // Middleware: tutte le route richiedono autenticazione
-router.use(AuthService.protect);
+router.use(authMiddleware.protect);
 
 /**
  * @swagger

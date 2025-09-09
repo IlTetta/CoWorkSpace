@@ -147,17 +147,17 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
 });
 
 module.exports = {
-    getDashboard,
-    getMySpaces,
-    createSpace,
-    updateSpace,
-    deleteSpace,
-    updateSpaceAvailability,
-    setSpaceHours,
-    getAllMyBookings,
-    updateBooking,
-    createBookingForClient,
-    getAllMyPayments,
-    processClientPayment,
-    updatePayment
+    getDashboard: exports.getDashboard,
+    getMySpaces: exports.getMySpaces,
+    createSpace: exports.createSpace,
+    updateSpace: exports.updateSpace,
+    deleteSpace: exports.deleteSpace,
+    updateSpaceAvailability: exports.updateSpaceAvailability,
+    setSpaceHours: exports.setSpaceHours,
+    getAllMyBookings: exports.getAllMyBookings,
+    updateBooking: exports.updateBooking,
+    createBookingForClient: exports.createBookingForClient,
+    getAllMyPayments: exports.getAllMyPayments,
+    processClientPayment: exports.processClientPayment,
+    updatePayment: exports.updatePayment
 };

@@ -242,26 +242,38 @@ class Location {
             SELECT 
                 JSON_AGG(
                     JSON_BUILD_OBJECT(
-                        'id', st.space_type_id,
-                        'name', st.type_name,
-                        'description', st.description,
-                        'spacesCount', COUNT(s2.space_id),
+                        'id', grouped_data.space_type_id,
+                        'name', grouped_data.type_name,
+                        'description', grouped_data.description,
+                        'spacesCount', grouped_data.spaces_count,
                         'priceRange', JSON_BUILD_OBJECT(
-                            'min', MIN(s2.price_per_hour),
-                            'max', MAX(s2.price_per_hour),
-                            'average', ROUND(AVG(s2.price_per_hour), 2)
+                            'min', grouped_data.min_price,
+                            'max', grouped_data.max_price,
+                            'average', grouped_data.avg_price
                         ),
                         'capacityRange', JSON_BUILD_OBJECT(
-                            'min', MIN(s2.capacity),
-                            'max', MAX(s2.capacity)
+                            'min', grouped_data.min_capacity,
+                            'max', grouped_data.max_capacity
                         )
-                    ) ORDER BY st.type_name
+                    ) ORDER BY grouped_data.type_name
                 ) AS space_types,
-                MIN(st.type_name) AS first_space_type
-            FROM spaces s2
-            JOIN space_types st ON s2.space_type_id = st.space_type_id
-            WHERE s2.location_id = l.location_id
-            GROUP BY s2.space_type_id, st.type_name, st.description, st.space_type_id
+                MIN(grouped_data.type_name) AS first_space_type
+            FROM (
+                SELECT 
+                    st.space_type_id,
+                    st.type_name,
+                    st.description,
+                    COUNT(s2.space_id) as spaces_count,
+                    MIN(s2.price_per_hour) as min_price,
+                    MAX(s2.price_per_hour) as max_price,
+                    ROUND(AVG(s2.price_per_hour), 2) as avg_price,
+                    MIN(s2.capacity) as min_capacity,
+                    MAX(s2.capacity) as max_capacity
+                FROM spaces s2
+                JOIN space_types st ON s2.space_type_id = st.space_type_id
+                WHERE s2.location_id = l.location_id
+                GROUP BY st.space_type_id, st.type_name, st.description
+            ) grouped_data
         ) st_json ON true
     `;
 

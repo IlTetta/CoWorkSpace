@@ -6,13 +6,13 @@
 
 const express = require('express');
 const adminController = require('../controllers/adminController');
-const AuthService = require('../services/AuthService');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // Middleware per tutte le route admin: richiede autenticazione e ruolo admin
-router.use(AuthService.protect);
-router.use(AuthService.authorize('admin'));
+router.use(authMiddleware.protect);
+router.use(authMiddleware.authorize('admin'));
 
 // ========================================
 // DASHBOARD SISTEMA
