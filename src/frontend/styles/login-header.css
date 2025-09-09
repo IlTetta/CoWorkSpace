@@ -75,7 +75,7 @@
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
-    
+
 .signup-button:hover {
     transform: scale(1.05);
     background-color: white;
@@ -126,12 +126,13 @@ label {
     right: 15px;
     transform: translateY(-50%);
     color: rgb(79, 70, 229);
-    pointer-events: none;
+    cursor: pointer;
     font-variation-settings: 'FILL' 1;
 }
 
 .username-bar,
-.password-bar {
+.password-bar,
+#forgot-password-email {
     width: 100%;
     height: 40px;
     padding: 0 50px 0 15px;
@@ -146,7 +147,8 @@ label {
 }
 
 .username-bar:focus,
-.password-bar:focus {
+.password-bar:focus,
+#forgot-password-email:focus {
     border-color: rgb(79, 70, 229);
     outline: none;
 }
@@ -169,7 +171,7 @@ label {
 .remember-me-label {
     display: inline-block;
     position: relative;
-    padding-left: 30px; 
+    padding-left: 30px;
     cursor: pointer;
     color: #555;
     font-family: sans-serif, Arial;
@@ -189,7 +191,7 @@ label {
     transition: background-color 0.15s ease-in-out;
 }
 
-.remember-me-checkbox:checked + .remember-me-label::before {
+.remember-me-checkbox:checked+.remember-me-label::before {
     background-color: rgb(79, 70, 229);
     content: '✓';
     color: white;
@@ -202,7 +204,7 @@ label {
 .forgot-password-link {
     font-size: 15.50px;
     color: #555;
-    text-emphasis: none;
+    text-decoration: underline;
     font-family: sans-serif, Arial;
     transition: color 0.15s ease-in-out;
     margin-bottom: 5px;
@@ -211,10 +213,10 @@ label {
 
 .forgot-password-link:hover {
     color: #4b42b9;
-    text-decoration: underline;
 }
 
-.login-button {
+.login-button,
+#send-reset-link-button {
     width: 100%;
     height: 40px;
     background-color: rgb(79, 70, 229);
@@ -224,10 +226,12 @@ label {
     font-size: 18px;
     font-family: sans-serif, Arial;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    margin-top: 10px;
 }
 
-.login-button:hover {
+.login-button:hover,
+#send-reset-link-button:hover {
     transform: scale(1.05);
     background-color: white;
     color: rgb(79, 70, 229);
@@ -236,7 +240,8 @@ label {
 }
 
 
-.login-button:active {
+.login-button:active,
+#send-reset-link-button:active {
     transform: scale(0.95);
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
     transition: all 0.01s ease-out;
@@ -255,11 +260,11 @@ label {
         flex-shrink: 0;
         min-width: max-content;
     }
-    
+
     .left-section {
         display: none;
     }
-    
+
     .right-section {
         width: auto;
         flex-shrink: 0;

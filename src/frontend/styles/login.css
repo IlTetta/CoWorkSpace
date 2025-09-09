@@ -41,9 +41,10 @@ body {
 }
 
 .close-button {
-    float: right; 
+    float: right;
     font-size: 24px;
     cursor: pointer;
+    margin-top: -7px;
 }
 
 @media (max-width: 1000px) {

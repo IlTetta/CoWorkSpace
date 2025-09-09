@@ -215,4 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'signup.html';
         });
     }
+
+    // Gestisce il click sul logo per reindirizzare a home.html
+    const logo = document.querySelector('.logo');
+    if (logo) {
+        logo.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'home.html';
+        });
+    }
 });

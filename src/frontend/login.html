@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="styles/background.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=person" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=account_circle" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@40,400,1,0&icon_names=visibility_off" />
 </head>
 
 <body>
@@ -32,7 +32,7 @@
         <div>
             <label for="username">Username</label>
             <div class="input-container">
-                <input class="username-bar" type="text" id="username" name="username" autocomplete="username">
+                <input class="username-bar" type="email" id="username" name="username" autocomplete="username">
                 <span class="material-symbols-outlined input-icon">person</span>
             </div>
         </div>
@@ -41,7 +41,9 @@
             <label for="password">Password</label>
             <div class="input-container">
                 <input class="password-bar" id="password" type="password" name="password" autocomplete="current-password">
-                <span class="material-symbols-outlined input-icon">lock</span>
+                <span class="material-symbols-outlined input-icon">
+                    visibility_off
+                </span>
             </div>
         </div>
 
@@ -71,5 +73,6 @@
     <script src="js/authService.js"></script>
     <script src="js/login.js"></script>
     <script src="js/reset-password-modal.js"></script>
+    <script src="js/reset-password-icon.js"></script>
 </body>
 </html>
