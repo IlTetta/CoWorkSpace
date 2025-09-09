@@ -123,34 +123,7 @@ class AuthService {
 // Crea istanza globale
 const authService = new AuthService();
 
-// Login form handler
-function handleLoginForm() {
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            if (!email || !password) {
-                FrontendUtils.showError('Email e password sono richiesti');
-                return;
-            }
-            
-            try {
-                const response = await authService.login(email, password);
-                FrontendUtils.showSuccess('Login effettuato con successo!');
-                
-                // Usa il metodo centralizzato per il redirect
-                authService.redirectAfterLogin();
-                
-            } catch (error) {
-                FrontendUtils.showError('Errore nel login: ' + error.message);
-            }
-        });
-    }
-}
+// Il login form è gestito da login.js
 
 // Registration form handler
 function handleRegistrationForm() {
@@ -251,7 +224,6 @@ function updateAuthUI() {
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthentication();
     updateAuthUI();
-    handleLoginForm();
     handleRegistrationForm();
     handleLogoutButton();
 });

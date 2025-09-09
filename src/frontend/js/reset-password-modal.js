@@ -6,8 +6,7 @@ const sendResetLinkBtn = document.getElementById('send-reset-link-button');
 const emailInput = document.getElementById('forgot-password-email');
 const modalMessage = document.getElementById('modal-message');
 
-// Endpoint API (da sostituire con il tuo URL reale)
-const API_URL = 'http://localhost:3000';
+// API_URL è già dichiarata in login.js
 
 /**
  * Funzione per mostrare messaggi all'interno del modale.

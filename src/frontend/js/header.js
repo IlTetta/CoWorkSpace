@@ -1,5 +1,8 @@
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { showMessage } from "./main.js";
+// Funzione per mostrare messaggi (locale invece di import)
+function showMessage(message, type) {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    // Potresti implementare qui la logica per mostrare toast/notifiche
+}
 
 // Funzionalità dell'header e navigazione
 (function() {
@@ -24,19 +27,15 @@ import { showMessage } from "./main.js";
             this.setupAuthListener(); 
         }
         
-        // NUOVO METODO: Gestisce l'ascoltatore di autenticazione di Firebase.
-        // Questo listener è fondamentale perché reagisce a ogni cambiamento dello stato di login.
+        // Gestisce l'autenticazione JWT
         setupAuthListener() {
-            const auth = getAuth();
-            onAuthStateChanged(auth, (user) => {
-                // Chiama il metodo per aggiornare l'interfaccia utente in base allo stato di login.
-                this.updateHeaderUI(user);
-                
-                // Opzionale: mostra un messaggio di benvenuto o di logout.
-                if (user) {
-                    showMessage(`Benvenuto, ${user.displayName || 'Utente'}!`, 'success');
-                } else {
-                    showMessage('Sei stato disconnesso con successo.', 'success');
+            // Verifica lo stato di autenticazione al caricamento
+            this.updateHeaderUI();
+            
+            // Ascolta gli eventi di storage per aggiornamenti di autenticazione
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'jwtToken' || e.key === 'coworkspace_user') {
+                    this.updateHeaderUI();
                 }
             });
         }
@@ -87,11 +86,20 @@ import { showMessage } from "./main.js";
             const logoutBtn = document.getElementById('logout-button');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', () => {
-                    const auth = getAuth();
-                    signOut(auth)
-                        .catch((error) => {
-                            showMessage(`Errore durante il logout: ${error.message}`, 'error');
-                        });
+                    try {
+                        // Usa authService per il logout
+                        if (window.authService) {
+                            window.authService.logout();
+                            showMessage('Logout effettuato con successo!', 'success');
+                        } else {
+                            // Fallback: rimuovi token manualmente
+                            localStorage.removeItem('jwtToken');
+                            localStorage.removeItem('coworkspace_user');
+                            window.location.href = 'login.html';
+                        }
+                    } catch (error) {
+                        showMessage(`Errore durante il logout: ${error.message}`, 'error');
+                    }
                 });
             }
             
@@ -234,27 +242,38 @@ import { showMessage } from "./main.js";
             }
         }
 
-        // METODO AGGIUNTO: Aggiorna l'interfaccia utente in base allo stato di autenticazione.
-        // A differenza del tuo codice originale, questo metodo è chiamato dal listener di Firebase
-        // ogni volta che lo stato di login cambia, rendendolo più dinamico.
-        updateHeaderUI(user) {
+        // Aggiorna l'interfaccia utente in base allo stato di autenticazione JWT
+        updateHeaderUI() {
             // Riferimenti agli elementi HTML
             const authButtons = document.getElementById('auth-buttons');
             const userProfile = document.getElementById('user-profile');
             const userDropdown = document.getElementById('user-dropdown');
         
-            if (user) {
+            // Controlla se l'utente è autenticato tramite JWT
+            const token = localStorage.getItem('jwtToken');
+            const userData = localStorage.getItem('coworkspace_user');
+            const isAuthenticated = token && userData;
+        
+            if (isAuthenticated) {
                 // L'utente è loggato: mostra l'icona e nasconde i pulsanti.
-                authButtons.style.display = 'none';
-                userProfile.style.display = 'flex';
+                if (authButtons) authButtons.style.display = 'none';
+                if (userProfile) userProfile.style.display = 'flex';
                 // Chiudi il dropdown quando l'utente si autentica
-                userDropdown.style.display = 'none';
+                if (userDropdown) userDropdown.style.display = 'none';
+                
+                // Opzionale: mostra informazioni utente
+                try {
+                    const user = JSON.parse(userData);
+                    console.log('Utente loggato:', user.name || user.email);
+                } catch (e) {
+                    console.warn('Errore nel parsing dei dati utente');
+                }
             } else {
                 // L'utente non è loggato: mostra i pulsanti e nasconde l'icona.
-                authButtons.style.display = 'flex';
-                userProfile.style.display = 'none';
+                if (authButtons) authButtons.style.display = 'flex';
+                if (userProfile) userProfile.style.display = 'none';
                 // Chiudi il dropdown se non c'è un utente loggato
-                userDropdown.style.display = 'none';
+                if (userDropdown) userDropdown.style.display = 'none';
             }
         }
     }

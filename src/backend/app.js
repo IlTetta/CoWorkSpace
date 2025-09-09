@@ -37,14 +37,16 @@ const authLimiter = rateLimit({
 
 // --- Security Middleware ---
 // Headers di sicurezza con Helmet
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-            // Fix this line
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-            scriptSrc: ["'self'"],
+            // Permetti script inline solo in sviluppo per Live Server
+            scriptSrc: isDevelopment ? ["'self'", "'unsafe-inline'"] : ["'self'"],
             imgSrc: ["'self'", "data:", "https:"],
         },
     },
