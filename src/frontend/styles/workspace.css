@@ -1,0 +1,231 @@
+body {
+    background: #256E82;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.6rem;
+    min-height: 100vh;
+    padding-top: 100px;
+}
+
+
+/* Sezione pagamento */
+.payment-section {
+    display: none;
+    text-align: center;
+}
+.payment-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: rgb(79, 70, 229);
+}
+.payment-total {
+    font-size: 1.8rem;
+    color: #334155;
+    margin-top: 0.5rem;
+}
+.pay-button {
+    width: auto;
+    padding: 1.2rem 2.5rem;
+    margin-top: 1.5rem;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+.pay-button:hover {
+    transform: scale(1.05);
+    background-color: white;
+    color: rgb(79, 70, 229);
+    border: 2px solid rgb(79, 70, 229);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+.pay-button:active {
+    transform: scale(0.95);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
+    transition: all 0.01s ease-out;
+}
+
+/* Contenitore Principale */
+.workspace-card {
+    margin-top: 2rem;
+    background-color: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    width: 90vw;
+    max-width: 800px;
+    padding-bottom: 40px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.workspace-title-block {
+    background-color: rgb(79, 70, 229);
+    color: #fff;
+    padding: 3rem 2rem 2rem 2rem;
+    border-radius: 18px 18px 0 0; /* Angoli superiori smussati, inferiori dritti */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.workspace-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin: 0;
+}
+
+.workspace-type {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #334155;
+    margin: 0.5rem 0 2rem 3rem;
+}
+
+/* Form di Prenotazione */
+.booking-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 0 3rem;
+}
+
+
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 320px;
+}
+
+.form-group {
+    width: 100%;
+}
+
+label {
+    color: #555555;
+    font-weight: 600;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Input stile dedicato come negli altri file frontend */
+.date-bar,
+.time-bar,
+.duration-bar,
+.price-bar {
+    height: 40px;
+    padding: 0 15px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(79, 70, 229);
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    color: #000;
+    background: white;
+    width: 100%;
+}
+.booking-button {
+    width: 100%;
+    height: 40px;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+
+
+input:focus, 
+select:focus {
+    border-color: rgb(79, 70, 229);
+    box-shadow: 0 0 0 2px rgb(165, 159, 237);
+    outline: none;
+}
+
+select[multiple] {
+    min-height: 12rem;
+    padding: 1rem 1.5rem;
+}
+
+/* Sezione Pagamento e Pulsante */
+.booking-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+button {
+    width: 100%;
+    height: 40px;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background-color: white;
+    color: rgb(79, 70, 229);
+    border: 2px solid rgb(79, 70, 229);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+button:active {
+    transform: scale(0.95);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
+    transition: all 0.01s ease-out;
+}
+
+#booking-message {
+    margin-top: 1.5rem;
+    font-size: 1.6rem;
+    color: rgb(79, 70, 229);
+    text-align: center;
+    font-weight: 600;
+}
+
+.field-error {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px; /* spazio sopra il messaggio */
+    display: block;   /* messaggio visibile occupa spazio solo quando presente */
+}
+
+@media (min-width: 768px) {
+    .booking-section {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+    }
+}
