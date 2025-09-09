@@ -1,6 +1,7 @@
 // src/backend/controllers/bookingController.js
 const BookingService = require('../services/BookingService');
 const NotificationService = require('../services/NotificationService');
+const Booking = require('../models/Booking');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const ApiResponse = require('../utils/apiResponse');
@@ -20,10 +21,25 @@ exports.getBookings = catchAsync(async (req, res) => {
     if (req.query.payment_status) filters.payment_status = req.query.payment_status;
     if (req.query.space_id) filters.space_id = parseInt(req.query.space_id);
     if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
-    if (req.query.booking_date) filters.booking_date = req.query.booking_date;
+    if (req.query.limit) filters.limit = parseInt(req.query.limit);
+
+    // Filtri datetime
+    if (req.query.start_date) filters.start_date = req.query.start_date;
+    if (req.query.end_date) filters.end_date = req.query.end_date;
     if (req.query.date_from) filters.date_from = req.query.date_from;
     if (req.query.date_to) filters.date_to = req.query.date_to;
-    if (req.query.limit) filters.limit = parseInt(req.query.limit);
+    if (req.query.intersects_date) filters.intersects_date = req.query.intersects_date;
+    
+    // Filtri per periodo attivo
+    if (req.query.active_between_start && req.query.active_between_end) {
+        filters.active_between_start = req.query.active_between_start;
+        filters.active_between_end = req.query.active_between_end;
+    }
+
+    // Compatibilità con formato vecchio
+    if (req.query.booking_date) {
+        filters.intersects_date = req.query.booking_date;
+    }
 
     const bookings = await BookingService.getBookings(req.user, filters);
 
@@ -52,15 +68,22 @@ exports.createBooking = catchAsync(async (req, res) => {
         const bookingData = {
             user_id: req.body.user_id || req.user.user_id, // Default a utente corrente
             space_id: req.body.space_id,
-            booking_date: req.body.booking_date,
-            start_time: req.body.start_time,
-            end_time: req.body.end_time,
-            total_hours: req.body.total_hours,
+            start_datetime: req.body.start_datetime,
+            end_datetime: req.body.end_datetime,
             total_price: req.body.total_price,
             status: req.body.status,
             payment_status: req.body.payment_status,
             notes: req.body.notes
         };
+
+        // Supporto per formato legacy (converte automaticamente)
+        if (!bookingData.start_datetime && req.body.booking_date && req.body.start_time) {
+            bookingData.start_datetime = `${req.body.booking_date}T${req.body.start_time}`;
+        }
+        
+        if (!bookingData.end_datetime && req.body.booking_date && req.body.end_time) {
+            bookingData.end_datetime = `${req.body.booking_date}T${req.body.end_time}`;
+        }
 
         const booking = await BookingService.createBooking(req.user, bookingData);
 
@@ -93,13 +116,34 @@ exports.updateBooking = catchAsync(async (req, res) => {
     // Campi aggiornabili
     const updateData = {};
     const allowedFields = [
-        'booking_date', 'start_time', 'end_time', 'total_hours',
-        'total_price', 'status', 'payment_status', 'notes'
+        'start_datetime', 'end_datetime', 'total_price', 
+        'status', 'payment_status', 'notes'
     ];
+
+    // Supporto per formato legacy
+    const legacyFields = {
+        'booking_date': (value, data) => {
+            if (req.body.start_time) data.start_datetime = `${value}T${req.body.start_time}`;
+            if (req.body.end_time) data.end_datetime = `${value}T${req.body.end_time}`;
+        },
+        'start_time': (value, data) => {
+            if (req.body.booking_date) data.start_datetime = `${req.body.booking_date}T${value}`;
+        },
+        'end_time': (value, data) => {
+            if (req.body.booking_date) data.end_datetime = `${req.body.booking_date}T${value}`;
+        }
+    };
 
     allowedFields.forEach(field => {
         if (req.body[field] !== undefined) {
             updateData[field] = req.body[field];
+        }
+    });
+
+    // Gestione campi legacy
+    Object.keys(legacyFields).forEach(field => {
+        if (req.body[field] !== undefined) {
+            legacyFields[field](req.body[field], updateData);
         }
     });
 
@@ -135,17 +179,26 @@ exports.deleteBooking = catchAsync(async (req, res) => {
  * POST /api/bookings/check-availability - Verifica disponibilità spazio
  */
 exports.checkAvailability = catchAsync(async (req, res) => {
-    const { space_id, booking_date, start_time, end_time } = req.body;
+    let { space_id, start_datetime, end_datetime } = req.body;
 
-    if (!space_id || !booking_date || !start_time || !end_time) {
-        throw AppError.badRequest('space_id, booking_date, start_time e end_time sono obbligatori');
+    // Supporto per formato legacy
+    if (!start_datetime && req.body.booking_date && req.body.start_time) {
+        start_datetime = `${req.body.booking_date}T${req.body.start_time}`;
+    }
+    
+    if (!end_datetime && req.body.booking_date && req.body.end_time) {
+        end_datetime = `${req.body.booking_date}T${req.body.end_time}`;
     }
 
-    const availability = await BookingService.checkAvailability(
+    if (!space_id || !start_datetime || !end_datetime) {
+        throw AppError.badRequest('space_id, start_datetime e end_datetime sono obbligatori');
+    }
+
+    const Space = require('../models/Space');
+    const availability = await Space.checkAvailabilityWithSchedule(
         parseInt(space_id),
-        booking_date,
-        start_time,
-        end_time
+        start_datetime,
+        end_datetime
     );
 
     return ApiResponse.success(res, 200, 'Disponibilità verificata con successo', availability);
@@ -155,17 +208,25 @@ exports.checkAvailability = catchAsync(async (req, res) => {
  * POST /api/bookings/calculate-price - Calcola prezzo prenotazione
  */
 exports.calculatePrice = catchAsync(async (req, res) => {
-        const { space_id, booking_date, start_time, end_time } = req.body;
+        let { space_id, start_datetime, end_datetime } = req.body;
 
-        if (!space_id || !booking_date || !start_time || !end_time) {
-            throw AppError.badRequest('space_id, booking_date, start_time e end_time sono obbligatori');
+        // Supporto per formato legacy
+        if (!start_datetime && req.body.booking_date && req.body.start_time) {
+            start_datetime = `${req.body.booking_date}T${req.body.start_time}`;
+        }
+        
+        if (!end_datetime && req.body.booking_date && req.body.end_time) {
+            end_datetime = `${req.body.booking_date}T${req.body.end_time}`;
+        }
+
+        if (!space_id || !start_datetime || !end_datetime) {
+            throw AppError.badRequest('space_id, start_datetime e end_datetime sono obbligatori');
         }
 
         const pricing = await BookingService.calculateBookingPrice(
             parseInt(space_id),
-            booking_date,
-            start_time,
-            end_time
+            start_datetime,
+            end_datetime
         );
 
     return ApiResponse.success(res, 200, 'Prezzo calcolato con successo', { pricing });
@@ -242,6 +303,119 @@ exports.updatePaymentStatus = catchAsync(async (req, res) => {
 });
 
 // ============================================================================
+// ENDPOINT PER GESTIONE PAGAMENTI
+// ============================================================================
+
+/**
+ * GET /api/bookings/user/:userId/payment-summary - Importo totale da pagare per un utente
+ */
+exports.getUserPaymentSummary = catchAsync(async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(userId)) {
+        throw AppError.badRequest('ID utente non valido');
+    }
+
+    // Verifica autorizzazione: solo se è il proprio profilo o admin/manager
+    if (req.user.user_id !== userId && !['admin', 'manager'].includes(req.user.role)) {
+        throw AppError.forbidden('Non autorizzato a visualizzare i pagamenti di questo utente');
+    }
+
+    // Filtri dalla query string
+    const filters = {};
+    if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
+    if (req.query.date_from) filters.date_from = req.query.date_from;
+    if (req.query.date_to) filters.date_to = req.query.date_to;
+    if (req.query.status) filters.status = req.query.status;
+
+    const paymentSummary = await Booking.getTotalAmountToPay(userId, filters);
+
+    return ApiResponse.success(res, 200, 'Riepilogo pagamenti recuperato con successo', paymentSummary);
+});
+
+/**
+ * GET /api/bookings/user/:userId/unpaid - Prenotazioni da pagare per un utente
+ */
+exports.getUserUnpaidBookings = catchAsync(async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(userId)) {
+        throw AppError.badRequest('ID utente non valido');
+    }
+
+    // Verifica autorizzazione: solo se è il proprio profilo o admin/manager
+    if (req.user.user_id !== userId && !['admin', 'manager'].includes(req.user.role)) {
+        throw AppError.forbidden('Non autorizzato a visualizzare le prenotazioni di questo utente');
+    }
+
+    // Filtri dalla query string
+    const filters = {};
+    if (req.query.location_id) filters.location_id = parseInt(req.query.location_id);
+    if (req.query.date_from) filters.date_from = req.query.date_from;
+    if (req.query.date_to) filters.date_to = req.query.date_to;
+    if (req.query.status) filters.status = req.query.status;
+    if (req.query.space_type_id) filters.space_type_id = parseInt(req.query.space_type_id);
+    if (req.query.limit) filters.limit = parseInt(req.query.limit);
+    
+    // Filtri speciali
+    if (req.query.due_soon === 'true') filters.due_soon = true;
+    if (req.query.overdue_only === 'true') filters.overdue_only = true;
+    
+    // Ordinamento
+    if (req.query.sort_by) {
+        const validSorts = ['amount_desc', 'amount_asc', 'date_asc', 'overdue'];
+        if (validSorts.includes(req.query.sort_by)) {
+            filters.sort_by = req.query.sort_by;
+        }
+    }
+
+    const unpaidBookings = await Booking.getUnpaidBookings(userId, filters);
+
+    return ApiResponse.list(res, unpaidBookings, 'Prenotazioni da pagare recuperate con successo', filters);
+});
+
+/**
+ * GET /api/bookings/user/:userId/payment-stats - Statistiche pagamenti per un utente
+ */
+exports.getUserPaymentStats = catchAsync(async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (isNaN(userId)) {
+        throw AppError.badRequest('ID utente non valido');
+    }
+
+    // Verifica autorizzazione: solo se è il proprio profilo o admin/manager
+    if (req.user.user_id !== userId && !['admin', 'manager'].includes(req.user.role)) {
+        throw AppError.forbidden('Non autorizzato a visualizzare le statistiche di questo utente');
+    }
+
+    const paymentStats = await Booking.getUserPaymentStats(userId);
+
+    return ApiResponse.success(res, 200, 'Statistiche pagamenti recuperate con successo', paymentStats);
+});
+
+/**
+ * GET /api/bookings/my-payments - Endpoint shortcut per i propri pagamenti
+ */
+exports.getMyPayments = catchAsync(async (req, res) => {
+    // Reindirizza alla funzione generica usando l'ID dell'utente loggato
+    req.params.userId = req.user.user_id;
+    
+    // Determina quale tipo di informazioni vuole l'utente
+    const type = req.query.type || 'summary'; // summary, unpaid, stats
+    
+    switch (type) {
+        case 'unpaid':
+            return exports.getUserUnpaidBookings(req, res);
+        case 'stats':
+            return exports.getUserPaymentStats(req, res);
+        case 'summary':
+        default:
+            return exports.getUserPaymentSummary(req, res);
+    }
+});
+
+// ============================================================================
 // ENDPOINT PUBBLICI (SENZA AUTENTICAZIONE)
 // ============================================================================
 
@@ -260,8 +434,7 @@ exports.getPublicAvailability = catchAsync(async (req, res) => {
         throw AppError.badRequest('Data è obbligatoria');
     }
 
-    // Per ora restituiamo solo informazioni base
-    // In futuro si potrebbe implementare un calendario di disponibilità
+    // Ottieni informazioni sullo spazio
     const Space = require('../models/Space');
     const space = await Space.findById(spaceId);
     
@@ -269,18 +442,116 @@ exports.getPublicAvailability = catchAsync(async (req, res) => {
         throw AppError.notFound('Spazio non trovato');
     }
 
+    // Ottieni slot disponibili per la data specificata
+    const slots = await Space.getAvailableSlots(spaceId, date);
+
     return ApiResponse.success(res, 200, 'Informazioni disponibilità recuperate con successo', {
         space: {
             id: space.space_id,
-            name: space.name,
+            name: space.space_name,
             capacity: space.capacity,
             price_per_hour: space.price_per_hour,
             price_per_day: space.price_per_day,
-            status: space.status
+            status: space.status,
+            operating_hours: {
+                opening_time: space.opening_time,
+                closing_time: space.closing_time,
+                available_days: space.available_days
+            }
         },
-        date,
-        message: 'Usa l\'endpoint /check-availability per verificare orari specifici'
+        availability: slots
     });
+});
+
+/**
+ * GET /api/bookings/space/:spaceId/schedule - Programma prenotazioni per uno spazio
+ */
+exports.getSpaceSchedule = catchAsync(async (req, res) => {
+    const spaceId = parseInt(req.params.spaceId);
+    const { date_from, date_to } = req.query;
+
+    if (isNaN(spaceId)) {
+        throw AppError.badRequest('ID spazio non valido');
+    }
+
+    // Default a 7 giorni a partire da oggi se non specificato
+    const startDate = date_from || new Date().toISOString().split('T')[0];
+    const endDate = date_to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const filters = {
+        space_id: spaceId,
+        start_date: startDate,
+        end_date: endDate,
+        status: ['confirmed', 'pending'] // Escludi prenotazioni cancellate
+    };
+
+    const bookings = await BookingService.getBookings(req.user, filters);
+
+    return ApiResponse.success(res, 200, 'Programma spazio recuperato con successo', {
+        space_id: spaceId,
+        period: { from: startDate, to: endDate },
+        bookings: bookings.map(booking => ({
+            booking_id: booking.booking_id,
+            start_datetime: booking.start_datetime,
+            end_datetime: booking.end_datetime,
+            status: booking.status,
+            user_name: booking.user_name,
+            total_hours: booking.total_hours,
+            notes: booking.notes
+        }))
+    });
+});
+
+/**
+ * POST /api/bookings/find-overlapping - Trova prenotazioni che si sovrappongono
+ */
+exports.findOverlappingBookings = catchAsync(async (req, res) => {
+    const { space_id, start_datetime, end_datetime } = req.body;
+
+    if (!space_id || !start_datetime || !end_datetime) {
+        throw AppError.badRequest('space_id, start_datetime e end_datetime sono obbligatori');
+    }
+
+    const Booking = require('../models/Booking');
+    const overlapping = await Booking.findOverlappingBookings(
+        parseInt(space_id),
+        start_datetime,
+        end_datetime
+    );
+
+    return ApiResponse.success(res, 200, 'Prenotazioni sovrapposte trovate', {
+        space_id: parseInt(space_id),
+        requested_period: { start_datetime, end_datetime },
+        overlapping_bookings: overlapping,
+        conflicts_found: overlapping.length > 0
+    });
+});
+
+/**
+ * GET /api/bookings/space/:spaceId/slots - Ottieni slot disponibili per una data
+ */
+exports.getAvailableSlots = catchAsync(async (req, res) => {
+    const spaceId = parseInt(req.params.spaceId);
+    const { date } = req.query;
+
+    if (isNaN(spaceId)) {
+        throw AppError.badRequest('ID spazio non valido');
+    }
+
+    if (!date) {
+        throw AppError.badRequest('Data è obbligatoria (formato: YYYY-MM-DD)');
+    }
+
+    // Validazione formato data
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+        throw AppError.badRequest('Formato data non valido (deve essere YYYY-MM-DD)');
+    }
+
+    const Space = require('../models/Space');
+    const slots = await Space.getAvailableSlots(spaceId, date);
+
+    return ApiResponse.success(res, 200, 'Slot disponibili recuperati con successo', slots);
 });
 
 

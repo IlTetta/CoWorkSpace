@@ -25,6 +25,21 @@ class BookingService {
             throw AppError.forbidden('Puoi creare prenotazioni solo per te stesso');
         }
 
+        // I manager possono prenotare per clienti delle location che gestiscono
+        // Questo permette l'assistenza clienti e la gestione operativa
+        if (currentUser.role === 'manager' && bookingData.user_id !== currentUser.user_id) {
+            // Verifica che il manager gestisca la location dello spazio prenotato
+            const space = await Space.findById(bookingData.space_id);
+            if (!space) {
+                throw AppError.badRequest('Spazio non trovato');
+            }
+            
+            const canManageSpace = await this.canManageSpaceLocation(space, currentUser);
+            if (!canManageSpace) {
+                throw AppError.forbidden('Puoi prenotare per clienti solo negli spazi delle tue location');
+            }
+        }
+
         // Verifica che lo spazio esista
         const space = await Space.findById(bookingData.space_id);
         if (!space) {
@@ -149,14 +164,20 @@ class BookingService {
             filters.user_id = currentUser.user_id;
         }
 
-        // I manager vedono solo le prenotazioni delle loro location
+        // I manager vedono TUTTE le prenotazioni delle location che gestiscono
+        // Questo è fondamentale per la gestione operativa delle sedi:
+        // - Monitoraggio occupazione
+        // - Assistenza clienti
+        // - Gestione conflitti
+        // - Reportistica
         if (currentUser && currentUser.role === 'manager') {
             // Ottieni le location gestite dal manager
             const managedLocations = await this.getManagedLocationIds(currentUser.user_id);
             if (managedLocations.length > 0) {
                 filters.location_id = managedLocations;
+                // IMPORTANTE: Non limitare per user_id - manager deve vedere tutto
             } else {
-                // Se non gestisce location, vede solo le sue prenotazioni
+                // Se non gestisce location, vede solo le sue prenotazioni personali
                 filters.user_id = currentUser.user_id;
             }
         }
@@ -350,6 +371,20 @@ class BookingService {
         const space = await Space.findById(booking.space_id);
         if (!space) return false;
         
+        return managedLocations.includes(space.location_id);
+    }
+
+    /**
+     * Verifica se un manager può gestire uno spazio specifico
+     * @param {Object} space - Spazio 
+     * @param {Object} manager - Manager
+     * @returns {Promise<boolean>} - true se può gestire
+     */
+    static async canManageSpaceLocation(space, manager) {
+        if (manager.role === 'admin') return true;
+        if (manager.role !== 'manager') return false;
+        
+        const managedLocations = await this.getManagedLocationIds(manager.user_id);
         return managedLocations.includes(space.location_id);
     }
 

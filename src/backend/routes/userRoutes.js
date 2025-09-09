@@ -61,20 +61,22 @@ const loginLimiter = rateLimit({
  *                 example: mario.rossi@email.com
  *               password:
  *                 type: string
- *                 minLength: 6
- *                 example: password123
+ *                 minLength: 8
+ *                 example: Password123!
  *               name:
  *                 type: string
  *                 example: Mario
  *               surname:
  *                 type: string
  *                 example: Rossi
- *               phoneNumber:
- *                 type: string
- *                 example: +39 123 456 7890
+ *               requestManagerRole:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Richiedi di diventare manager (l'utente non potrà fare login fino all'approvazione)
+ *                 example: false
  *     responses:
  *       201:
- *         description: Utente registrato con successo
+ *         description: Utente registrato con successo (può fare login)
  *         content:
  *           application/json:
  *             schema:
@@ -90,6 +92,30 @@ const loginLimiter = rateLimit({
  *                         token:
  *                           type: string
  *                           description: JWT token per autenticazione
+ *                         canLogin:
+ *                           type: boolean
+ *                           example: true
+ *       202:
+ *         description: Utente registrato, in attesa di approvazione manager (non può fare login)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         token:
+ *                           type: string
+ *                           nullable: true
+ *                           example: null
+ *                         canLogin:
+ *                           type: boolean
+ *                           example: false
  *       400:
  *         description: Dati non validi
  *         content:
@@ -445,5 +471,421 @@ router.post('/request-password-reset', loginLimiter, userController.requestPassw
  */
 // Inizia cambio password dal profilo (protetto)
 router.post('/initiate-password-change', authMiddleware.protect, userController.initiatePasswordChange);
+
+/**
+ * @swagger
+ * /users/fcm-token:
+ *   post:
+ *     summary: Salva il token FCM per le notifiche push
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fcm_token:
+ *                 type: string
+ *                 description: Il token FCM da salvare
+ *                 example: 'fcm_token_example'
+ *     responses:
+ *       200:
+ *         description: Token FCM salvato con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: "Token FCM salvato con successo"
+ *       400:
+ *         description: Richiesta non valida
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/fcm-token', authMiddleware.protect, userController.saveFcmToken);
+/**
+ * @swagger
+ * /users/{user_id}/email:
+ *   get:
+ *     summary: Ottieni email di un utente specifico (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Email utente recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         userId:
+ *                           type: integer
+ *                           example: 1
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                           example: 'mario.rossi@email.com'
+ *                         name:
+ *                           type: string
+ *                           example: 'Mario'
+ *                         surname:
+ *                           type: string
+ *                           example: 'Rossi'
+ *                         role:
+ *                           type: string
+ *                           example: 'user'
+ *       400:
+ *         description: ID utente non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Ottieni email utente per ID (solo admin)
+router.get('/:user_id/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.getUserEmail);
+
+/**
+ * @swagger
+ * /users/check-email:
+ *   get:
+ *     summary: Verifica se un'email è già registrata
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Email da verificare
+ *         example: 'test@email.com'
+ *     responses:
+ *       200:
+ *         description: Verifica email completata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                           example: 'test@email.com'
+ *                         exists:
+ *                           type: boolean
+ *                           example: true
+ *       400:
+ *         description: Email non fornita o formato non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Verifica esistenza email (pubblica)
+router.get('/check-email', userController.checkEmailExists);
+
+/**
+ * @swagger
+ * /users/search/email:
+ *   get:
+ *     summary: Cerca utenti per email (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Pattern email da cercare (minimo 3 caratteri)
+ *         example: 'mario'
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Numero massimo di risultati
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: Ricerca utenti completata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         users:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 1
+ *                               name:
+ *                                 type: string
+ *                                 example: 'Mario'
+ *                               surname:
+ *                                 type: string
+ *                                 example: 'Rossi'
+ *                               email:
+ *                                 type: string
+ *                                 format: email
+ *                                 example: 'mario.rossi@email.com'
+ *                               role:
+ *                                 type: string
+ *                                 example: 'user'
+ *                               created_at:
+ *                                 type: string
+ *                                 format: date-time
+ *       400:
+ *         description: Pattern email non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Cerca utenti per email (solo admin)
+router.get('/search/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.searchUsersByEmail);
+
+/**
+ * @swagger
+ * /users/manager-requests/pending:
+ *   get:
+ *     summary: Ottieni tutte le richieste manager pending (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Richieste manager pending recuperate con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         allOf:
+ *                           - $ref: '#/components/schemas/User'
+ *                           - type: object
+ *                             properties:
+ *                               manager_request_pending:
+ *                                 type: boolean
+ *                                 example: true
+ *                               manager_request_date:
+ *                                 type: string
+ *                                 format: date-time
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Ottieni richieste manager pending (solo admin)
+router.get('/manager-requests/pending', authMiddleware.protect, authMiddleware.authorize('admin'), userController.getPendingManagerRequests);
+
+/**
+ * @swagger
+ * /users/{user_id}/approve-manager:
+ *   patch:
+ *     summary: Approva richiesta manager (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente da promuovere
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Richiesta manager approvata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         description: ID utente non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato o nessuna richiesta pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Approva richiesta manager (solo admin)
+router.patch('/:user_id/approve-manager', authMiddleware.protect, authMiddleware.authorize('admin'), userController.approveManagerRequest);
+
+/**
+ * @swagger
+ * /users/{user_id}/reject-manager:
+ *   patch:
+ *     summary: Rifiuta richiesta manager (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Richiesta manager rifiutata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         description: ID utente non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato o nessuna richiesta pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Rifiuta richiesta manager (solo admin)
+router.patch('/:user_id/reject-manager', authMiddleware.protect, authMiddleware.authorize('admin'), userController.rejectManagerRequest);
 
 module.exports = router;

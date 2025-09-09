@@ -1,0 +1,50 @@
+services:
+  app:
+    build: . 
+    container_name: coworking_app
+    ports:
+      - "3000:3000"
+    environment:
+      # Variabili per la connessione al database
+      DATABASE_URL: postgres://coworkspace_user:cachemeifyoucan@db:5432/coworkspace_db
+      
+      # Variabili per l'ambiente
+      NODE_ENV: development
+      
+      # Altre variabili dell'applicazione
+      PORT: 3000
+      JWT_SECRET: c7a5M0RarP+bX4LsdyGgcOjAAe32hRUHoqxDoHJlhUkujIFZAR4m/q8TJdfHRijI
+      JWT_EXPIRES_IN: 24h
+      JWT_REFRESH_SECRET: c7a5M0RarP+bX4LsdyGgcOjAAe32hRUHoqxDoHJlhUkujIFZAR4m/q8TJdfHRijI_REFRESH
+      FRONTEND_URL: http://localhost:3000
+      EMAIL_USER: coworkspace.webdev@gmail.com
+      EMAIL_PASS: vknf nbmg oaoh ryww
+      EMAIL_FROM: CoWorkSpace <coworkspace.webdev@gmail.com>
+      FIREBASE_SERVICE_ACCOUNT_PATH: /usr/src/app/src/firebase-service-account.json
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15
+    container_name: coworking_db
+    environment:
+      POSTGRES_DB: coworkspace_db
+      POSTGRES_USER: coworkspace_user
+      POSTGRES_PASSWORD: cachemeifyoucan
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coworkspace_user -d coworkspace_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:

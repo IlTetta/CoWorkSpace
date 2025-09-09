@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Richiesta Manager Non Approvata</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #e74c3c;
+            margin-bottom: 30px;
+        }
+        .content {
+            line-height: 1.6;
+            color: #333;
+        }
+        .info-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{companyName}}</h1>
+            <h2>📧 Aggiornamento Richiesta Manager</h2>
+        </div>
+        
+        <div class="content">
+            <p>Ciao {{userName}},</p>
+            
+            <div class="info-box">
+                <h3>ℹ️ Richiesta Non Approvata</h3>
+                <p>La tua richiesta per diventare manager non è stata approvata in questo momento.</p>
+            </div>
+            
+            <p>Ti informiamo che la tua richiesta per diventare <strong>manager</strong> su CoWorkSpace non è stata approvata dall'amministratore.</p>
+            
+            <p><strong>Cosa puoi fare ora:</strong></p>
+            <ul>
+                <li>🔑 Puoi continuare a utilizzare la piattaforma come <strong>utente normale</strong></li>
+                <li>📅 Puoi prenotare spazi di coworking</li>
+                <li>💼 Avrai accesso a tutte le funzionalità per gli utenti</li>
+                <li>🔄 Potrai richiedere nuovamente in futuro</li>
+            </ul>
+            
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="button">🚀 Accedi alla Piattaforma</a>
+            </div>
+            
+            <p>Non preoccuparti! Puoi continuare a utilizzare CoWorkSpace normalmente e godere di tutti i servizi disponibili per gli utenti.</p>
+            
+            <p>Grazie per il tuo interesse nel diventare manager. Ti incoraggiamo a continuare a utilizzare la piattaforma!</p>
+        </div>
+        
+        <div class="footer">
+            <p>Grazie per aver scelto {{companyName}}!</p>
+            <p>Se hai domande, non esitare a contattarci.</p>
+        </div>
+    </div>
+</body>
+</html>

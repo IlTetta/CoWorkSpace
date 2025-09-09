@@ -12,12 +12,24 @@ class AuthService {
         // Crea utente usando il model
         const user = await User.create(userData);
 
-        // Genera token
+        // Se l'utente ha richiesto di essere manager, non generiamo il token
+        // perché non può fare login finché non viene approvato
+        if (user.manager_request_pending) {
+            return {
+                token: null,
+                user: user.toJSON(),
+                message: 'Registrazione completata. La tua richiesta per diventare manager è stata inviata all\'amministratore. Non potrai effettuare il login fino all\'approvazione.',
+                canLogin: false
+            };
+        }
+
+        // Genera token per utenti normali
         const token = this.generateToken(user);
 
         return {
             token,
-            user: user.toJSON()
+            user: user.toJSON(),
+            canLogin: true
         };
     }
 
@@ -43,6 +55,9 @@ class AuthService {
         const passwordCheck = await user.verifyPasswordForLogin(password);
         
         if (!passwordCheck.isValid) {
+            if (passwordCheck.managerRequestPending) {
+                throw AppError.forbidden(passwordCheck.message);
+            }
             if (passwordCheck.expired) {
                 throw AppError.badRequest('Password temporanea scaduta. Richiedi un nuovo reset password');
             }
@@ -314,6 +329,184 @@ class AuthService {
      */
     static async changePasswordOnReset(user, currentPassword, newPassword) {
         return await user.changePasswordOnReset(currentPassword, newPassword);
+    }
+
+    /**
+     * Ottieni utente per ID
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<User|null>} - Utente trovato o null
+     */
+    static async getUserById(userId) {
+        return await User.findById(userId);
+    }
+
+    /**
+     * Verifica se un'email è già registrata
+     * @param {string} email - Email da verificare
+     * @returns {Promise<boolean>} - True se email esiste
+     */
+    static async checkEmailExists(email) {
+        if (!email) {
+            throw AppError.badRequest('Email è obbligatoria');
+        }
+
+        // Validazione formato email
+        User.validateEmail(email);
+
+        const user = await User.findByEmail(email);
+        return user !== null;
+    }
+
+    /**
+     * Cerca utenti per email (ricerca parziale)
+     * @param {string} emailPattern - Pattern email da cercare
+     * @param {number} limit - Limite risultati
+     * @returns {Promise<Array>} - Array di utenti trovati
+     */
+    static async searchUsersByEmail(emailPattern, limit = 10) {
+        if (!emailPattern || emailPattern.length < 3) {
+            throw AppError.badRequest('Pattern email deve contenere almeno 3 caratteri');
+        }
+
+        return await User.searchByEmail(emailPattern, limit);
+    }
+
+    static async updateFcmToken(userId, fcmToken) {
+        if (!userId || !fcmToken) {
+            throw AppError.badRequest('ID utente e token FCM sono obbligatori');
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw AppError.notFound('Utente non trovato');
+        }
+
+        user.fcm_token = fcmToken;
+        await User.updateFcmToken(user);
+
+        return user;
+    }
+
+    /**
+     * Ottieni tutti gli utenti con filtri (solo per admin)
+     * @param {Object} filters - Filtri di ricerca
+     * @returns {Promise<Array>} - Lista utenti
+     */
+    static async getAllUsers(filters = {}) {
+        try {
+            const whereConditions = [];
+            const params = [];
+            let paramIndex = 1;
+
+            // Filtro per ruolo
+            if (filters.role) {
+                whereConditions.push(`role = $${paramIndex}`);
+                params.push(filters.role);
+                paramIndex++;
+            }
+
+            // Filtro per location (per manager)
+            if (filters.location_id) {
+                whereConditions.push(`location_id = $${paramIndex}`);
+                params.push(filters.location_id);
+                paramIndex++;
+            }
+
+            let query = `
+                SELECT user_id, name, surname, email, role, location_id, created_at
+                FROM users
+            `;
+
+            if (whereConditions.length > 0) {
+                query += ` WHERE ${whereConditions.join(' AND ')}`;
+            }
+
+            query += ' ORDER BY created_at DESC';
+
+            return await User.query(query, params);
+        } catch (error) {
+            throw AppError.database('Errore nel recupero utenti');
+        }
+    }
+
+    /**
+     * Aggiorna ruolo utente (solo per admin)
+     * @param {number} userId - ID dell'utente
+     * @param {string} newRole - Nuovo ruolo
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Object>} - Utente aggiornato
+     */
+    static async updateUserRole(userId, newRole, adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono modificare i ruoli');
+        }
+
+        const validRoles = ['user', 'manager', 'admin'];
+        if (!validRoles.includes(newRole)) {
+            throw AppError.badRequest(`Ruolo non valido. Valori ammessi: ${validRoles.join(', ')}`);
+        }
+
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                throw AppError.notFound('Utente non trovato');
+            }
+
+            // Aggiorna ruolo
+            const query = `
+                UPDATE users 
+                SET role = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $2
+                RETURNING *
+            `;
+
+            const result = await User.query(query, [newRole, userId]);
+            return result[0];
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.database('Errore nell\'aggiornamento ruolo utente');
+        }
+    }
+
+    /**
+     * Ottieni tutte le richieste manager pending (solo admin)
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Array>} - Lista delle richieste pending
+     */
+    static async getPendingManagerRequests(adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono visualizzare le richieste manager');
+        }
+
+        return await User.getPendingManagerRequests();
+    }
+
+    /**
+     * Approva richiesta manager (solo admin)
+     * @param {number} userId - ID dell'utente da promuovere
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Object>} - Utente aggiornato
+     */
+    static async approveManagerRequest(userId, adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono approvare le richieste manager');
+        }
+
+        return await User.approveManagerRequest(userId);
+    }
+
+    /**
+     * Rifiuta richiesta manager (solo admin)
+     * @param {number} userId - ID dell'utente
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Object>} - Utente aggiornato
+     */
+    static async rejectManagerRequest(userId, adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono rifiutare le richieste manager');
+        }
+
+        return await User.rejectManagerRequest(userId);
     }
 }
 
