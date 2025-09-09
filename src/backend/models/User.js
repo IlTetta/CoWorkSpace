@@ -16,6 +16,8 @@ class User {
         this.temp_password_hash = userData.temp_password_hash;
         this.temp_password_expires_at = userData.temp_password_expires_at;
         this.fcm_token = userData.fcm_token;
+        this.manager_request_pending = userData.manager_request_pending || false;
+        this.manager_request_date = userData.manager_request_date;
     }
 
     /**
@@ -24,10 +26,10 @@ class User {
      * @returns {Promise<User>} - Nuovo utente creato
      */
     static async create(userData) {
-        const { name, surname, email, password, role } = userData;
+        const { name, surname, email, password, requestManagerRole } = userData;
 
         // Validazione business logic
-        this.validateUserData({ name, surname, email, password, role });
+        this.validateUserData({ name, surname, email, password });
 
         // Verifica se email già esiste
         const existingUser = await this.findByEmail(email);
@@ -39,12 +41,16 @@ class User {
         const salt = await bcrypt.genSalt(12);
         const password_hash = await bcrypt.hash(password, salt);
 
+        // Determina i valori per la richiesta manager
+        const manager_request_pending = requestManagerRole || false;
+        const manager_request_date = requestManagerRole ? new Date() : null;
+
         try {
             const result = await pool.query(
-                `INSERT INTO users (name, surname, email, password_hash, role)
-                 VALUES ($1, $2, $3, $4, $5) 
-                 RETURNING user_id, name, surname, email, role, created_at`,
-                [name, surname, email, password_hash, role]
+                `INSERT INTO users (name, surname, email, password_hash, role, manager_request_pending, manager_request_date)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7) 
+                 RETURNING user_id, name, surname, email, role, created_at, manager_request_pending, manager_request_date`,
+                [name, surname, email, password_hash, 'user', manager_request_pending, manager_request_date]
             );
 
             return new User(result.rows[0]);
@@ -83,7 +89,8 @@ class User {
         try {
             const result = await pool.query(
                 `SELECT user_id, name, surname, email, role, created_at, 
-                        is_password_reset_required, temp_password_hash, temp_password_expires_at 
+                        is_password_reset_required, temp_password_hash, temp_password_expires_at,
+                        manager_request_pending, manager_request_date 
                  FROM users WHERE user_id = $1`,
                 [id]
             );
@@ -103,7 +110,7 @@ class User {
     static async searchByEmail(emailPattern, limit = 10) {
         try {
             const result = await pool.query(
-                `SELECT user_id, name, surname, email, role, created_at
+                `SELECT user_id, name, surname, email, role, created_at, manager_request_pending, manager_request_date
                  FROM users 
                  WHERE LOWER(email) LIKE LOWER($1)
                  ORDER BY email
@@ -117,7 +124,9 @@ class User {
                 surname: row.surname,
                 email: row.email,
                 role: row.role,
-                created_at: row.created_at
+                created_at: row.created_at,
+                manager_request_pending: row.manager_request_pending,
+                manager_request_date: row.manager_request_date
             }));
         } catch (error) {
             throw AppError.internal('Errore durante la ricerca utenti per email', error);
@@ -347,11 +356,22 @@ class User {
 
     /**
      * Verifica password dell'utente (normale o temporanea per login)
+     * Blocca il login se l'utente ha una richiesta manager pending
      * @param {string} password - Password in chiaro
      * @returns {Promise<Object>} - Oggetto con validità e necessità di reset
      */
     async verifyPasswordForLogin(password) {
         try {
+            // Blocca login se c'è una richiesta manager pending
+            if (this.manager_request_pending) {
+                return { 
+                    isValid: false, 
+                    requiresReset: false, 
+                    managerRequestPending: true,
+                    message: 'Il tuo account è in attesa di approvazione per diventare manager. Non puoi effettuare il login fino all\'approvazione.'
+                };
+            }
+
             // Prima verifica password normale
             const isNormalPasswordValid = await bcrypt.compare(password, this.password_hash);
             
@@ -386,11 +406,82 @@ class User {
     }
 
     /**
+     * Approva richiesta manager per un utente
+     * @param {number} userId - ID dell'utente da promuovere
+     * @returns {Promise<User>} - Utente aggiornato
+     */
+    static async approveManagerRequest(userId) {
+        try {
+            const result = await pool.query(
+                `UPDATE users 
+                 SET role = 'manager', manager_request_pending = FALSE, manager_request_date = NULL
+                 WHERE user_id = $1 AND manager_request_pending = TRUE
+                 RETURNING user_id, name, surname, email, role, created_at, manager_request_pending, manager_request_date`,
+                [userId]
+            );
+
+            if (result.rows.length === 0) {
+                throw AppError.notFound('Utente non trovato o non ha una richiesta manager pending');
+            }
+
+            return new User(result.rows[0]);
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.internal('Errore durante l\'approvazione della richiesta manager', error);
+        }
+    }
+
+    /**
+     * Rifiuta richiesta manager per un utente
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<User>} - Utente aggiornato
+     */
+    static async rejectManagerRequest(userId) {
+        try {
+            const result = await pool.query(
+                `UPDATE users 
+                 SET manager_request_pending = FALSE, manager_request_date = NULL
+                 WHERE user_id = $1 AND manager_request_pending = TRUE
+                 RETURNING user_id, name, surname, email, role, created_at, manager_request_pending, manager_request_date`,
+                [userId]
+            );
+
+            if (result.rows.length === 0) {
+                throw AppError.notFound('Utente non trovato o non ha una richiesta manager pending');
+            }
+
+            return new User(result.rows[0]);
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.internal('Errore durante il rifiuto della richiesta manager', error);
+        }
+    }
+
+    /**
+     * Ottieni tutti gli utenti con richiesta manager pending
+     * @returns {Promise<Array>} - Array di utenti con richiesta pending
+     */
+    static async getPendingManagerRequests() {
+        try {
+            const result = await pool.query(
+                `SELECT user_id, name, surname, email, role, created_at, manager_request_pending, manager_request_date
+                 FROM users 
+                 WHERE manager_request_pending = TRUE
+                 ORDER BY manager_request_date ASC`
+            );
+
+            return result.rows.map(row => new User(row));
+        } catch (error) {
+            throw AppError.internal('Errore durante il recupero delle richieste manager pending', error);
+        }
+    }
+
+    /**
      * Validazione dati utente
      * @param {Object} userData - Dati da validare
      * @throws {AppError} - Se validazione fallisce
      */
-    static validateUserData({ name, surname, email, password, role }) {
+    static validateUserData({ name, surname, email, password }) {
         const errors = [];
 
         if (!name || name.trim().length < 2) {
@@ -411,10 +502,6 @@ class User {
             errors.push('Password è obbligatoria');
         } else {
             this.validatePassword(password);
-        }
-
-        if (!role || !['user', 'manager', 'admin'].includes(role)) {
-            errors.push('Ruolo deve essere: user, manager o admin');
         }
 
         if (errors.length > 0) {
@@ -466,7 +553,9 @@ class User {
             email: this.email,
             role: this.role,
             created_at: this.created_at,
-            is_password_reset_required: this.is_password_reset_required
+            is_password_reset_required: this.is_password_reset_required,
+            manager_request_pending: this.manager_request_pending,
+            manager_request_date: this.manager_request_date
         };
     }
 

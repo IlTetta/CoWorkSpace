@@ -363,6 +363,91 @@ class NotificationService {
     }
 
     /**
+     * Invia notifica all'admin per richiesta manager
+     */
+    static async sendManagerRequestNotification(user) {
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@coworkspace.com';
+        
+        const templateData = {
+            userName: `${user.name} ${user.surname}`,
+            userEmail: user.email,
+            userId: user.id || user.user_id,
+            requestDate: new Date().toLocaleDateString('it-IT'),
+            companyName: 'CoWorkSpace',
+            adminUrl: process.env.ADMIN_PANEL_URL ? `${process.env.ADMIN_PANEL_URL}/manager-requests` : '#',
+            subject: `Nuova Richiesta Manager - ${user.name} ${user.surname}`
+        };
+
+        return this.sendEmail({
+            recipient: adminEmail,
+            subject: templateData.subject,
+            templateName: 'manager_request_notification',
+            templateData,
+            user_id: user.id || user.user_id
+        });
+    }
+
+    /**
+     * Invia email di approvazione manager all'utente
+     */
+    static async sendManagerApprovalNotification(user) {
+        const templateData = {
+            userName: `${user.name} ${user.surname}`,
+            email: user.email,
+            companyName: 'CoWorkSpace',
+            loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
+            subject: `Richiesta Manager Approvata - CoWorkSpace`
+        };
+
+        return this.sendEmail({
+            recipient: user.email,
+            subject: templateData.subject,
+            templateName: 'manager_approval',
+            templateData,
+            user_id: user.id || user.user_id
+        });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `La tua richiesta per diventare manager è stata approvata! Ora puoi effettuare il login.`,
+                user_id: user.id || user.user_id
+            });
+        }
+    }
+
+    /**
+     * Invia email di rifiuto manager all'utente
+     */
+    static async sendManagerRejectionNotification(user) {
+        const templateData = {
+            userName: `${user.name} ${user.surname}`,
+            email: user.email,
+            companyName: 'CoWorkSpace',
+            loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
+            subject: `Richiesta Manager Non Approvata - CoWorkSpace`
+        };
+
+        return this.sendEmail({
+            recipient: user.email,
+            subject: templateData.subject,
+            templateName: 'manager_rejection',
+            templateData,
+            user_id: user.id || user.user_id
+        });
+
+        if(user.fcm_token){
+            await this.sendPushNotification({
+                fcmToken: user.fcm_token,
+                title: templateData.subject,
+                body: `La tua richiesta per diventare manager non è stata approvata. Puoi comunque continuare come utente normale.`,
+                user_id: user.id || user.user_id
+            });
+        }
+    }
+
+    /**
      * Ottieni notifiche per un utente
      */
     static async getUserNotifications(user_id, filters = {}) {

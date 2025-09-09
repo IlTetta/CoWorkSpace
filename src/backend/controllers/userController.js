@@ -8,7 +8,7 @@ const ApiResponse = require('../utils/apiResponse');
  * Registrazione nuovo utente
  */
 exports.register = catchAsync(async (req, res, next) => {
-    const { name, surname, email, password, role } = req.body;
+    const { name, surname, email, password, requestManagerRole } = req.body;
 
     // Delega tutta la logica al service
     const result = await AuthService.register({
@@ -16,7 +16,7 @@ exports.register = catchAsync(async (req, res, next) => {
         surname, 
         email,
         password,
-        role
+        requestManagerRole: requestManagerRole || false
     });
 
     // 📧 Invia email di benvenuto automaticamente
@@ -28,9 +28,24 @@ exports.register = catchAsync(async (req, res, next) => {
         // Non bloccare la registrazione se l'email fallisce
     }
 
-    return ApiResponse.created(res, 'Registrazione avvenuta con successo', {
+    // 📧 Se è stata richiesta la promozione a manager, invia email all'admin
+    if (result.user.manager_request_pending) {
+        try {
+            await NotificationService.sendManagerRequestNotification(result.user);
+            console.log(`📧 Email di richiesta manager inviata all'admin per: ${result.user.email}`);
+        } catch (emailError) {
+            console.error('❌ Errore invio email richiesta manager:', emailError.message);
+            // Non bloccare la registrazione se l'email fallisce
+        }
+    }
+
+    const statusCode = result.canLogin ? 201 : 202; // 202 = Accepted (pending approval)
+    const message = result.message || 'Registrazione avvenuta con successo';
+
+    return ApiResponse.success(res, statusCode, message, {
         token: result.token,
-        user: result.user
+        user: result.user,
+        canLogin: result.canLogin
     });
 });
 
@@ -249,4 +264,65 @@ exports.saveFcmToken = catchAsync(async (req, res, next) => {
     await AuthService.updateFcmToken(req.user.id, fcm_token);
 
     return ApiResponse.success(res, 200, 'Token FCM salvato con successo');
+});
+
+/**
+ * Ottieni tutte le richieste manager pending (solo admin)
+ */
+exports.getPendingManagerRequests = catchAsync(async (req, res, next) => {
+    const pendingRequests = await AuthService.getPendingManagerRequests(req.user);
+
+    return ApiResponse.list(res, pendingRequests, 'Richieste manager pending recuperate con successo');
+});
+
+/**
+ * Approva richiesta manager (solo admin)
+ */
+exports.approveManagerRequest = catchAsync(async (req, res, next) => {
+    const userId = parseInt(req.params.user_id);
+    
+    if (!userId || userId <= 0) {
+        return next(AppError.badRequest('ID utente non valido'));
+    }
+
+    const updatedUser = await AuthService.approveManagerRequest(userId, req.user);
+
+    // 📧 Invia email di conferma promozione all'utente
+    try {
+        await NotificationService.sendManagerApprovalNotification(updatedUser);
+        console.log(`📧 Email di approvazione manager inviata a: ${updatedUser.email}`);
+    } catch (emailError) {
+        console.error('❌ Errore invio email approvazione manager:', emailError.message);
+        // Non bloccare l'operazione se l'email fallisce
+    }
+
+    return ApiResponse.updated(res, {
+        user: updatedUser.toJSON()
+    }, 'Richiesta manager approvata con successo');
+});
+
+/**
+ * Rifiuta richiesta manager (solo admin)
+ */
+exports.rejectManagerRequest = catchAsync(async (req, res, next) => {
+    const userId = parseInt(req.params.user_id);
+    
+    if (!userId || userId <= 0) {
+        return next(AppError.badRequest('ID utente non valido'));
+    }
+
+    const updatedUser = await AuthService.rejectManagerRequest(userId, req.user);
+
+    // 📧 Invia email di rifiuto all'utente
+    try {
+        await NotificationService.sendManagerRejectionNotification(updatedUser);
+        console.log(`📧 Email di rifiuto manager inviata a: ${updatedUser.email}`);
+    } catch (emailError) {
+        console.error('❌ Errore invio email rifiuto manager:', emailError.message);
+        // Non bloccare l'operazione se l'email fallisce
+    }
+
+    return ApiResponse.updated(res, {
+        user: updatedUser.toJSON()
+    }, 'Richiesta manager rifiutata con successo');
 });

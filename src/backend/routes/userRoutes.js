@@ -61,20 +61,22 @@ const loginLimiter = rateLimit({
  *                 example: mario.rossi@email.com
  *               password:
  *                 type: string
- *                 minLength: 6
- *                 example: password123
+ *                 minLength: 8
+ *                 example: Password123!
  *               name:
  *                 type: string
  *                 example: Mario
  *               surname:
  *                 type: string
  *                 example: Rossi
- *               phoneNumber:
- *                 type: string
- *                 example: +39 123 456 7890
+ *               requestManagerRole:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Richiedi di diventare manager (l'utente non potrà fare login fino all'approvazione)
+ *                 example: false
  *     responses:
  *       201:
- *         description: Utente registrato con successo
+ *         description: Utente registrato con successo (può fare login)
  *         content:
  *           application/json:
  *             schema:
@@ -90,6 +92,30 @@ const loginLimiter = rateLimit({
  *                         token:
  *                           type: string
  *                           description: JWT token per autenticazione
+ *                         canLogin:
+ *                           type: boolean
+ *                           example: true
+ *       202:
+ *         description: Utente registrato, in attesa di approvazione manager (non può fare login)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         token:
+ *                           type: string
+ *                           nullable: true
+ *                           example: null
+ *                         canLogin:
+ *                           type: boolean
+ *                           example: false
  *       400:
  *         description: Dati non validi
  *         content:
@@ -696,5 +722,170 @@ router.get('/check-email', userController.checkEmailExists);
  */
 // Cerca utenti per email (solo admin)
 router.get('/search/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.searchUsersByEmail);
+
+/**
+ * @swagger
+ * /users/manager-requests/pending:
+ *   get:
+ *     summary: Ottieni tutte le richieste manager pending (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Richieste manager pending recuperate con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         allOf:
+ *                           - $ref: '#/components/schemas/User'
+ *                           - type: object
+ *                             properties:
+ *                               manager_request_pending:
+ *                                 type: boolean
+ *                                 example: true
+ *                               manager_request_date:
+ *                                 type: string
+ *                                 format: date-time
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Ottieni richieste manager pending (solo admin)
+router.get('/manager-requests/pending', authMiddleware.protect, authMiddleware.authorize('admin'), userController.getPendingManagerRequests);
+
+/**
+ * @swagger
+ * /users/{user_id}/approve-manager:
+ *   patch:
+ *     summary: Approva richiesta manager (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente da promuovere
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Richiesta manager approvata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         description: ID utente non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato o nessuna richiesta pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Approva richiesta manager (solo admin)
+router.patch('/:user_id/approve-manager', authMiddleware.protect, authMiddleware.authorize('admin'), userController.approveManagerRequest);
+
+/**
+ * @swagger
+ * /users/{user_id}/reject-manager:
+ *   patch:
+ *     summary: Rifiuta richiesta manager (Solo Admin)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID dell'utente
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Richiesta manager rifiutata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         description: ID utente non valido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo admin)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Utente non trovato o nessuna richiesta pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Rifiuta richiesta manager (solo admin)
+router.patch('/:user_id/reject-manager', authMiddleware.protect, authMiddleware.authorize('admin'), userController.rejectManagerRequest);
 
 module.exports = router;

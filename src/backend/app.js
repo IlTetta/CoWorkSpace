@@ -20,6 +20,8 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const additionalServiceRoutes = require('./routes/additionalServiceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const managerRoutes = require('./routes/managerRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // --- Rate Limiting ---
 // Rate limiting stricter per operazioni di autenticazione
@@ -281,7 +283,9 @@ app.get('/api', (req, res) => {
             bookings: '/api/bookings',
             payments: '/api/payments',
             'additional-services': '/api/additional-services',
-            notifications: '/api/notifications'
+            notifications: '/api/notifications',
+            manager: '/api/manager',
+            admin: '/api/admin'
         },
         docs: '/api-docs', // Documentazione Swagger
         health: '/health'
@@ -298,6 +302,8 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/additional-services', additionalServiceRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/manager', managerRoutes);
+app.use('/api/admin', adminRoutes);
 
 // --- Gestione globale degli errori ---
 app.use((err, req, res, next) => {

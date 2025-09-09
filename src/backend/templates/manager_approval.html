@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Richiesta Manager Approvata</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #27ae60;
+            margin-bottom: 30px;
+        }
+        .content {
+            line-height: 1.6;
+            color: #333;
+        }
+        .success-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{companyName}}</h1>
+            <h2>🎉 Richiesta Manager Approvata!</h2>
+        </div>
+        
+        <div class="content">
+            <p>Ciao {{userName}},</p>
+            
+            <div class="success-box">
+                <h3>✅ Congratulazioni!</h3>
+                <p><strong>La tua richiesta per diventare manager è stata approvata!</strong></p>
+            </div>
+            
+            <p>Siamo lieti di informarti che la tua richiesta per diventare <strong>manager</strong> su CoWorkSpace è stata approvata dall'amministratore.</p>
+            
+            <p><strong>Cosa puoi fare ora:</strong></p>
+            <ul>
+                <li>🔑 Puoi effettuare il login con le tue credenziali normali</li>
+                <li>🏢 Avrai accesso alle funzionalità di gestione degli spazi</li>
+                <li>📊 Potrai visualizzare e gestire le prenotazioni</li>
+                <li>👥 Avrai privilegi aggiuntivi sulla piattaforma</li>
+            </ul>
+            
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="button">🚀 Accedi alla Piattaforma</a>
+            </div>
+            
+            <p>Il tuo nuovo ruolo ti consentirà di gestire gli spazi di coworking e offrire un servizio migliore ai nostri utenti.</p>
+            
+            <p>Benvenuto nel team dei manager di {{companyName}}!</p>
+        </div>
+        
+        <div class="footer">
+            <p>Grazie per aver scelto {{companyName}}!</p>
+            <p>Se hai domande, non esitare a contattarci.</p>
+        </div>
+    </div>
+</body>
+</html>

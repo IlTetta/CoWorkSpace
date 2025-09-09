@@ -12,11 +12,13 @@ CREATE TABLE IF NOT EXISTS users (
   surname VARCHAR(100) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
   password_hash VARCHAR(255) NOT NULL,
-  role user_role_enum NOT NULL,
+  role user_role_enum NOT NULL DEFAULT 'user',
   is_password_reset_required BOOLEAN DEFAULT FALSE,
   temp_password_hash VARCHAR(255),
   temp_password_expires_at TIMESTAMP,
-  fcm_token VARCHAR(255), 
+  fcm_token VARCHAR(255),
+  manager_request_pending BOOLEAN DEFAULT FALSE,
+  manager_request_date TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -159,3 +161,15 @@ CREATE TABLE IF NOT EXISTS notifications (
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE SET NULL,
   FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE SET NULL
 );
+
+-- Inserimento utente admin di default
+-- Password: CoWorkSpace2025!
+-- Hash generato con bcrypt rounds=12
+INSERT INTO users (name, surname, email, password_hash, role) 
+VALUES (
+  'Admin',
+  'CoWorkSpace', 
+  'admin@coworkspace.com',
+  '$2b$12$3QkdEdtpCfqQrm74UK.6AuQTrZH/jI683J1f0CkpwvS30lZEWn9pG',
+  'admin'
+) ON CONFLICT (email) DO NOTHING;

@@ -11,8 +11,9 @@ exports.registerValidation = [
         .matches(/[a-z]/).withMessage('La password deve contenere almeno una lettera minuscola.')
         .matches(/[A-Z]/).withMessage('La password deve contenere almeno una lettera maiuscola.')
         .matches(/[@$!%*?&]/).withMessage('La password deve contenere almeno un carattere speciale.'),
-    body('role')
-        .isIn(['user', 'manager', 'admin']).withMessage('Ruolo non valido')
+    body('requestManagerRole')
+        .optional()
+        .isBoolean().withMessage('requestManagerRole deve essere un valore booleano')
 ];
 
 exports.loginValidation = [
