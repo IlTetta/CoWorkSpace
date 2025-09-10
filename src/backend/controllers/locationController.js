@@ -183,14 +183,27 @@ exports.getLocationStats = catchAsync(async (req, res, next) => {
  * Ottieni locations ordinate alfabeticamente (compatibilità)
  */
 exports.getAllLocationsAlphabetically = catchAsync(async (req, res, next) => {
-    const locations = await LocationService.getLocations({}, req.user || null);
+    const filters = {
+        city: req.query.city,
+        name: req.query.name,
+        manager_id: req.query.manager_id
+    };
 
-    // Ordina alfabeticamente
-    const sortedLocations = locations
-        .sort((a, b) => a.location_name.localeCompare(b.location_name))
-        .map(location => location.toJSON());
+    // Rimuovi filtri vuoti
+    Object.keys(filters).forEach(key => {
+        if (!filters[key]) delete filters[key];
+    });
 
-    return ApiResponse.list(res, sortedLocations, 'Locations ordinate recuperate con successo');
+    // Prendi l'ordine di sorting dalla query o default ad 'asc'
+    const sortOrder = req.query.sortOrder || 'asc';
+
+    // Usa il metodo che include i tipi di spazio con ordinamento alfabetico
+    const locations = await LocationService.getLocationsWithSpaceTypes(filters, {
+        sortBy: 'name',
+        sortOrder: sortOrder
+    }, req.user || null);
+
+    return ApiResponse.list(res, locations, 'Locations ordinate recuperate con successo');
 });
 
 /**
