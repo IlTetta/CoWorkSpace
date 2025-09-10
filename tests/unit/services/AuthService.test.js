@@ -56,7 +56,8 @@ describe('AuthService', () => {
             expect(User.create).toHaveBeenCalledWith(userData);
             expect(result).toEqual({
                 token: mockToken,
-                user: mockUser.toJSON()
+                user: mockUser.toJSON(),
+                canLogin: true
             });
         });
     });

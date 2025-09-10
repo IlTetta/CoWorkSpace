@@ -15,6 +15,21 @@ router.use(authMiddleware.protect);
 router.use(authMiddleware.authorize('admin'));
 
 // ========================================
+// PROFILO ADMIN
+// ========================================
+
+/**
+ * @swagger
+ * /api/admin/profile:
+ *   get:
+ *     summary: Profilo admin - Informazioni di base dell'admin corrente
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/profile', adminController.getAdminProfile);
+
+// ========================================
 // DASHBOARD SISTEMA
 // ========================================
 
@@ -37,8 +52,36 @@ router.get('/dashboard', adminController.getSystemDashboard);
  * @swagger
  * /api/admin/users:
  *   get:
- *     summary: Recupera tutti gli utenti del sistema
+ *     summary: Recupera tutti gli utenti del sistema con filtri avanzati
  *     tags: [Admin - Users]
+ *     parameters:
+ *       - name: role
+ *         in: query
+ *         description: Filtra per ruolo specifico (user, manager, admin)
+ *         schema:
+ *           type: string
+ *           enum: [user, manager, admin]
+ *       - name: name
+ *         in: query
+ *         description: Ricerca parziale per nome o cognome
+ *         schema:
+ *           type: string
+ *       - name: email
+ *         in: query
+ *         description: Ricerca parziale per email
+ *         schema:
+ *           type: string
+ *       - name: sort_by
+ *         in: query
+ *         description: Ordinamento (name_asc, name_desc, email_asc, email_desc, role_asc, role_desc, created_asc, created_desc)
+ *         schema:
+ *           type: string
+ *           enum: [name_asc, name_desc, email_asc, email_desc, role_asc, role_desc, created_asc, created_desc]
+ *       - name: limit
+ *         in: query
+ *         description: Limite numero risultati
+ *         schema:
+ *           type: integer
  *   post:
  *     summary: Crea nuovo utente
  *     tags: [Admin - Users]
@@ -46,6 +89,31 @@ router.get('/dashboard', adminController.getSystemDashboard);
 router.route('/users')
     .get(adminController.getAllUsers)
     .post(adminController.createUser);
+
+/**
+ * @swagger
+ * /api/admin/managers:
+ *   get:
+ *     summary: Recupera tutti i manager del sistema
+ *     tags: [Admin - Users]
+ *     parameters:
+ *       - name: name
+ *         in: query
+ *         description: Ricerca parziale per nome o cognome
+ *         schema:
+ *           type: string
+ *       - name: sort_by
+ *         in: query
+ *         description: Ordinamento (default name_asc)
+ *         schema:
+ *           type: string
+ *       - name: limit
+ *         in: query
+ *         description: Limite numero risultati
+ *         schema:
+ *           type: integer
+ */
+router.get('/managers', adminController.getAllManagers);
 
 /**
  * @swagger
@@ -78,8 +146,36 @@ router.put('/users/:userId/role', adminController.updateUserRole);
  * @swagger
  * /api/admin/locations:
  *   get:
- *     summary: Recupera tutte le location del sistema
+ *     summary: Recupera tutte le location del sistema con filtri avanzati
  *     tags: [Admin - Locations]
+ *     parameters:
+ *       - name: name
+ *         in: query
+ *         description: Ricerca parziale per nome location
+ *         schema:
+ *           type: string
+ *       - name: city
+ *         in: query
+ *         description: Filtro per città specifica
+ *         schema:
+ *           type: string
+ *       - name: manager_id
+ *         in: query
+ *         description: Filtro per manager specifico
+ *         schema:
+ *           type: integer
+ *       - name: sort_by
+ *         in: query
+ *         description: Campo di ordinamento
+ *         schema:
+ *           type: string
+ *           enum: [name, city, date, manager]
+ *       - name: sort_order
+ *         in: query
+ *         description: Ordine di ordinamento
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
  *   post:
  *     summary: Crea nuova location
  *     tags: [Admin - Locations]
@@ -87,6 +183,38 @@ router.put('/users/:userId/role', adminController.updateUserRole);
 router.route('/locations')
     .get(adminController.getAllLocations)
     .post(adminController.createLocation);
+
+/**
+ * @swagger
+ * /api/admin/locations/without-manager:
+ *   get:
+ *     summary: Recupera location senza manager assegnato
+ *     tags: [Admin - Locations]
+ *     parameters:
+ *       - name: name
+ *         in: query
+ *         description: Ricerca parziale per nome location
+ *         schema:
+ *           type: string
+ *       - name: city
+ *         in: query
+ *         description: Filtro per città specifica
+ *         schema:
+ *           type: string
+ *       - name: sort_by
+ *         in: query
+ *         description: Campo di ordinamento
+ *         schema:
+ *           type: string
+ *           enum: [name, city, date]
+ *       - name: sort_order
+ *         in: query
+ *         description: Ordine di ordinamento
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ */
+router.get('/locations/without-manager', adminController.getLocationsWithoutManager);
 
 /**
  * @swagger
@@ -146,5 +274,54 @@ router.get('/bookings', adminController.getAllBookings);
  *     tags: [Admin - Override]
  */
 router.get('/payments', adminController.getAllPayments);
+
+// ========================================
+// GESTIONE UTENTI - FUNZIONI SPECIFICHE ADMIN
+// ========================================
+
+/**
+ * @swagger
+ * /api/admin/users/{user_id}/email:
+ *   get:
+ *     summary: Ottieni email di un utente specifico
+ *     tags: [Admin - Users]
+ */
+router.get('/users/:user_id/email', adminController.getUserEmail);
+
+/**
+ * @swagger
+ * /api/admin/users/search/email:
+ *   get:
+ *     summary: Cerca utenti per email
+ *     tags: [Admin - Users]
+ */
+router.get('/users/search/email', adminController.searchUsersByEmail);
+
+/**
+ * @swagger
+ * /api/admin/users/manager-requests/pending:
+ *   get:
+ *     summary: Ottieni tutte le richieste manager pending
+ *     tags: [Admin - Users]
+ */
+router.get('/users/manager-requests/pending', adminController.getPendingManagerRequests);
+
+/**
+ * @swagger
+ * /api/admin/users/{user_id}/approve-manager:
+ *   patch:
+ *     summary: Approva richiesta manager
+ *     tags: [Admin - Users]
+ */
+router.patch('/users/:user_id/approve-manager', adminController.approveManagerRequest);
+
+/**
+ * @swagger
+ * /api/admin/users/{user_id}/reject-manager:
+ *   patch:
+ *     summary: Rifiuta richiesta manager
+ *     tags: [Admin - Users]
+ */
+router.patch('/users/:user_id/reject-manager', adminController.rejectManagerRequest);
 
 module.exports = router;

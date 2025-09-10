@@ -13,6 +13,29 @@ const AppError = require('../utils/AppError');
 const ApiResponse = require('../utils/apiResponse');
 
 /**
+ * Profilo admin - Informazioni di base dell'admin corrente
+ */
+exports.getAdminProfile = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        throw AppError.forbidden('Accesso riservato agli amministratori');
+    }
+
+    const adminProfile = {
+        user_id: req.user.user_id,
+        name: req.user.name,
+        surname: req.user.surname,
+        email: req.user.email,
+        role: req.user.role,
+        created_at: req.user.created_at,
+        updated_at: req.user.updated_at
+    };
+
+    return ApiResponse.success(res, 200, 'Profilo admin recuperato con successo', {
+        admin: adminProfile
+    });
+});
+
+/**
  * Dashboard sistema per admin - Stats complete
  */
 exports.getSystemDashboard = catchAsync(async (req, res, next) => {
@@ -64,6 +87,7 @@ exports.getSystemDashboard = catchAsync(async (req, res, next) => {
 
 /**
  * Recupera tutti gli utenti del sistema
+ * Supporta filtri per ruolo, ricerca per nome/email, ordinamento alfabetico
  */
 exports.getAllUsers = catchAsync(async (req, res, next) => {
     if (req.user.role !== 'admin') {
@@ -71,17 +95,78 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
     }
 
     const filters = {
-        role: req.query.role,
-        email: req.query.email,
-        name: req.query.name
+        role: req.query.role, // Filtro per ruolo specifico (user, manager, admin)
+        email: req.query.email, // Ricerca parziale per email
+        name: req.query.name, // Ricerca parziale per nome o cognome
+        sort_by: req.query.sort_by, // Ordinamento (name_asc, name_desc, email_asc, email_desc, role_asc, role_desc, created_asc, created_desc)
+        limit: req.query.limit // Limite risultati
     };
+
+    // Validazione ruolo se specificato
+    if (filters.role) {
+        const validRoles = ['user', 'manager', 'admin'];
+        if (!validRoles.includes(filters.role)) {
+            throw AppError.badRequest(`Ruolo non valido. Valori ammessi: ${validRoles.join(', ')}`);
+        }
+    }
+
+    // Validazione ordinamento se specificato
+    if (filters.sort_by) {
+        const validSorts = ['name_asc', 'name_desc', 'email_asc', 'email_desc', 'role_asc', 'role_desc', 'created_asc', 'created_desc'];
+        if (!validSorts.includes(filters.sort_by)) {
+            throw AppError.badRequest(`Ordinamento non valido. Valori ammessi: ${validSorts.join(', ')}`);
+        }
+    }
 
     const users = await AuthService.getAllUsers(filters);
 
-    return ApiResponse.success(res, 200, 'Utenti recuperati', {
+    // Statistiche sui risultati
+    const roleStats = users.reduce((acc, user) => {
+        acc[user.role] = (acc[user.role] || 0) + 1;
+        return acc;
+    }, {});
+
+    return ApiResponse.success(res, 200, 'Utenti recuperati con successo', {
         users: users,
         total: users.length,
-        filters_applied: Object.keys(filters).filter(key => filters[key])
+        role_statistics: roleStats,
+        filters_applied: Object.keys(filters).filter(key => filters[key]),
+        applied_filters: {
+            role: filters.role || null,
+            email_search: filters.email || null,
+            name_search: filters.name || null,
+            sort_by: filters.sort_by || 'created_desc',
+            limit: filters.limit || null
+        }
+    });
+});
+
+/**
+ * Recupera solo i manager del sistema
+ * Funzione di convenienza per ottenere tutti i manager con ordinamento
+ */
+exports.getAllManagers = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        throw AppError.forbidden('Solo gli admin possono vedere tutti i manager');
+    }
+
+    const filters = {
+        role: 'manager',
+        name: req.query.name, // Ricerca parziale per nome o cognome
+        sort_by: req.query.sort_by || 'name_asc', // Default ordinamento alfabetico
+        limit: req.query.limit
+    };
+
+    const managers = await AuthService.getAllUsers(filters);
+
+    return ApiResponse.success(res, 200, 'Manager recuperati con successo', {
+        managers: managers,
+        total: managers.length,
+        applied_filters: {
+            name_search: filters.name || null,
+            sort_by: filters.sort_by,
+            limit: filters.limit || null
+        }
     });
 });
 
@@ -209,7 +294,8 @@ exports.updateUserRole = catchAsync(async (req, res, next) => {
 // ========================================
 
 /**
- * Recupera tutte le location
+ * Recupera tutte le location del sistema con filtri avanzati e ordinamento
+ * L'admin può vedere tutte le location con informazioni dettagliate
  */
 exports.getAllLocations = catchAsync(async (req, res, next) => {
     if (req.user.role !== 'admin') {
@@ -217,17 +303,85 @@ exports.getAllLocations = catchAsync(async (req, res, next) => {
     }
 
     const filters = {
-        name: req.query.name,
-        city: req.query.city,
-        manager_id: req.query.manager_id
+        name: req.query.name,           // Ricerca parziale per nome location
+        city: req.query.city,           // Filtro per città
+        manager_id: req.query.manager_id // Filtro per manager specifico
     };
 
-    const locations = await LocationService.getLocations(filters, req.user);
+    const sorting = {
+        sortBy: req.query.sort_by || 'name',      // Opzioni: 'name', 'city', 'date', 'manager'
+        sortOrder: req.query.sort_order || 'asc'  // 'asc' o 'desc'
+    };
 
-    return ApiResponse.success(res, 200, 'Location recuperate', {
+    // Validazione parametri di ordinamento
+    const validSorts = ['name', 'city', 'date', 'manager'];
+    if (!validSorts.includes(sorting.sortBy)) {
+        throw AppError.badRequest(`Ordinamento non valido. Valori ammessi: ${validSorts.join(', ')}`);
+    }
+
+    const validOrders = ['asc', 'desc'];
+    if (!validOrders.includes(sorting.sortOrder)) {
+        throw AppError.badRequest(`Ordine non valido. Valori ammessi: ${validOrders.join(', ')}`);
+    }
+
+    // Ottieni locations con informazioni complete (include manager info, space types, etc.)
+    const locations = await LocationService.getLocationsWithSpaceTypes(filters, sorting, req.user);
+
+    // Statistiche aggiuntive per l'admin
+    const locationStats = {
+        total: locations.length,
+        by_city: locations.reduce((acc, location) => {
+            const city = location.city || 'Non specificata';
+            acc[city] = (acc[city] || 0) + 1;
+            return acc;
+        }, {}),
+        with_managers: locations.filter(l => l.managerId).length,
+        without_managers: locations.filter(l => !l.managerId).length,
+        unique_cities: [...new Set(locations.map(l => l.city).filter(Boolean))].length
+    };
+
+    return ApiResponse.success(res, 200, 'Location recuperate con successo', {
         locations: locations,
         total: locations.length,
-        filters_applied: Object.keys(filters).filter(key => filters[key])
+        statistics: locationStats,
+        applied_filters: {
+            name_search: filters.name || null,
+            city_filter: filters.city || null,
+            manager_filter: filters.manager_id || null,
+            sort_by: sorting.sortBy,
+            sort_order: sorting.sortOrder
+        }
+    });
+});
+
+/**
+ * Recupera location senza manager assegnato
+ * Funzione di utilità per l'admin per identificare location che necessitano di un manager
+ */
+exports.getLocationsWithoutManager = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        throw AppError.forbidden('Solo gli admin possono vedere le location senza manager');
+    }
+
+    // Filtra solo location senza manager
+    const filters = {
+        manager_id: null,
+        name: req.query.name,
+        city: req.query.city
+    };
+
+    const sorting = {
+        sortBy: req.query.sort_by || 'city',
+        sortOrder: req.query.sort_order || 'asc'
+    };
+
+    const locations = await LocationService.getLocationsWithSpaceTypes(filters, sorting, req.user);
+
+    return ApiResponse.success(res, 200, 'Location senza manager recuperate', {
+        locations: locations,
+        total: locations.length,
+        message: `Trovate ${locations.length} location che necessitano di un manager`,
+        cities_involved: [...new Set(locations.map(l => l.city).filter(Boolean))]
     });
 });
 
@@ -482,5 +636,114 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
         total: payments.length,
         message: 'Admin override - Visione completa sistema'
     });
+});
+
+// ========================================
+// GESTIONE UTENTI - FUNZIONI SPECIFICHE ADMIN
+// ========================================
+
+/**
+ * Ottieni email di un utente per ID
+ * Solo admin può accedere a questa funzione per motivi di privacy
+ */
+exports.getUserEmail = catchAsync(async (req, res, next) => {
+    const userId = parseInt(req.params.user_id);
+    
+    if (!userId || userId <= 0) {
+        return next(AppError.badRequest('ID utente non valido'));
+    }
+
+    const user = await AuthService.getUserById(userId);
+    
+    if (!user) {
+        return next(AppError.notFound('Utente non trovato'));
+    }
+
+    return ApiResponse.success(res, 200, 'Email utente recuperata con successo', {
+        userId: user.user_id,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        role: user.role
+    });
+});
+
+/**
+ * Cerca utenti per email (per admin)
+ * Permette ricerca parziale dell'email
+ */
+exports.searchUsersByEmail = catchAsync(async (req, res, next) => {
+    const { email, limit = 10 } = req.query;
+    
+    if (!email || email.length < 3) {
+        return next(AppError.badRequest('Email deve contenere almeno 3 caratteri per la ricerca'));
+    }
+
+    const users = await AuthService.searchUsersByEmail(email, parseInt(limit));
+
+    return ApiResponse.list(res, users, 'Ricerca utenti completata');
+});
+
+/**
+ * Ottieni tutte le richieste manager pending (solo admin)
+ */
+exports.getPendingManagerRequests = catchAsync(async (req, res, next) => {
+    const pendingRequests = await AuthService.getPendingManagerRequests(req.user);
+
+    return ApiResponse.list(res, pendingRequests, 'Richieste manager pending recuperate con successo');
+});
+
+/**
+ * Approva richiesta manager (solo admin)
+ */
+exports.approveManagerRequest = catchAsync(async (req, res, next) => {
+    const userId = parseInt(req.params.user_id);
+    
+    if (!userId || userId <= 0) {
+        return next(AppError.badRequest('ID utente non valido'));
+    }
+
+    const updatedUser = await AuthService.approveManagerRequest(userId, req.user);
+
+    // 📧 Invia email di conferma promozione all'utente
+    try {
+        const NotificationService = require('../services/NotificationService');
+        await NotificationService.sendManagerApprovalNotification(updatedUser);
+        console.log(`📧 Email di approvazione manager inviata a: ${updatedUser.email}`);
+    } catch (emailError) {
+        console.error('❌ Errore invio email approvazione manager:', emailError.message);
+        // Non bloccare l'operazione se l'email fallisce
+    }
+
+    return ApiResponse.updated(res, {
+        user: updatedUser.toJSON()
+    }, 'Richiesta manager approvata con successo');
+});
+
+/**
+ * Rifiuta richiesta manager (solo admin)
+ */
+exports.rejectManagerRequest = catchAsync(async (req, res, next) => {
+    const userId = parseInt(req.params.user_id);
+    
+    if (!userId || userId <= 0) {
+        return next(AppError.badRequest('ID utente non valido'));
+    }
+
+    const updatedUser = await AuthService.rejectManagerRequest(userId, req.user);
+
+    // 📧 Invia email di rifiuto all'utente
+    try {
+        const NotificationService = require('../services/NotificationService');
+        await NotificationService.sendManagerRejectionNotification(updatedUser);
+        console.log(`📧 Email di rifiuto manager inviata a: ${updatedUser.email}`);
+    } catch (emailError) {
+        console.error('❌ Errore invio email rifiuto manager:', emailError.message);
+        // Non bloccare l'operazione se l'email fallisce
+    }
+
+    return ApiResponse.updated(res, {
+        user: updatedUser.toJSON()
+    }, 'Richiesta manager rifiutata con successo');
 });
 

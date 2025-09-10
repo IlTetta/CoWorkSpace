@@ -477,6 +477,462 @@ class User {
     }
 
     /**
+     * Ottieni dashboard completa per utente
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<Object>} - Dati dashboard dell'utente
+     */
+    static async getDashboard(userId) {
+        try {
+            // 1. Informazioni personali
+            const user = await this.findById(userId);
+            if (!user) {
+                throw AppError.notFound('Utente non trovato');
+            }
+
+            // 2. Query per prenotazioni con dettagli completi
+            const bookingsQuery = `
+                SELECT 
+                    b.booking_id,
+                    DATE(b.start_datetime) as booking_date,
+                    TIME(b.start_datetime) as start_time,
+                    TIME(b.end_datetime) as end_time,
+                    b.total_hours,
+                    b.total_price,
+                    b.status,
+                    b.created_at,
+                    s.space_name,
+                    s.capacity,
+                    s.price_per_hour,
+                    s.price_per_day,
+                    st.type_name as space_type,
+                    l.location_name,
+                    l.address,
+                    l.city,
+                    p.payment_id,
+                    p.amount as payment_amount,
+                    p.payment_method,
+                    p.status as payment_status,
+                    p.payment_date,
+                    p.transaction_id
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE b.user_id = $1
+                ORDER BY b.created_at DESC
+            `;
+
+            const bookingsResult = await pool.query(bookingsQuery, [userId]);
+
+            // 3. Statistiche generali
+            const statsQuery = `
+                SELECT 
+                    COUNT(DISTINCT b.booking_id) as total_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.booking_id END) as completed_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'confirmed' THEN b.booking_id END) as confirmed_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END) as cancelled_bookings,
+                    COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as total_spent,
+                    COALESCE(SUM(b.total_hours), 0) as total_hours_booked,
+                    COUNT(DISTINCT s.location_id) as locations_visited,
+                    COUNT(DISTINCT s.space_type_id) as space_types_used
+                FROM bookings b
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                LEFT JOIN spaces s ON b.space_id = s.space_id
+                WHERE b.user_id = $1
+            `;
+
+            const statsResult = await pool.query(statsQuery, [userId]);
+            const stats = statsResult.rows[0] || {};
+
+            // 4. Prenotazioni future (confirmed)
+            const upcomingBookingsQuery = `
+                SELECT 
+                    b.booking_id,
+                    DATE(b.start_datetime) as booking_date,
+                    TIME(b.start_datetime) as start_time,
+                    TIME(b.end_datetime) as end_time,
+                    s.space_name,
+                    st.type_name as space_type,
+                    l.location_name,
+                    l.address
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                WHERE b.user_id = $1 
+                AND b.status = 'confirmed'
+                AND b.start_datetime > CURRENT_TIMESTAMP
+                ORDER BY b.start_datetime ASC
+                LIMIT 5
+            `;
+
+            const upcomingBookings = await pool.query(upcomingBookingsQuery, [userId]);
+
+            // 5. Prenotazioni recenti (ultime 5)
+            const recentBookingsQuery = `
+                SELECT 
+                    b.booking_id,
+                    DATE(b.start_datetime) as booking_date,
+                    TIME(b.start_datetime) as start_time,
+                    TIME(b.end_datetime) as end_time,
+                    b.status,
+                    s.space_name,
+                    st.type_name as space_type,
+                    l.location_name,
+                    p.status as payment_status
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE b.user_id = $1
+                ORDER BY b.created_at DESC
+                LIMIT 5
+            `;
+
+            const recentBookings = await pool.query(recentBookingsQuery, [userId]);
+
+            // 6. Top location preferite
+            const topLocationsQuery = `
+                SELECT 
+                    l.location_name,
+                    l.city,
+                    COUNT(*) as booking_count
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN locations l ON s.location_id = l.location_id
+                WHERE b.user_id = $1
+                GROUP BY l.location_id, l.location_name, l.city
+                ORDER BY booking_count DESC
+                LIMIT 3
+            `;
+
+            const topLocations = await pool.query(topLocationsQuery, [userId]);
+
+            // 7. Top space types preferiti
+            const topSpaceTypesQuery = `
+                SELECT 
+                    st.type_name,
+                    COUNT(*) as booking_count
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                WHERE b.user_id = $1
+                GROUP BY st.space_type_id, st.type_name
+                ORDER BY booking_count DESC
+                LIMIT 3
+            `;
+
+            const topSpaceTypes = await pool.query(topSpaceTypesQuery, [userId]);
+
+            return {
+                user: {
+                    user_id: user.user_id,
+                    name: user.name,
+                    surname: user.surname,
+                    email: user.email,
+                    role: user.role,
+                    created_at: user.created_at
+                },
+                statistics: {
+                    total_bookings: parseInt(stats.total_bookings || 0),
+                    completed_bookings: parseInt(stats.completed_bookings || 0),
+                    confirmed_bookings: parseInt(stats.confirmed_bookings || 0),
+                    cancelled_bookings: parseInt(stats.cancelled_bookings || 0),
+                    total_spent: parseFloat(stats.total_spent || 0),
+                    total_hours_booked: parseFloat(stats.total_hours_booked || 0),
+                    locations_visited: parseInt(stats.locations_visited || 0),
+                    space_types_used: parseInt(stats.space_types_used || 0)
+                },
+                bookings: {
+                    all: bookingsResult.rows,
+                    upcoming: upcomingBookings.rows,
+                    recent: recentBookings.rows,
+                    total: bookingsResult.rows.length
+                },
+                preferences: {
+                    top_locations: topLocations.rows,
+                    top_space_types: topSpaceTypes.rows
+                }
+            };
+
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.internal('Errore durante il recupero dashboard utente', error);
+        }
+    }
+
+    /**
+     * Ottieni dashboard completa per manager
+     * @param {number} managerId - ID del manager
+     * @returns {Promise<Object>} - Dati dashboard del manager
+     */
+    static async getManagerDashboard(managerId) {
+        try {
+            // 1. Informazioni personali del manager
+            const manager = await this.findById(managerId);
+            if (!manager) {
+                throw AppError.notFound('Manager non trovato');
+            }
+
+            if (manager.role !== 'manager' && manager.role !== 'admin') {
+                throw AppError.forbidden('Accesso riservato ai manager');
+            }
+
+            // 2. Location gestite dal manager
+            const locationsQuery = `
+                SELECT 
+                    l.location_id,
+                    l.location_name,
+                    l.address,
+                    l.city,
+                    l.description,
+                    COUNT(DISTINCT s.space_id) as total_spaces,
+                    COUNT(DISTINCT CASE WHEN b.status = 'confirmed' THEN b.booking_id END) as active_bookings,
+                    COUNT(DISTINCT b.user_id) as unique_customers
+                FROM locations l
+                LEFT JOIN spaces s ON l.location_id = s.location_id
+                LEFT JOIN bookings b ON s.space_id = b.space_id AND DATE(b.start_datetime) >= CURRENT_DATE
+                WHERE l.manager_id = $1
+                GROUP BY l.location_id, l.location_name, l.address, l.city, l.description
+                ORDER BY l.location_name
+            `;
+
+            const locations = await pool.query(locationsQuery, [managerId]);
+
+            // 3. Tutte le prenotazioni per le location gestite con dati utente
+            const bookingsQuery = `
+                SELECT 
+                    b.booking_id,
+                    DATE(b.start_datetime) as booking_date,
+                    TIME(b.start_datetime) as start_time,
+                    TIME(b.end_datetime) as end_time,
+                    b.total_hours,
+                    b.total_price,
+                    b.status,
+                    b.created_at,
+                    u.user_id,
+                    u.name as customer_name,
+                    u.surname as customer_surname,
+                    u.email as customer_email,
+                    s.space_id,
+                    s.space_name,
+                    s.capacity,
+                    st.type_name as space_type,
+                    l.location_id,
+                    l.location_name,
+                    l.city,
+                    p.payment_id,
+                    p.amount as payment_amount,
+                    p.payment_method,
+                    p.status as payment_status,
+                    p.payment_date,
+                    p.transaction_id
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE l.manager_id = $1
+                ORDER BY b.created_at DESC
+            `;
+
+            const allBookings = await pool.query(bookingsQuery, [managerId]);
+
+            // 4. Statistiche generali per le location gestite
+            const statsQuery = `
+                SELECT 
+                    COUNT(DISTINCT b.booking_id) as total_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'completed' THEN b.booking_id END) as completed_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'confirmed' THEN b.booking_id END) as confirmed_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END) as cancelled_bookings,
+                    COUNT(DISTINCT CASE WHEN b.status = 'pending' THEN b.booking_id END) as pending_bookings,
+                    COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as total_revenue,
+                    COALESCE(SUM(b.total_hours), 0) as total_hours_booked,
+                    COUNT(DISTINCT b.user_id) as unique_customers,
+                    COUNT(DISTINCT s.space_id) as spaces_used,
+                    COUNT(DISTINCT l.location_id) as locations_managed
+                FROM bookings b
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE l.manager_id = $1
+            `;
+
+            const statsResult = await pool.query(statsQuery, [managerId]);
+            const stats = statsResult.rows[0] || {};
+
+            // 5. Prenotazioni future (confirmed e pending)
+            const upcomingBookingsQuery = `
+                SELECT 
+                    b.booking_id,
+                    DATE(b.start_datetime) as booking_date,
+                    TIME(b.start_datetime) as start_time,
+                    TIME(b.end_datetime) as end_time,
+                    b.status,
+                    u.name as customer_name,
+                    u.surname as customer_surname,
+                    u.email as customer_email,
+                    s.space_name,
+                    st.type_name as space_type,
+                    l.location_name,
+                    p.status as payment_status
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE l.manager_id = $1 
+                AND b.status IN ('confirmed', 'pending')
+                AND b.start_datetime > CURRENT_TIMESTAMP
+                ORDER BY b.start_datetime ASC
+                LIMIT 10
+            `;
+
+            const upcomingBookings = await pool.query(upcomingBookingsQuery, [managerId]);
+
+            // 6. Prenotazioni recenti (ultime 10)
+            const recentBookingsQuery = `
+                SELECT 
+                    b.booking_id,
+                    DATE(b.start_datetime) as booking_date,
+                    TIME(b.start_datetime) as start_time,
+                    TIME(b.end_datetime) as end_time,
+                    b.status,
+                    b.created_at,
+                    u.name as customer_name,
+                    u.surname as customer_surname,
+                    u.email as customer_email,
+                    s.space_name,
+                    st.type_name as space_type,
+                    l.location_name,
+                    p.status as payment_status,
+                    p.payment_method
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN space_types st ON s.space_type_id = st.space_type_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE l.manager_id = $1
+                ORDER BY b.created_at DESC
+                LIMIT 10
+            `;
+
+            const recentBookings = await pool.query(recentBookingsQuery, [managerId]);
+
+            // 7. Top customers (utenti con più prenotazioni)
+            const topCustomersQuery = `
+                SELECT 
+                    u.user_id,
+                    u.name,
+                    u.surname,
+                    u.email,
+                    COUNT(b.booking_id) as total_bookings,
+                    COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as total_spent,
+                    MAX(b.created_at) as last_booking_date
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE l.manager_id = $1
+                GROUP BY u.user_id, u.name, u.surname, u.email
+                ORDER BY total_bookings DESC, total_spent DESC
+                LIMIT 5
+            `;
+
+            const topCustomers = await pool.query(topCustomersQuery, [managerId]);
+
+            // 8. Performance per location
+            const locationPerformanceQuery = `
+                SELECT 
+                    l.location_id,
+                    l.location_name,
+                    l.city,
+                    COUNT(b.booking_id) as total_bookings,
+                    COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as revenue,
+                    COUNT(DISTINCT b.user_id) as unique_customers,
+                    AVG(b.total_hours) as avg_booking_hours
+                FROM locations l
+                LEFT JOIN spaces s ON l.location_id = s.location_id
+                LEFT JOIN bookings b ON s.space_id = b.space_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
+                WHERE l.manager_id = $1
+                GROUP BY l.location_id, l.location_name, l.city
+                ORDER BY revenue DESC, total_bookings DESC
+            `;
+
+            const locationPerformance = await pool.query(locationPerformanceQuery, [managerId]);
+
+            // 9. Statistiche sui pagamenti
+            const paymentsStatsQuery = `
+                SELECT 
+                    p.payment_method,
+                    COUNT(*) as payment_count,
+                    SUM(p.amount) as total_amount,
+                    COUNT(CASE WHEN p.status = 'completed' THEN 1 END) as completed_count,
+                    COUNT(CASE WHEN p.status = 'failed' THEN 1 END) as failed_count,
+                    COUNT(CASE WHEN p.status = 'refunded' THEN 1 END) as refunded_count
+                FROM payments p
+                JOIN bookings b ON p.booking_id = b.booking_id
+                JOIN spaces s ON b.space_id = s.space_id
+                JOIN locations l ON s.location_id = l.location_id
+                WHERE l.manager_id = $1
+                GROUP BY p.payment_method
+                ORDER BY total_amount DESC
+            `;
+
+            const paymentStats = await pool.query(paymentsStatsQuery, [managerId]);
+
+            return {
+                manager: {
+                    user_id: manager.user_id,
+                    name: manager.name,
+                    surname: manager.surname,
+                    email: manager.email,
+                    role: manager.role,
+                    created_at: manager.created_at
+                },
+                locations: locations.rows,
+                statistics: {
+                    total_bookings: parseInt(stats.total_bookings || 0),
+                    completed_bookings: parseInt(stats.completed_bookings || 0),
+                    confirmed_bookings: parseInt(stats.confirmed_bookings || 0),
+                    cancelled_bookings: parseInt(stats.cancelled_bookings || 0),
+                    pending_bookings: parseInt(stats.pending_bookings || 0),
+                    total_revenue: parseFloat(stats.total_revenue || 0),
+                    total_hours_booked: parseFloat(stats.total_hours_booked || 0),
+                    unique_customers: parseInt(stats.unique_customers || 0),
+                    spaces_used: parseInt(stats.spaces_used || 0),
+                    locations_managed: parseInt(stats.locations_managed || 0)
+                },
+                bookings: {
+                    all: allBookings.rows,
+                    upcoming: upcomingBookings.rows,
+                    recent: recentBookings.rows,
+                    total: allBookings.rows.length
+                },
+                customers: {
+                    top: topCustomers.rows,
+                    total_unique: parseInt(stats.unique_customers || 0)
+                },
+                performance: {
+                    by_location: locationPerformance.rows,
+                    payment_methods: paymentStats.rows
+                }
+            };
+
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.internal('Errore durante il recupero dashboard manager', error);
+        }
+    }
+
+    /**
      * Validazione dati utente
      * @param {Object} userData - Dati da validare
      * @throws {AppError} - Se validazione fallisce
