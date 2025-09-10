@@ -14,6 +14,7 @@ const SpaceService = require('../services/SpaceService');
 const BookingService = require('../services/BookingService');
 const PaymentService = require('../services/PaymentService');
 const AvailabilityService = require('../services/AvailabilityService');
+const AuthService = require('../services/AuthService');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const ApiResponse = require('../utils/apiResponse');
@@ -26,7 +27,7 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
         throw AppError.forbidden('Accesso riservato ai manager');
     }
 
-    const dashboard = await LocationService.getManagerDashboard(req.user);
+    const dashboard = await AuthService.getManagerDashboard(req.user.user_id);
     return ApiResponse.success(res, 200, 'Dashboard manager recuperata', dashboard);
 });
 

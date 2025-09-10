@@ -38,7 +38,9 @@ const pool = new Pool(poolConfig);
 
 // Event listeners for monitoring
 pool.on('connect', (client) => {
-  console.log(`[DB] Nuova connessione stabilita: ${client.processID}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[DB] Nuova connessione stabilita: ${client.processID}`);
+  }
 });
 
 pool.on('error', (err, client) => {
@@ -47,7 +49,9 @@ pool.on('error', (err, client) => {
 });
 
 pool.on('acquire', (client) => {
-  if (process.env.NODE_ENV === 'development') {
+  // Rimuoviamo questo log perché troppo verboso
+  // Solo per debugging estremo se necessario
+  if (process.env.DB_DEBUG_VERBOSE === 'true') {
     console.log(`[DB] Client acquisito: ${client.processID}`);
   }
 });
@@ -189,6 +193,16 @@ const initialize = async () => {
 
   console.log('[DB] Database inizializzato correttamente');
   console.log('[DB] Pool stats:', getPoolStats());
+
+  // Log delle statistiche del pool ogni 10 minuti in development
+  if (process.env.NODE_ENV === 'development') {
+    setInterval(() => {
+      const stats = getPoolStats();
+      if (stats.totalConnections > 0) {
+        console.log(`[DB] Pool stats - Totali: ${stats.totalConnections}, Idle: ${stats.idleConnections}, In attesa: ${stats.waitingClients}`);
+      }
+    }, 10 * 60 * 1000); // 10 minuti
+  }
 
   return true;
 };

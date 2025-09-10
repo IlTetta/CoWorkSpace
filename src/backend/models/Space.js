@@ -395,12 +395,12 @@ class Space {
             SELECT COUNT(*) as count
             FROM bookings
             WHERE space_id = $1
-            AND booking_date = $2
+            AND DATE(start_datetime) = $2
             AND status IN ('confirmed', 'pending')
             AND (
-                (start_time <= $3::time AND end_time > $3::time) OR
-                (start_time < $4::time AND end_time >= $4::time) OR
-                (start_time >= $3::time AND end_time <= $4::time)
+                (TIME(start_datetime) <= $3::time AND TIME(end_datetime) > $3::time) OR
+                (TIME(start_datetime) < $4::time AND TIME(end_datetime) >= $4::time) OR
+                (TIME(start_datetime) >= $3::time AND TIME(end_datetime) <= $4::time)
             )
         `;
 

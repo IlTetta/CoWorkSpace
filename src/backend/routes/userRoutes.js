@@ -224,6 +224,154 @@ router.get('/profile', authMiddleware.protect, userController.getProfile);
 
 /**
  * @swagger
+ * /users/dashboard:
+ *   get:
+ *     summary: Ottieni dashboard utente con storico prenotazioni e pagamenti
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard utente recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           type: object
+ *                           properties:
+ *                             user_id:
+ *                               type: integer
+ *                               example: 1
+ *                             name:
+ *                               type: string
+ *                               example: 'Mario'
+ *                             surname:
+ *                               type: string
+ *                               example: 'Rossi'
+ *                             email:
+ *                               type: string
+ *                               format: email
+ *                               example: 'mario.rossi@email.com'
+ *                             role:
+ *                               type: string
+ *                               example: 'user'
+ *                             created_at:
+ *                               type: string
+ *                               format: date-time
+ *                         statistics:
+ *                           type: object
+ *                           properties:
+ *                             total_bookings:
+ *                               type: integer
+ *                               example: 15
+ *                             completed_bookings:
+ *                               type: integer
+ *                               example: 12
+ *                             confirmed_bookings:
+ *                               type: integer
+ *                               example: 2
+ *                             cancelled_bookings:
+ *                               type: integer
+ *                               example: 1
+ *                             total_spent:
+ *                               type: number
+ *                               format: decimal
+ *                               example: 450.00
+ *                             total_hours_booked:
+ *                               type: number
+ *                               format: decimal
+ *                               example: 75.5
+ *                             locations_visited:
+ *                               type: integer
+ *                               example: 3
+ *                             space_types_used:
+ *                               type: integer
+ *                               example: 4
+ *                         bookings:
+ *                           type: object
+ *                           properties:
+ *                             all:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   booking_id:
+ *                                     type: integer
+ *                                   booking_date:
+ *                                     type: string
+ *                                     format: date
+ *                                   start_time:
+ *                                     type: string
+ *                                     format: time
+ *                                   end_time:
+ *                                     type: string
+ *                                     format: time
+ *                                   total_hours:
+ *                                     type: number
+ *                                     format: decimal
+ *                                   total_price:
+ *                                     type: number
+ *                                     format: decimal
+ *                                   status:
+ *                                     type: string
+ *                                     enum: ['confirmed', 'pending', 'cancelled', 'completed']
+ *                                   space_name:
+ *                                     type: string
+ *                                   location_name:
+ *                                     type: string
+ *                                   payment_status:
+ *                                     type: string
+ *                                     enum: ['completed', 'failed', 'refunded']
+ *                             upcoming:
+ *                               type: array
+ *                               description: Prossime prenotazioni confermate
+ *                             recent:
+ *                               type: array
+ *                               description: Ultime 5 prenotazioni
+ *                             total:
+ *                               type: integer
+ *                         preferences:
+ *                           type: object
+ *                           properties:
+ *                             top_locations:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   location_name:
+ *                                     type: string
+ *                                   city:
+ *                                     type: string
+ *                                   booking_count:
+ *                                     type: integer
+ *                             top_space_types:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   type_name:
+ *                                     type: string
+ *                                   booking_count:
+ *                                     type: integer
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Dashboard utente (protetto)
+router.get('/dashboard', authMiddleware.protect, userController.getDashboard);
+
+/**
+ * @swagger
  * /users/logout:
  *   post:
  *     summary: Logout utente
@@ -521,78 +669,6 @@ router.post('/initiate-password-change', authMiddleware.protect, userController.
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/fcm-token', authMiddleware.protect, userController.saveFcmToken);
-/**
- * @swagger
- * /users/{user_id}/email:
- *   get:
- *     summary: Ottieni email di un utente specifico (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID dell'utente
- *         example: 1
- *     responses:
- *       200:
- *         description: Email utente recuperata con successo
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         userId:
- *                           type: integer
- *                           example: 1
- *                         email:
- *                           type: string
- *                           format: email
- *                           example: 'mario.rossi@email.com'
- *                         name:
- *                           type: string
- *                           example: 'Mario'
- *                         surname:
- *                           type: string
- *                           example: 'Rossi'
- *                         role:
- *                           type: string
- *                           example: 'user'
- *       400:
- *         description: ID utente non valido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Utente non trovato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Ottieni email utente per ID (solo admin)
-router.get('/:user_id/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.getUserEmail);
 
 /**
  * @swagger
@@ -638,254 +714,5 @@ router.get('/:user_id/email', authMiddleware.protect, authMiddleware.authorize('
  */
 // Verifica esistenza email (pubblica)
 router.get('/check-email', userController.checkEmailExists);
-
-/**
- * @swagger
- * /users/search/email:
- *   get:
- *     summary: Cerca utenti per email (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: email
- *         required: true
- *         schema:
- *           type: string
- *         description: Pattern email da cercare (minimo 3 caratteri)
- *         example: 'mario'
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 50
- *           default: 10
- *         description: Numero massimo di risultati
- *         example: 10
- *     responses:
- *       200:
- *         description: Ricerca utenti completata
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         users:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               id:
- *                                 type: integer
- *                                 example: 1
- *                               name:
- *                                 type: string
- *                                 example: 'Mario'
- *                               surname:
- *                                 type: string
- *                                 example: 'Rossi'
- *                               email:
- *                                 type: string
- *                                 format: email
- *                                 example: 'mario.rossi@email.com'
- *                               role:
- *                                 type: string
- *                                 example: 'user'
- *                               created_at:
- *                                 type: string
- *                                 format: date-time
- *       400:
- *         description: Pattern email non valido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Cerca utenti per email (solo admin)
-router.get('/search/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.searchUsersByEmail);
-
-/**
- * @swagger
- * /users/manager-requests/pending:
- *   get:
- *     summary: Ottieni tutte le richieste manager pending (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Richieste manager pending recuperate con successo
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items:
- *                         allOf:
- *                           - $ref: '#/components/schemas/User'
- *                           - type: object
- *                             properties:
- *                               manager_request_pending:
- *                                 type: boolean
- *                                 example: true
- *                               manager_request_date:
- *                                 type: string
- *                                 format: date-time
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Ottieni richieste manager pending (solo admin)
-router.get('/manager-requests/pending', authMiddleware.protect, authMiddleware.authorize('admin'), userController.getPendingManagerRequests);
-
-/**
- * @swagger
- * /users/{user_id}/approve-manager:
- *   patch:
- *     summary: Approva richiesta manager (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID dell'utente da promuovere
- *         example: 1
- *     responses:
- *       200:
- *         description: Richiesta manager approvata con successo
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/User'
- *       400:
- *         description: ID utente non valido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Utente non trovato o nessuna richiesta pending
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Approva richiesta manager (solo admin)
-router.patch('/:user_id/approve-manager', authMiddleware.protect, authMiddleware.authorize('admin'), userController.approveManagerRequest);
-
-/**
- * @swagger
- * /users/{user_id}/reject-manager:
- *   patch:
- *     summary: Rifiuta richiesta manager (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID dell'utente
- *         example: 1
- *     responses:
- *       200:
- *         description: Richiesta manager rifiutata con successo
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/User'
- *       400:
- *         description: ID utente non valido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Utente non trovato o nessuna richiesta pending
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Rifiuta richiesta manager (solo admin)
-router.patch('/:user_id/reject-manager', authMiddleware.protect, authMiddleware.authorize('admin'), userController.rejectManagerRequest);
 
 module.exports = router;
