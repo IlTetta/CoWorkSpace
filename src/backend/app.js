@@ -55,7 +55,41 @@ app.use(helmet({
 
 // CORS configurato in modo sicuro
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : false),
+    origin: function (origin, callback) {
+        // Lista di origini permesse per sviluppo
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://127.0.0.1:5500',
+            'http://localhost:5500',
+            'http://127.0.0.1:3000'
+        ];
+        
+        // Se c'è una FRONTEND_URL specifica nell'environment, usala
+        if (process.env.FRONTEND_URL) {
+            allowedOrigins.push(process.env.FRONTEND_URL);
+        }
+        
+        // In development, permetti le origini della lista
+        // In production, permetti solo se specificato in FRONTEND_URL
+        if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+            // Permetti anche richieste senza origin (es. Postman, app mobile)
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+            }
+        } else {
+            // Production: solo FRONTEND_URL specificata
+            if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+                callback(null, true);
+            } else if (!origin) {
+                // Permetti richieste senza origin anche in production (per API calls dirette)
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
