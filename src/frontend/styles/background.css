@@ -1,0 +1,38 @@
+body::before,
+body::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 0;
+}
+
+body::before {
+    width: 500px;
+    height: 500px;
+    top: -100px;
+    left: -100px;
+}
+
+body::after {
+    width: 400px;
+    height: 400px;
+    bottom: 0px;
+    right: 0px;
+}
+
+@media (max-width: 1000px) {
+    body::before {
+        width: 300px;
+        height: 300px;
+        top: -50px;
+        left: -50px;
+    }
+
+    body::after {
+        width: 200px;
+        height: 200px;
+        bottom: 0px;
+        right: 0px;
+    }
+}

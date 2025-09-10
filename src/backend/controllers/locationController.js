@@ -5,7 +5,7 @@ const AppError = require('../utils/AppError');
 const ApiResponse = require('../utils/apiResponse');
 
 /**
- * Ottieni tutte le locations con filtri opzionali
+ * Ottieni tutte le locations con filtri opzionali e tipi di spazio associati
  */
 exports.getAllLocations = catchAsync(async (req, res, next) => {
     const filters = {
@@ -14,15 +14,24 @@ exports.getAllLocations = catchAsync(async (req, res, next) => {
         manager_id: req.query.manager_id
     };
 
+    // Parametri di ordinamento
+    const sorting = {
+        sortBy: req.query.sortBy || 'name', // 'name', 'city', 'spaceType'
+        sortOrder: req.query.sortOrder || 'asc' // 'asc', 'desc'
+    };
+
     // Rimuovi filtri vuoti
     Object.keys(filters).forEach(key => {
         if (!filters[key]) delete filters[key];
     });
 
     // req.user può essere undefined per richieste pubbliche
-    const locations = await LocationService.getLocations(filters, req.user || null);
+    const locations = await LocationService.getLocationsWithSpaceTypes(filters, sorting, req.user || null);
 
-    return ApiResponse.list(res, locations.map(location => location.toJSON()), 'Locations recuperate con successo', filters);
+    return ApiResponse.list(res, locations, 'Locations con tipi di spazio recuperate con successo', {
+        filters,
+        sorting
+    });
 });
 
 /**
@@ -174,14 +183,27 @@ exports.getLocationStats = catchAsync(async (req, res, next) => {
  * Ottieni locations ordinate alfabeticamente (compatibilità)
  */
 exports.getAllLocationsAlphabetically = catchAsync(async (req, res, next) => {
-    const locations = await LocationService.getLocations({}, req.user || null);
+    const filters = {
+        city: req.query.city,
+        name: req.query.name,
+        manager_id: req.query.manager_id
+    };
 
-    // Ordina alfabeticamente
-    const sortedLocations = locations
-        .sort((a, b) => a.location_name.localeCompare(b.location_name))
-        .map(location => location.toJSON());
+    // Rimuovi filtri vuoti
+    Object.keys(filters).forEach(key => {
+        if (!filters[key]) delete filters[key];
+    });
 
-    return ApiResponse.list(res, sortedLocations, 'Locations ordinate recuperate con successo');
+    // Prendi l'ordine di sorting dalla query o default ad 'asc'
+    const sortOrder = req.query.sortOrder || 'asc';
+
+    // Usa il metodo che include i tipi di spazio con ordinamento alfabetico
+    const locations = await LocationService.getLocationsWithSpaceTypes(filters, {
+        sortBy: 'name',
+        sortOrder: sortOrder
+    }, req.user || null);
+
+    return ApiResponse.list(res, locations, 'Locations ordinate recuperate con successo');
 });
 
 /**

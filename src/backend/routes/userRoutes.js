@@ -61,20 +61,22 @@ const loginLimiter = rateLimit({
  *                 example: mario.rossi@email.com
  *               password:
  *                 type: string
- *                 minLength: 6
- *                 example: password123
+ *                 minLength: 8
+ *                 example: Password123!
  *               name:
  *                 type: string
  *                 example: Mario
  *               surname:
  *                 type: string
  *                 example: Rossi
- *               phoneNumber:
- *                 type: string
- *                 example: +39 123 456 7890
+ *               requestManagerRole:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Richiedi di diventare manager (l'utente non potrà fare login fino all'approvazione)
+ *                 example: false
  *     responses:
  *       201:
- *         description: Utente registrato con successo
+ *         description: Utente registrato con successo (può fare login)
  *         content:
  *           application/json:
  *             schema:
@@ -90,6 +92,30 @@ const loginLimiter = rateLimit({
  *                         token:
  *                           type: string
  *                           description: JWT token per autenticazione
+ *                         canLogin:
+ *                           type: boolean
+ *                           example: true
+ *       202:
+ *         description: Utente registrato, in attesa di approvazione manager (non può fare login)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *                         token:
+ *                           type: string
+ *                           nullable: true
+ *                           example: null
+ *                         canLogin:
+ *                           type: boolean
+ *                           example: false
  *       400:
  *         description: Dati non validi
  *         content:
@@ -195,6 +221,154 @@ router.post('/login', loginLimiter, loginValidation, validateRequest, userContro
  */
 // Profilo utente (protetto)
 router.get('/profile', authMiddleware.protect, userController.getProfile);
+
+/**
+ * @swagger
+ * /users/dashboard:
+ *   get:
+ *     summary: Ottieni dashboard utente con storico prenotazioni e pagamenti
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard utente recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           type: object
+ *                           properties:
+ *                             user_id:
+ *                               type: integer
+ *                               example: 1
+ *                             name:
+ *                               type: string
+ *                               example: 'Mario'
+ *                             surname:
+ *                               type: string
+ *                               example: 'Rossi'
+ *                             email:
+ *                               type: string
+ *                               format: email
+ *                               example: 'mario.rossi@email.com'
+ *                             role:
+ *                               type: string
+ *                               example: 'user'
+ *                             created_at:
+ *                               type: string
+ *                               format: date-time
+ *                         statistics:
+ *                           type: object
+ *                           properties:
+ *                             total_bookings:
+ *                               type: integer
+ *                               example: 15
+ *                             completed_bookings:
+ *                               type: integer
+ *                               example: 12
+ *                             confirmed_bookings:
+ *                               type: integer
+ *                               example: 2
+ *                             cancelled_bookings:
+ *                               type: integer
+ *                               example: 1
+ *                             total_spent:
+ *                               type: number
+ *                               format: decimal
+ *                               example: 450.00
+ *                             total_hours_booked:
+ *                               type: number
+ *                               format: decimal
+ *                               example: 75.5
+ *                             locations_visited:
+ *                               type: integer
+ *                               example: 3
+ *                             space_types_used:
+ *                               type: integer
+ *                               example: 4
+ *                         bookings:
+ *                           type: object
+ *                           properties:
+ *                             all:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   booking_id:
+ *                                     type: integer
+ *                                   booking_date:
+ *                                     type: string
+ *                                     format: date
+ *                                   start_time:
+ *                                     type: string
+ *                                     format: time
+ *                                   end_time:
+ *                                     type: string
+ *                                     format: time
+ *                                   total_hours:
+ *                                     type: number
+ *                                     format: decimal
+ *                                   total_price:
+ *                                     type: number
+ *                                     format: decimal
+ *                                   status:
+ *                                     type: string
+ *                                     enum: ['confirmed', 'pending', 'cancelled', 'completed']
+ *                                   space_name:
+ *                                     type: string
+ *                                   location_name:
+ *                                     type: string
+ *                                   payment_status:
+ *                                     type: string
+ *                                     enum: ['completed', 'failed', 'refunded']
+ *                             upcoming:
+ *                               type: array
+ *                               description: Prossime prenotazioni confermate
+ *                             recent:
+ *                               type: array
+ *                               description: Ultime 5 prenotazioni
+ *                             total:
+ *                               type: integer
+ *                         preferences:
+ *                           type: object
+ *                           properties:
+ *                             top_locations:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   location_name:
+ *                                     type: string
+ *                                   city:
+ *                                     type: string
+ *                                   booking_count:
+ *                                     type: integer
+ *                             top_space_types:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   type_name:
+ *                                     type: string
+ *                                   booking_count:
+ *                                     type: integer
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+// Dashboard utente (protetto)
+router.get('/dashboard', authMiddleware.protect, userController.getDashboard);
 
 /**
  * @swagger
@@ -495,78 +669,6 @@ router.post('/initiate-password-change', authMiddleware.protect, userController.
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/fcm-token', authMiddleware.protect, userController.saveFcmToken);
-/**
- * @swagger
- * /users/{user_id}/email:
- *   get:
- *     summary: Ottieni email di un utente specifico (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID dell'utente
- *         example: 1
- *     responses:
- *       200:
- *         description: Email utente recuperata con successo
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         userId:
- *                           type: integer
- *                           example: 1
- *                         email:
- *                           type: string
- *                           format: email
- *                           example: 'mario.rossi@email.com'
- *                         name:
- *                           type: string
- *                           example: 'Mario'
- *                         surname:
- *                           type: string
- *                           example: 'Rossi'
- *                         role:
- *                           type: string
- *                           example: 'user'
- *       400:
- *         description: ID utente non valido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Utente non trovato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Ottieni email utente per ID (solo admin)
-router.get('/:user_id/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.getUserEmail);
 
 /**
  * @swagger
@@ -612,89 +714,5 @@ router.get('/:user_id/email', authMiddleware.protect, authMiddleware.authorize('
  */
 // Verifica esistenza email (pubblica)
 router.get('/check-email', userController.checkEmailExists);
-
-/**
- * @swagger
- * /users/search/email:
- *   get:
- *     summary: Cerca utenti per email (Solo Admin)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: email
- *         required: true
- *         schema:
- *           type: string
- *         description: Pattern email da cercare (minimo 3 caratteri)
- *         example: 'mario'
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 50
- *           default: 10
- *         description: Numero massimo di risultati
- *         example: 10
- *     responses:
- *       200:
- *         description: Ricerca utenti completata
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         users:
- *                           type: array
- *                           items:
- *                             type: object
- *                             properties:
- *                               id:
- *                                 type: integer
- *                                 example: 1
- *                               name:
- *                                 type: string
- *                                 example: 'Mario'
- *                               surname:
- *                                 type: string
- *                                 example: 'Rossi'
- *                               email:
- *                                 type: string
- *                                 format: email
- *                                 example: 'mario.rossi@email.com'
- *                               role:
- *                                 type: string
- *                                 example: 'user'
- *                               created_at:
- *                                 type: string
- *                                 format: date-time
- *       400:
- *         description: Pattern email non valido
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Non autorizzato
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Accesso negato (solo admin)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-// Cerca utenti per email (solo admin)
-router.get('/search/email', authMiddleware.protect, authMiddleware.authorize('admin'), userController.searchUsersByEmail);
 
 module.exports = router;

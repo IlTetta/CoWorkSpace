@@ -1,0 +1,52 @@
+/* Header */
+.header {
+    height: 100px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 1003;
+}
+
+
+.middle-section {
+    display: fixed;
+}
+
+
+.logo {
+    color: rgb(79, 70, 229);
+    font-family: sans-serif, Arial;
+    font-weight: 900;
+    font-size: 40px;
+    cursor: pointer;
+}
+
+/* Stili Globali */
+html {
+    box-sizing: border-box;
+    font-size: 62.5%;
+}
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+
+@media (max-width: 1000px) {
+    .header {
+        height: 100px;
+        justify-content: center;
+        
+    }
+
+    .logo {
+        transform: scale(0.8);
+        text-align: center;
+    }
+}

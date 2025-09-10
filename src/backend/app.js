@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./config/db');
 const ApiResponse = require('./utils/apiResponse');
 const { specs, swaggerUi } = require('./config/swagger');
+const path = require('path');
 const app = express();
 
 // --- Importazione dei moduli delle rotte ---
@@ -19,23 +20,14 @@ const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const additionalServiceRoutes = require('./routes/additionalServiceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const managerRoutes = require('./routes/managerRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // --- Rate Limiting ---
-// Rate limiting generale per tutte le API
-const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minuti
-    max: 100, // 100 richieste per IP ogni 15 minuti
-    message: {
-        error: 'Troppe richieste da questo IP, riprova più tardi.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
 // Rate limiting stricter per operazioni di autenticazione
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minuti
-    max: 5, // Solo 5 tentativi di login per IP ogni 15 minuti
+    max: 100, // Solo 100 tentativi di login per IP ogni 15 minuti
     message: {
         error: 'Troppi tentativi di accesso. Riprova tra 15 minuti.'
     },
@@ -45,21 +37,59 @@ const authLimiter = rateLimit({
 
 // --- Security Middleware ---
 // Headers di sicurezza con Helmet
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            // Permetti script inline solo in sviluppo per Live Server
+            scriptSrc: isDevelopment ? ["'self'", "'unsafe-inline'"] : ["'self'"],
             imgSrc: ["'self'", "data:", "https:"],
         },
     },
-    crossOriginEmbedderPolicy: false // Per Swagger UI
+    crossOriginEmbedderPolicy: false // For Swagger UI
 }));
 
 // CORS configurato in modo sicuro
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : false),
+    origin: function (origin, callback) {
+        // Lista di origini permesse per sviluppo
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://127.0.0.1:5500',
+            'http://localhost:5500',
+            'http://127.0.0.1:3000'
+        ];
+        
+        // Se c'è una FRONTEND_URL specifica nell'environment, usala
+        if (process.env.FRONTEND_URL) {
+            allowedOrigins.push(process.env.FRONTEND_URL);
+        }
+        
+        // In development, permetti le origini della lista
+        // In production, permetti solo se specificato in FRONTEND_URL
+        if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+            // Permetti anche richieste senza origin (es. Postman, app mobile)
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+            }
+        } else {
+            // Production: solo FRONTEND_URL specificata
+            if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+                callback(null, true);
+            } else if (!origin) {
+                // Permetti richieste senza origin anche in production (per API calls dirette)
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -68,8 +98,25 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Limite dimensione payload
 
-// Applica rate limiting generale a tutte le rotte API
-app.use('/api/', generalLimiter);
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Pagina principale dell'applicazione
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Restituisce la pagina HTML principale
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ */
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/home.html'));
+});
+
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Applica rate limiting specifico per auth
 app.use('/api/users/login', authLimiter);
@@ -91,6 +138,82 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
     }
 }));
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Endpoint di health check del sistema
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: Sistema funzionante
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: 'OK'
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 uptime:
+ *                   type: number
+ *                   description: Tempo di attività in secondi
+ *                 memory:
+ *                   type: object
+ *                   properties:
+ *                     rss:
+ *                       type: number
+ *                     heapTotal:
+ *                       type: number
+ *                     heapUsed:
+ *                       type: number
+ *                     external:
+ *                       type: number
+ *                 database:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       example: 'healthy'
+ *                     responseTime:
+ *                       type: number
+ *                     connections:
+ *                       type: number
+ *                 connectionPool:
+ *                   type: object
+ *                   properties:
+ *                     totalConnections:
+ *                       type: number
+ *                     idleConnections:
+ *                       type: number
+ *                     waitingCount:
+ *                       type: number
+ *                 version:
+ *                   type: string
+ *                   example: '1.0.0'
+ *                 environment:
+ *                   type: string
+ *                   example: 'development'
+ *       503:
+ *         description: Sistema non funzionante
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: 'ERROR'
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 error:
+ *                   type: string
+ *                   description: Dettagli dell'errore
+ */
 // --- Health Check Endpoint ---
 app.get('/health', async (req, res) => {
     try {
@@ -119,6 +242,68 @@ app.get('/health', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api:
+ *   get:
+ *     summary: Informazioni generali sull'API
+ *     tags: [API Info]
+ *     responses:
+ *       200:
+ *         description: Informazioni API e lista degli endpoint disponibili
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   example: 'CoWorkSpace API'
+ *                 version:
+ *                   type: string
+ *                   example: '1.0.0'
+ *                 description:
+ *                   type: string
+ *                   example: 'API per la gestione di spazi co-working'
+ *                 endpoints:
+ *                   type: object
+ *                   properties:
+ *                     auth:
+ *                       type: string
+ *                       example: '/api/users'
+ *                     locations:
+ *                       type: string
+ *                       example: '/api/locations'
+ *                     spaces:
+ *                       type: string
+ *                       example: '/api/spaces'
+ *                     space-types:
+ *                       type: string
+ *                       example: '/api/space-types'
+ *                     availability:
+ *                       type: string
+ *                       example: '/api/availability'
+ *                     bookings:
+ *                       type: string
+ *                       example: '/api/bookings'
+ *                     payments:
+ *                       type: string
+ *                       example: '/api/payments'
+ *                     additional-services:
+ *                       type: string
+ *                       example: '/api/additional-services'
+ *                     notifications:
+ *                       type: string
+ *                       example: '/api/notifications'
+ *                 docs:
+ *                   type: string
+ *                   example: '/api-docs'
+ *                   description: 'URL della documentazione Swagger'
+ *                 health:
+ *                   type: string
+ *                   example: '/health'
+ *                   description: 'URL del health check'
+ */
 // --- API Info Endpoint ---
 app.get('/api', (req, res) => {
     res.json({
@@ -134,7 +319,9 @@ app.get('/api', (req, res) => {
             bookings: '/api/bookings',
             payments: '/api/payments',
             'additional-services': '/api/additional-services',
-            notifications: '/api/notifications'
+            notifications: '/api/notifications',
+            manager: '/api/manager',
+            admin: '/api/admin'
         },
         docs: '/api-docs', // Documentazione Swagger
         health: '/health'
@@ -151,6 +338,8 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/additional-services', additionalServiceRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/manager', managerRoutes);
+app.use('/api/admin', adminRoutes);
 
 // --- Gestione globale degli errori ---
 app.use((err, req, res, next) => {

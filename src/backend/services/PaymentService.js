@@ -1,6 +1,8 @@
 // src/backend/services/PaymentService.js
 const Payment = require('../models/Payment');
 const Booking = require('../models/Booking');
+const Space = require('../models/Space');
+const Location = require('../models/Location');
 const AppError = require('../utils/AppError');
 const db = require('../config/db');
 
@@ -28,10 +30,28 @@ class PaymentService {
             throw AppError.notFound('Prenotazione non trovata');
         }
 
-        // Verifica autorizzazione: solo il proprietario della prenotazione può pagare
-        // (o admin/manager per conto di altri)
+        // Verifica autorizzazione: proprietario della prenotazione o manager/admin
         if (currentUser.role === 'user' && booking.user_id !== currentUser.user_id) {
             throw AppError.forbidden('Non puoi creare un pagamento per questa prenotazione');
+        }
+
+        // I manager possono processare pagamenti per clienti delle proprie location
+        // Questo include:
+        // - Pagamenti in contanti alla reception
+        // - Assistenza clienti con problemi di pagamento
+        // - Processare pagamenti per conto di clienti
+        if (currentUser.role === 'manager' && booking.user_id !== currentUser.user_id) {
+            // Verifica che il manager gestisca la location del booking
+            const space = await Space.findById(booking.space_id);
+            if (!space) {
+                throw AppError.badRequest('Spazio della prenotazione non trovato');
+            }
+            
+            // Verifica attraverso la location
+            const location = await Location.findById(space.location_id);
+            if (!location || location.manager_id !== currentUser.user_id) {
+                throw AppError.forbidden('Puoi processare pagamenti solo per prenotazioni delle tue location');
+            }
         }
 
         // Verifica che non esista già un pagamento per questa prenotazione

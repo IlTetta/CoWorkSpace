@@ -173,11 +173,13 @@ class Booking {
                     u.email as user_email,
                     s.space_name,
                     l.location_name,
-                    l.address as location_address
+                    l.address as location_address,
+                    p.status as payment_status
                 FROM bookings b
                 JOIN users u ON b.user_id = u.user_id
                 JOIN spaces s ON b.space_id = s.space_id
                 JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
                 WHERE 1=1
             `;
 
@@ -212,7 +214,7 @@ class Booking {
             }
 
             if (filters.payment_status) {
-                query += ` AND b.payment_status = $${paramCount++}`;
+                query += ` AND p.status = $${paramCount++}`;
                 values.push(filters.payment_status);
             }
 
@@ -718,8 +720,9 @@ class Booking {
                 FROM bookings b
                 JOIN spaces s ON b.space_id = s.space_id
                 JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
                 WHERE b.user_id = $1 
-                AND b.payment_status = 'pending'
+                AND (p.status IS NULL OR p.status = 'pending')
                 AND b.status NOT IN ('cancelled')
             `;
 
@@ -768,8 +771,9 @@ class Booking {
                 FROM bookings b
                 JOIN spaces s ON b.space_id = s.space_id
                 JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
                 WHERE b.user_id = $1 
-                AND b.payment_status = 'pending'
+                AND (p.status IS NULL OR p.status = 'pending')
                 AND b.status NOT IN ('cancelled')
             `;
 
@@ -863,14 +867,16 @@ class Booking {
                     CASE 
                         WHEN b.created_at < CURRENT_TIMESTAMP - INTERVAL '3 days' THEN true
                         ELSE false
-                    END as payment_overdue
+                    END as payment_overdue,
+                    p.status as payment_status
                 FROM bookings b
                 JOIN users u ON b.user_id = u.user_id
                 JOIN spaces s ON b.space_id = s.space_id
                 JOIN space_types st ON s.space_type_id = st.space_type_id
                 JOIN locations l ON s.location_id = l.location_id
+                LEFT JOIN payments p ON b.booking_id = p.booking_id
                 WHERE b.user_id = $1 
-                AND b.payment_status = 'pending'
+                AND (p.status IS NULL OR p.status = 'pending')
                 AND b.status NOT IN ('cancelled')
             `;
 

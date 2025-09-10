@@ -67,14 +67,14 @@ class Location {
         `;
 
         const result = await db.query(query, [id]);
-        
+
         if (result.rows.length === 0) {
             return null;
         }
 
         const locationData = result.rows[0];
         const location = new Location(locationData);
-        
+
         // Aggiungi dati del manager se presente
         if (locationData.manager_name) {
             location.manager = {
@@ -99,7 +99,7 @@ class Location {
             FROM locations l
             LEFT JOIN users u ON l.manager_id = u.user_id
         `;
-        
+
         const conditions = [];
         const values = [];
 
@@ -116,9 +116,13 @@ class Location {
         }
 
         // Filtro per manager
-        if (filters.manager_id) {
-            conditions.push(`l.manager_id = $${values.length + 1}`);
-            values.push(filters.manager_id);
+        if (filters.manager_id !== undefined) {
+            if (filters.manager_id === null) {
+                conditions.push(`l.manager_id IS NULL`);
+            } else {
+                conditions.push(`l.manager_id = $${values.length + 1}`);
+                values.push(filters.manager_id);
+            }
         }
 
         if (conditions.length > 0) {
@@ -156,7 +160,6 @@ class Location {
             FROM locations l
             LEFT JOIN users u ON l.manager_id = u.user_id
         `;
-        
         const conditions = [];
         const values = [];
 
@@ -173,9 +176,13 @@ class Location {
         }
 
         // Filtro per manager
-        if (filters.manager_id) {
-            conditions.push(`l.manager_id = $${values.length + 1}`);
-            values.push(filters.manager_id);
+        if (filters.manager_id !== undefined) {
+            if (filters.manager_id === null) {
+                conditions.push(`l.manager_id IS NULL`);
+            } else {
+                conditions.push(`l.manager_id = $${values.length + 1}`);
+                values.push(filters.manager_id);
+            }
         }
 
         if (conditions.length > 0) {
@@ -217,10 +224,182 @@ class Location {
     }
 
     /**
-     * Aggiorna una location
-     * @param {number} id - ID della location
-     * @param {Object} updateData - Dati da aggiornare
-     * @returns {Promise<Location>} - Location aggiornata
+  * Trova tutte le locations con i loro tipi di spazio associati in una singola query ottimizzata
+  * @param {Object} filters - Filtri di ricerca
+  * @param {string} sortBy - Campo per ordinamento ('name', 'city', 'spaceType')
+  * @param {string} sortOrder - Ordine ('asc', 'desc')
+  * @returns {Promise<Object[]>} - Array di locations con tipi di spazio
+  */
+    static async findAllWithSpaceTypes(filters = {}, sortBy = 'name', sortOrder = 'asc') {
+        let query = `
+        SELECT 
+            l.location_id,
+            l.location_name,
+            l.address,
+            l.city,
+            l.description,
+            l.manager_id,
+            u.name as manager_name,
+            u.surname as manager_surname,
+            COALESCE(st_json.space_types, '[]'::json) as space_types,
+            st_json.first_space_type
+        FROM locations l
+        LEFT JOIN users u ON l.manager_id = u.user_id
+        LEFT JOIN LATERAL (
+            SELECT 
+                JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                        'id', grouped_data.space_type_id,
+                        'name', grouped_data.type_name,
+                        'description', grouped_data.description,
+                        'spacesCount', grouped_data.spaces_count,
+                        'priceRange', JSON_BUILD_OBJECT(
+                            'min', grouped_data.min_price,
+                            'max', grouped_data.max_price,
+                            'average', grouped_data.avg_price
+                        ),
+                        'capacityRange', JSON_BUILD_OBJECT(
+                            'min', grouped_data.min_capacity,
+                            'max', grouped_data.max_capacity
+                        )
+                    ) ORDER BY grouped_data.type_name
+                ) AS space_types,
+                MIN(grouped_data.type_name) AS first_space_type
+            FROM (
+                SELECT 
+                    st.space_type_id,
+                    st.type_name,
+                    st.description,
+                    COUNT(s2.space_id) as spaces_count,
+                    MIN(s2.price_per_hour) as min_price,
+                    MAX(s2.price_per_hour) as max_price,
+                    ROUND(AVG(s2.price_per_hour), 2) as avg_price,
+                    MIN(s2.capacity) as min_capacity,
+                    MAX(s2.capacity) as max_capacity
+                FROM spaces s2
+                JOIN space_types st ON s2.space_type_id = st.space_type_id
+                WHERE s2.location_id = l.location_id
+                GROUP BY st.space_type_id, st.type_name, st.description
+            ) grouped_data
+        ) st_json ON true
+    `;
+
+        const conditions = [];
+        const values = [];
+
+        // Filtri dinamici
+        if (filters.city) {
+            conditions.push(`LOWER(l.city) = LOWER($${values.length + 1})`);
+            values.push(filters.city);
+        }
+
+        if (filters.name) {
+            conditions.push(`LOWER(l.location_name) LIKE LOWER($${values.length + 1})`);
+            values.push(`%${filters.name}%`);
+        }
+
+        if (filters.manager_id !== undefined) {
+            if (filters.manager_id === null) {
+                conditions.push(`l.manager_id IS NULL`);
+            } else {
+                conditions.push(`l.manager_id = $${values.length + 1}`);
+                values.push(filters.manager_id);
+            }
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        // Ordinamento
+        let orderClause = '';
+        switch (sortBy) {
+            case 'name':
+                orderClause = `l.location_name ${sortOrder.toUpperCase()}`;
+                break;
+            case 'city':
+                orderClause = `l.city ${sortOrder.toUpperCase()}, l.location_name ASC`;
+                break;
+            case 'spaceType':
+                orderClause = `st_json.first_space_type ${sortOrder.toUpperCase()} NULLS LAST, l.location_name ASC`;
+                break;
+            default:
+                orderClause = 'l.location_name ASC';
+        }
+
+        query += ` ORDER BY ${orderClause}`;
+
+        try {
+            const result = await db.query(query, values);
+
+            return result.rows.map(row => ({
+                id: row.location_id,
+                name: row.location_name,
+                address: row.address,
+                city: row.city,
+                description: row.description,
+                managerId: row.manager_id,
+                manager: row.manager_name ? {
+                    id: row.manager_id,
+                    name: row.manager_name,
+                    surname: row.manager_surname
+                } : null,
+                spaceTypes: row.space_types || []
+            }));
+        } catch (error) {
+            console.warn('Query complessa fallita, uso metodo fallback:', error.message);
+            return await this.findAllWithSpaceTypesFallback(filters, sortBy, sortOrder);
+        }
+    }
+
+    /**
+ * Metodo fallback per trovare locations con tipi di spazio (multiple queries)
+ * @param {Object} filters - Filtri di ricerca
+ * @param {string} sortBy - Campo per ordinamento
+ * @param {string} sortOrder - Ordine
+ * @returns {Promise<Object[]>} - Array di locations con tipi di spazio
+ */
+static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
+    const locations = await this.findAll(filters);
+
+    const locationsWithSpaceTypes = await Promise.all(
+        locations.map(async (location) => {
+            const spaceTypes = await this.getLocationSpaceTypes(location.location_id);
+            return {
+                ...location.toJSON(),
+                spaceTypes
+            };
+        })
+    );
+
+    // Ordinamento lato JS
+    if (sortBy === 'spaceType') {
+        locationsWithSpaceTypes.sort((a, b) => {
+            const aFirstType = a.spaceTypes.length > 0 ? a.spaceTypes[0].name : '';
+            const bFirstType = b.spaceTypes.length > 0 ? b.spaceTypes[0].name : '';
+            const comparison = aFirstType.localeCompare(bFirstType);
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    } else if (sortBy === 'name') {
+        locationsWithSpaceTypes.sort((a, b) => {
+            const comparison = a.name.localeCompare(b.name);
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    } else if (sortBy === 'city') {
+        locationsWithSpaceTypes.sort((a, b) => {
+            const comparison = a.city.localeCompare(b.city);
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    }
+
+    return locationsWithSpaceTypes;
+}
+
+/**
+ * Aggiorna una location
+ * @param {number} id - ID della location
+ * @param {Object} updateData - Dati da aggiornare
+ * @returns {Promise<Location>} - Location aggiornata
      */
     static async update(id, updateData) {
         // Validazione input
@@ -254,7 +433,7 @@ class Location {
 
         try {
             const result = await db.query(query, values);
-            
+
             if (result.rows.length === 0) {
                 throw AppError.notFound('Location non trovata');
             }
@@ -280,7 +459,7 @@ class Location {
         // Verifica se ci sono spazi associati
         const spacesQuery = 'SELECT COUNT(*) as count FROM spaces WHERE location_id = $1';
         const spacesResult = await db.query(spacesQuery, [id]);
-        
+
         if (parseInt(spacesResult.rows[0].count) > 0) {
             throw AppError.badRequest('Impossibile eliminare: ci sono spazi associati a questa location');
         }
@@ -457,7 +636,6 @@ class Location {
         };
 
         const results = {};
-        
         for (const [key, query] of Object.entries(queries)) {
             try {
                 const result = await db.query(query, [locationId]);

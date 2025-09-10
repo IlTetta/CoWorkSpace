@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuova Richiesta Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .content {
+            line-height: 1.6;
+            color: #333;
+        }
+        .user-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .approve-button {
+            background-color: #27ae60;
+        }
+        .reject-button {
+            background-color: #e74c3c;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{companyName}}</h1>
+            <h2>🚀 Nuova Richiesta Manager</h2>
+        </div>
+        
+        <div class="content">
+            <p>Ciao Admin,</p>
+            
+            <p>Un nuovo utente ha richiesto di diventare <strong>manager</strong> sulla piattaforma CoWorkSpace.</p>
+            
+            <div class="user-info">
+                <h3>📋 Dettagli Utente:</h3>
+                <ul>
+                    <li><strong>Nome:</strong> {{userName}}</li>
+                    <li><strong>Email:</strong> {{userEmail}}</li>
+                    <li><strong>ID Utente:</strong> #{{userId}}</li>
+                    <li><strong>Data Richiesta:</strong> {{requestDate}}</li>
+                </ul>
+            </div>
+            
+            <p>⚠️ <strong>Importante:</strong> L'utente non potrà effettuare il login fino a quando non approvi o rifiuti la sua richiesta.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{adminUrl}}" class="button approve-button">✅ Gestisci Richieste</a>
+            </div>
+            
+            <p>Puoi approvare o rifiutare la richiesta direttamente dal pannello amministratore.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Questa email è stata generata automaticamente dal sistema {{companyName}}.</p>
+            <p>Non rispondere a questa email.</p>
+        </div>
+    </div>
+</body>
+</html>

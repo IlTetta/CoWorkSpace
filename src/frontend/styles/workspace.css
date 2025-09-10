@@ -1,0 +1,502 @@
+body {
+    background: #256E82;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.6rem;
+    min-height: 100vh;
+    padding-top: 100px;
+    margin: 0;
+}
+
+/* Container principale a due colonne */
+.workspace-container {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+    gap: 30px;
+    padding: 20px;
+    min-height: calc(100vh - 120px);
+}
+
+/* Sezione sinistra - Informazioni Location */
+.location-info-section {
+    flex: 1;
+    min-width: 400px;
+}
+
+.location-card-detail {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    height: fit-content;
+}
+
+.location-header {
+    margin-bottom: 25px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 20px;
+}
+
+.location-name {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: rgb(79, 70, 229);
+    margin: 0 0 10px 0;
+}
+
+.location-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.location-city,
+.location-address {
+    font-size: 1.4rem;
+    color: #666;
+    margin: 0;
+    font-style: italic;
+}
+
+.location-description,
+.location-spaces,
+.location-manager {
+    margin-bottom: 25px;
+}
+
+.location-description h3,
+.location-spaces h3,
+.location-manager h3 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: rgb(79, 70, 229);
+    margin: 0 0 15px 0;
+}
+
+.location-description p,
+.location-manager p {
+    font-size: 1.4rem;
+    color: #334155;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.space-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.space-type-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.space-type-card:hover {
+    border-color: rgb(79, 70, 229);
+    background: #f0f4ff;
+    transform: translateY(-2px);
+}
+
+.space-type-card.selected {
+    border-color: rgb(79, 70, 229);
+    background: #f0f4ff;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.space-type-name {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: rgb(79, 70, 229);
+    margin: 0 0 8px 0;
+}
+
+.space-type-description {
+    font-size: 1.2rem;
+    color: #666;
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+}
+
+.space-type-price {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #059669;
+    margin: 0;
+}
+
+.back-button-container {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
+.back-button {
+    background: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    background: rgb(99, 89, 255);
+    transform: translateY(-2px);
+}
+
+/* Sezione destra - Prenotazione */
+.booking-section-container {
+    flex: 1;
+    min-width: 400px;
+    display: flex;
+    justify-content: center;
+}
+
+
+/* Sezione pagamento */
+.payment-section {
+    display: none;
+    text-align: center;
+}
+.payment-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: rgb(79, 70, 229);
+}
+.payment-total {
+    font-size: 1.8rem;
+    color: #334155;
+    margin-top: 0.5rem;
+}
+.pay-button {
+    width: auto;
+    padding: 1.2rem 2.5rem;
+    margin-top: 1.5rem;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+.pay-button:hover {
+    transform: scale(1.05);
+    background-color: white;
+    color: rgb(79, 70, 229);
+    border: 2px solid rgb(79, 70, 229);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+.pay-button:active {
+    transform: scale(0.95);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
+    transition: all 0.01s ease-out;
+}
+
+/* Contenitore Principale */
+.workspace-card {
+    margin-top: 2rem;
+    background-color: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    width: 90vw;
+    max-width: 800px;
+    padding-bottom: 40px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.workspace-title-block {
+    background-color: rgb(79, 70, 229);
+    color: #fff;
+    padding: 3rem 2rem 2rem 2rem;
+    border-radius: 18px 18px 0 0; /* Angoli superiori smussati, inferiori dritti */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.workspace-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin: 0;
+}
+
+.workspace-type {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #334155;
+    margin: 0.5rem 0 2rem 3rem;
+}
+
+/* Form di Prenotazione */
+.booking-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 0 3rem;
+}
+
+
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 320px;
+}
+
+.form-group {
+    width: 100%;
+}
+
+label {
+    color: #555555;
+    font-weight: 600;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Input stile dedicato come negli altri file frontend */
+.date-bar,
+.time-bar,
+.duration-bar,
+.price-bar {
+    height: 40px;
+    padding: 0 15px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(79, 70, 229);
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    color: #000;
+    background: white;
+    width: 100%;
+}
+.booking-button {
+    width: 100%;
+    height: 40px;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+
+
+input:focus, 
+select:focus {
+    border-color: rgb(79, 70, 229);
+    box-shadow: 0 0 0 2px rgb(165, 159, 237);
+    outline: none;
+}
+
+select[multiple] {
+    min-height: 12rem;
+    padding: 1rem 1.5rem;
+}
+
+/* Sezione Pagamento e Pulsante */
+.booking-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+button {
+    width: 100%;
+    height: 40px;
+    background-color: rgb(79, 70, 229);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background-color: white;
+    color: rgb(79, 70, 229);
+    border: 2px solid rgb(79, 70, 229);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+button:active {
+    transform: scale(0.95);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(79, 70, 229, 0.5) inset;
+    transition: all 0.01s ease-out;
+}
+
+#booking-message {
+    margin-top: 1.5rem;
+    font-size: 1.6rem;
+    color: rgb(79, 70, 229);
+    text-align: center;
+    font-weight: 600;
+}
+
+.field-error {
+    color: red;
+    font-size: 14px;
+    margin-top: 5px; /* spazio sopra il messaggio */
+    display: block;   /* messaggio visibile occupa spazio solo quando presente */
+}
+
+/* Additional styles for new layout */
+
+/* Booking Section Container Enhancement */
+.booking-section-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    overflow-y: auto;
+}
+
+.booking-section-container h2 {
+    color: #1f2937;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 25px 0;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+/* Form styling consistency */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    color: #374151;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    color: #374151;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: rgb(79, 70, 229);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-group select:hover {
+    border-color: #d1d5db;
+}
+
+/* Input consistency */
+input[type="date"],
+input[type="time"],
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    color: #374151;
+    transition: all 0.3s ease;
+}
+
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="text"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: rgb(79, 70, 229);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Enhanced responsive design */
+@media (max-width: 768px) {
+    .workspace-container {
+        flex-direction: column;
+        gap: 20px;
+        padding: 15px;
+    }
+
+    .location-info-section,
+    .booking-section-container {
+        flex: none;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .location-info-section {
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+
+    .space-types-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .location-card-detail h2,
+    .booking-section-container h2 {
+        font-size: 1.8rem;
+    }
+
+    .location-address,
+    .location-manager {
+        font-size: 1.3rem;
+    }
+
+    .space-type-name {
+        font-size: 1.5rem;
+    }
+
+    .space-type-price {
+        font-size: 1.3rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .booking-section {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+    }
+}

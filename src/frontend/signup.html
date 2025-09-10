@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CoWorkSpace - Signup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/signup.css">
+    <link rel="stylesheet" href="styles/signup-header.css">
+    <link rel="stylesheet" href="styles/background.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=person" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=lock_person" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@40,400,1,0&icon_names=visibility_off" />
+</head>
+
+<body>
+    <div class="header">
+        <div class="left-section"></div>
+        <div class="middle-section">
+            <div class="logo">CoWorkSpace</div>
+        </div>
+        <div class="right-section">
+            <button class="login-button">Login</button>
+        </div>
+    </div>
+
+    <div class="people-icon">
+        <span class="material-symbols-outlined registration-icon">lock_person</span>
+    </div>
+
+    <form id="signup-form" class="panel">
+        <div>
+            <label for="username">Name</label>
+            <div class="input-container">
+                <input class="name-bar" type="text" id="name" name="name">
+                <!--<span class="material-symbols-outlined input-icon">person</span>-->
+            </div>
+        </div>
+
+        <div>
+            <label for="surname">Surname</label>
+            <div class="input-container">
+                <input class="surname-bar" type="text" id="surname" name="surname">
+            </div>
+        </div>
+
+        <div>
+            <label for="email">Email</label>
+            <div class="input-container">
+                <input class="email-bar" type="email" id="email" name="email">
+            </div>
+        </div>
+
+        <div>
+            <label for="password">Password</label>
+            <div class="input-container">
+                <input class="password-bar" id="password" type="password" name="password">
+                <span class="material-symbols-outlined input-icon">
+                    visibility_off
+                </span>
+            </div>
+        </div>
+
+        <div class="manager-request-container">
+            <input type="checkbox" id="manager-request" class="manager-request-checkbox">
+            <label for="manager-request" class="manager-request-label">Richiesta manager</label>
+        </div>
+
+        <button type="submit" class="signup-button">Signup</button>
+    </form>
+
+    <script src="js/apiService.js"></script>
+    <script src="js/authService.js"></script>
+    <script src="js/signup.js"></script>
+    <script src="js/reset-password-icon.js"></script>
+</body>
+</html>

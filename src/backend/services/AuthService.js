@@ -12,12 +12,24 @@ class AuthService {
         // Crea utente usando il model
         const user = await User.create(userData);
 
-        // Genera token
+        // Se l'utente ha richiesto di essere manager, non generiamo il token
+        // perché non può fare login finché non viene approvato
+        if (user.manager_request_pending) {
+            return {
+                token: null,
+                user: user.toJSON(),
+                message: 'Registrazione completata. La tua richiesta per diventare manager è stata inviata all\'amministratore. Non potrai effettuare il login fino all\'approvazione.',
+                canLogin: false
+            };
+        }
+
+        // Genera token per utenti normali
         const token = this.generateToken(user);
 
         return {
             token,
-            user: user.toJSON()
+            user: user.toJSON(),
+            canLogin: true
         };
     }
 
@@ -43,6 +55,9 @@ class AuthService {
         const passwordCheck = await user.verifyPasswordForLogin(password);
         
         if (!passwordCheck.isValid) {
+            if (passwordCheck.managerRequestPending) {
+                throw AppError.forbidden(passwordCheck.message);
+            }
             if (passwordCheck.expired) {
                 throw AppError.badRequest('Password temporanea scaduta. Richiedi un nuovo reset password');
             }
@@ -370,6 +385,199 @@ class AuthService {
         await User.updateFcmToken(user);
 
         return user;
+    }
+
+    /**
+     * Ottieni tutti gli utenti con filtri (solo per admin)
+     * @param {Object} filters - Filtri di ricerca
+     * @returns {Promise<Array>} - Lista utenti
+     */
+    static async getAllUsers(filters = {}) {
+        try {
+            const whereConditions = [];
+            const params = [];
+            let paramIndex = 1;
+
+            // Filtro per ruolo
+            if (filters.role) {
+                whereConditions.push(`role = $${paramIndex}`);
+                params.push(filters.role);
+                paramIndex++;
+            }
+
+            // Filtro per email (ricerca parziale)
+            if (filters.email) {
+                whereConditions.push(`LOWER(email) LIKE LOWER($${paramIndex})`);
+                params.push(`%${filters.email}%`);
+                paramIndex++;
+            }
+
+            // Filtro per nome (ricerca parziale)
+            if (filters.name) {
+                whereConditions.push(`(LOWER(name) LIKE LOWER($${paramIndex}) OR LOWER(surname) LIKE LOWER($${paramIndex}))`);
+                params.push(`%${filters.name}%`);
+                paramIndex++;
+            }
+
+            // Filtro per location (per manager)
+            if (filters.location_id) {
+                whereConditions.push(`location_id = $${paramIndex}`);
+                params.push(filters.location_id);
+                paramIndex++;
+            }
+
+            let query = `
+                SELECT user_id, name, surname, email, role, location_id, created_at, updated_at,
+                       manager_request_pending, manager_request_date
+                FROM users
+            `;
+
+            if (whereConditions.length > 0) {
+                query += ` WHERE ${whereConditions.join(' AND ')}`;
+            }
+
+            // Ordinamento
+            let orderBy = 'created_at DESC'; // Default
+
+            if (filters.sort_by) {
+                switch (filters.sort_by) {
+                    case 'name_asc':
+                        orderBy = 'name ASC, surname ASC';
+                        break;
+                    case 'name_desc':
+                        orderBy = 'name DESC, surname DESC';
+                        break;
+                    case 'email_asc':
+                        orderBy = 'email ASC';
+                        break;
+                    case 'email_desc':
+                        orderBy = 'email DESC';
+                        break;
+                    case 'role_asc':
+                        orderBy = 'role ASC, name ASC';
+                        break;
+                    case 'role_desc':
+                        orderBy = 'role DESC, name ASC';
+                        break;
+                    case 'created_asc':
+                        orderBy = 'created_at ASC';
+                        break;
+                    case 'created_desc':
+                    default:
+                        orderBy = 'created_at DESC';
+                        break;
+                }
+            }
+
+            query += ` ORDER BY ${orderBy}`;
+
+            // Limite risultati se specificato
+            if (filters.limit && parseInt(filters.limit) > 0) {
+                query += ` LIMIT ${parseInt(filters.limit)}`;
+            }
+
+            return await User.query(query, params);
+        } catch (error) {
+            throw AppError.database('Errore nel recupero utenti');
+        }
+    }
+
+    /**
+     * Aggiorna ruolo utente (solo per admin)
+     * @param {number} userId - ID dell'utente
+     * @param {string} newRole - Nuovo ruolo
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Object>} - Utente aggiornato
+     */
+    static async updateUserRole(userId, newRole, adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono modificare i ruoli');
+        }
+
+        const validRoles = ['user', 'manager', 'admin'];
+        if (!validRoles.includes(newRole)) {
+            throw AppError.badRequest(`Ruolo non valido. Valori ammessi: ${validRoles.join(', ')}`);
+        }
+
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                throw AppError.notFound('Utente non trovato');
+            }
+
+            // Aggiorna ruolo
+            const query = `
+                UPDATE users 
+                SET role = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $2
+                RETURNING *
+            `;
+
+            const result = await User.query(query, [newRole, userId]);
+            return result[0];
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.database('Errore nell\'aggiornamento ruolo utente');
+        }
+    }
+
+    /**
+     * Ottieni tutte le richieste manager pending (solo admin)
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Array>} - Lista delle richieste pending
+     */
+    static async getPendingManagerRequests(adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono visualizzare le richieste manager');
+        }
+
+        return await User.getPendingManagerRequests();
+    }
+
+    /**
+     * Approva richiesta manager (solo admin)
+     * @param {number} userId - ID dell'utente da promuovere
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Object>} - Utente aggiornato
+     */
+    static async approveManagerRequest(userId, adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono approvare le richieste manager');
+        }
+
+        return await User.approveManagerRequest(userId);
+    }
+
+    /**
+     * Rifiuta richiesta manager (solo admin)
+     * @param {number} userId - ID dell'utente
+     * @param {Object} adminUser - Utente admin che effettua l'operazione
+     * @returns {Promise<Object>} - Utente aggiornato
+     */
+    static async rejectManagerRequest(userId, adminUser) {
+        if (adminUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli admin possono rifiutare le richieste manager');
+        }
+
+        return await User.rejectManagerRequest(userId);
+    }
+
+    /**
+     * Ottieni dashboard completa per utente normale
+     * @param {number} userId - ID dell'utente
+     * @returns {Promise<Object>} - Dati dashboard
+     */
+    static async getUserDashboard(userId) {
+        return await User.getDashboard(userId);
+    }
+
+    /**
+     * Ottieni dashboard completa per manager
+     * @param {number} managerId - ID del manager
+     * @returns {Promise<Object>} - Dati dashboard manager
+     */
+    static async getManagerDashboard(managerId) {
+        return await User.getManagerDashboard(managerId);
     }
 }
 

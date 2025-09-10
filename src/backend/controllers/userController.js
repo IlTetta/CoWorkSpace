@@ -8,7 +8,7 @@ const ApiResponse = require('../utils/apiResponse');
  * Registrazione nuovo utente
  */
 exports.register = catchAsync(async (req, res, next) => {
-    const { name, surname, email, password, role } = req.body;
+    const { name, surname, email, password, requestManagerRole } = req.body;
 
     // Delega tutta la logica al service
     const result = await AuthService.register({
@@ -16,7 +16,7 @@ exports.register = catchAsync(async (req, res, next) => {
         surname, 
         email,
         password,
-        role
+        requestManagerRole: requestManagerRole || false
     });
 
     // 📧 Invia email di benvenuto automaticamente
@@ -28,9 +28,24 @@ exports.register = catchAsync(async (req, res, next) => {
         // Non bloccare la registrazione se l'email fallisce
     }
 
-    return ApiResponse.created(res, 'Registrazione avvenuta con successo', {
+    // 📧 Se è stata richiesta la promozione a manager, invia email all'admin
+    if (result.user.manager_request_pending) {
+        try {
+            await NotificationService.sendManagerRequestNotification(result.user);
+            console.log(`📧 Email di richiesta manager inviata all'admin per: ${result.user.email}`);
+        } catch (emailError) {
+            console.error('❌ Errore invio email richiesta manager:', emailError.message);
+            // Non bloccare la registrazione se l'email fallisce
+        }
+    }
+
+    const statusCode = result.canLogin ? 201 : 202; // 202 = Accepted (pending approval)
+    const message = result.message || 'Registrazione avvenuta con successo';
+
+    return ApiResponse.success(res, statusCode, message, {
         token: result.token,
-        user: result.user
+        user: result.user,
+        canLogin: result.canLogin
     });
 });
 
@@ -168,37 +183,6 @@ exports.initiatePasswordChange = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Ottieni email di un utente per ID
- * Solo admin può accedere a questa funzione per motivi di privacy
- */
-exports.getUserEmail = catchAsync(async (req, res, next) => {
-    const userId = parseInt(req.params.user_id);
-    
-    if (!userId || userId <= 0) {
-        return next(AppError.badRequest('ID utente non valido'));
-    }
-
-    // Solo admin può recuperare email di altri utenti
-    if (req.user.role !== 'admin') {
-        return next(AppError.forbidden('Solo gli amministratori possono accedere alle email degli utenti'));
-    }
-
-    const user = await AuthService.getUserById(userId);
-    
-    if (!user) {
-        return next(AppError.notFound('Utente non trovato'));
-    }
-
-    return ApiResponse.success(res, 200, 'Email utente recuperata con successo', {
-        userId: user.user_id,
-        email: user.email,
-        name: user.name,
-        surname: user.surname,
-        role: user.role
-    });
-});
-
-/**
  * Verifica se una email è già registrata nel sistema
  * Funzione pubblica per validazione durante registrazione
  */
@@ -217,27 +201,6 @@ exports.checkEmailExists = catchAsync(async (req, res, next) => {
     });
 });
 
-/**
- * Cerca utenti per email (per admin)
- * Permette ricerca parziale dell'email
- */
-exports.searchUsersByEmail = catchAsync(async (req, res, next) => {
-    const { email, limit = 10 } = req.query;
-    
-    if (!email || email.length < 3) {
-        return next(AppError.badRequest('Email deve contenere almeno 3 caratteri per la ricerca'));
-    }
-
-    // Solo admin può cercare utenti per email
-    if (req.user.role !== 'admin') {
-        return next(AppError.forbidden('Solo gli amministratori possono cercare utenti per email'));
-    }
-
-    const users = await AuthService.searchUsersByEmail(email, parseInt(limit));
-
-    return ApiResponse.list(res, users, 'Ricerca utenti completata');
-});
-
 exports.saveFcmToken = catchAsync(async (req, res, next) => {
     const { fcm_token } = req.body;
 
@@ -249,4 +212,16 @@ exports.saveFcmToken = catchAsync(async (req, res, next) => {
     await AuthService.updateFcmToken(req.user.id, fcm_token);
 
     return ApiResponse.success(res, 200, 'Token FCM salvato con successo');
+});
+
+/**
+ * Dashboard utente - Informazioni personali, storico prenotazioni e pagamenti
+ */
+exports.getDashboard = catchAsync(async (req, res, next) => {
+    const userId = req.user.user_id;
+
+    // Ottieni dati dashboard dal service
+    const dashboardData = await AuthService.getUserDashboard(userId);
+
+    return ApiResponse.success(res, 200, 'Dashboard utente recuperata con successo', dashboardData);
 });
