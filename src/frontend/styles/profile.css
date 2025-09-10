@@ -110,13 +110,13 @@ body {
 
 .modal-content {
     background: white;
-    padding: 30px;
-    width: 500px;
-    max-width: 90%;
+    margin: 0 auto;
+    padding: 25px;
+    width: 450px;
+    max-width: 100%;
     border-radius: 10px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     position: relative;
-    margin: 0; /* Rimuove il margin auto per il posizionamento assoluto */
 }
 
 .close-button {
@@ -137,14 +137,14 @@ body {
 .modal-content h2 {
     color: rgb(79, 70, 229);
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     font-family: sans-serif, Arial;
 }
 
 .user-info-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
 }
 
 .form-group {
@@ -153,17 +153,18 @@ body {
 }
 
 .form-group label {
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     color: #555;
     font-weight: bold;
     font-family: sans-serif, Arial;
+    font-size: 14px;
 }
 
 .form-group input {
-    padding: 12px 15px;
+    padding: 10px 12px;
     border: 2px solid #e0e0e0;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 15px;
     font-family: sans-serif, Arial;
     background-color: #f8f9fa;
     color: #333;
@@ -258,18 +259,23 @@ body {
 
     .modal-content {
         width: 95%;
-        margin: 0; /* Rimuove margin auto anche su mobile */
+        margin: 0 auto;
         padding: 20px;
     }
 
     .modal {
-        left: 180px; /* Posizionamento per mobile */
-        top: 350px; /* Più in basso su mobile per evitare sovrapposizioni */
-        width: calc(100% - 200px); /* Larghezza per mobile */
+        left: 0; /* Su mobile la sidebar non interferisce */
+        top: 350px; /* Posizionato sotto la sidebar su mobile ma più in alto */
+        width: 100%; /* Occupa tutta la larghezza disponibile */
+        padding: 20px 0 40px 0;
     }
 
     .form-group input {
-        padding: 10px 12px;
+        padding: 8px 10px;
         font-size: 14px;
+    }
+
+    .form-group label {
+        font-size: 13px;
     }
 }

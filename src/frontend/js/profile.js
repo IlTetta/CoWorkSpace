@@ -1,13 +1,33 @@
 // Profile.js - Gestisce le funzionalità della pagina profilo
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Verifica se l'utente è autenticato (temporaneamente disabilitato per test)
-    // const token = localStorage.getItem('jwtToken');
-    // if (!token) {
-    //     // Se non c'è token, reindirizza al login
-    //     window.location.href = 'login.html';
-    //     return;
-    // }
+    // Verifica se l'utente è autenticato (permetti accesso in sviluppo)
+    const isDevelopment = window.location.protocol === 'file:' || 
+                         window.location.hostname === '127.0.0.1' || 
+                         window.location.hostname === 'localhost' ||
+                         window.location.port === '5500'; // Live Server porta di default
+    
+    if (!isDevelopment) {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            // Se non c'è token e non siamo in sviluppo, reindirizza al login
+            window.location.href = 'login.html';
+            return;
+        }
+    }
+    
+    // Se siamo in sviluppo e non ci sono dati utente, aggiungi dati di test
+    if (isDevelopment && !localStorage.getItem('coworkspace_user')) {
+        const testUser = {
+            name: 'Mario',
+            surname: 'Rossi', 
+            email: 'mario.rossi@example.com',
+            role: 'client',
+            created_at: '2024-01-15T10:30:00Z',
+            manager_request_pending: false
+        };
+        localStorage.setItem('coworkspace_user', JSON.stringify(testUser));
+    }
     
     // Inizializza i gestori dei pulsanti
     initializeButtons();
@@ -15,22 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeProfileImageUpload();
     // Carica l'immagine del profilo salvata (se presente)
     loadSavedProfileImage();
-    // Carica i dati dell'utente aggiornati
-    loadUserData();
 });
-
-/**
- * Carica i dati dell'utente al caricamento della pagina
- */
-async function loadUserData() {
-    try {
-        // Prova a aggiornare i dati dall'API
-        await fetchUserDataFromAPI();
-    } catch (error) {
-        console.error('Errore nel caricare i dati utente:', error);
-        // Continua comunque, i dati potrebbero essere già nel localStorage
-    }
-}
 
 /**
  * Inizializza i gestori degli eventi per i pulsanti
@@ -308,53 +313,16 @@ function removeProfileImage() {
 }
 
 /**
- * Ottiene i dati dell'utente dal localStorage o API
+ * Ottiene i dati dell'utente dal localStorage
  */
 function getUserData() {
     try {
-        // Prima prova a recuperare dal localStorage
         const userString = localStorage.getItem('coworkspace_user');
-        if (userString) {
-            const user = JSON.parse(userString);
-            return user;
-        }
-        
-        // Se non ci sono dati nel localStorage, prova a fare una chiamata API
-        // Questo è utile se l'utente ha appena fatto login
-        fetchUserDataFromAPI();
-        return null;
+        return userString ? JSON.parse(userString) : null;
     } catch (error) {
         console.error('Errore nel recuperare i dati utente:', error);
         return null;
     }
-}
-
-/**
- * Recupera i dati dell'utente dall'API (opzionale per refresh)
- */
-async function fetchUserDataFromAPI() {
-    try {
-        const token = localStorage.getItem('jwtToken');
-        if (!token) {
-            console.log('Nessun token trovato, reindirizzamento al login');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        // Usa apiService se disponibile
-        if (window.apiService) {
-            const response = await window.apiService.get('/auth/me');
-            if (response.success && response.data) {
-                // Salva i dati aggiornati nel localStorage
-                localStorage.setItem('coworkspace_user', JSON.stringify(response.data));
-                return response.data;
-            }
-        }
-    } catch (error) {
-        console.error('Errore nel recuperare i dati dall\'API:', error);
-        // In caso di errore, continua con i dati del localStorage se disponibili
-    }
-    return null;
 }
 
 /**
