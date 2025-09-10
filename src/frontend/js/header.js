@@ -81,6 +81,19 @@ function showMessage(message, type) {
                 });
             }
 
+            // LOGICA DEL PULSANTE PROFILO:
+            const profileBtn = document.getElementById('profile-button');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', () => {
+                    try {
+                        // Naviga alla pagina profilo
+                        window.location.href = 'profile.html';
+                    } catch (error) {
+                        showMessage(`Errore durante la navigazione al profilo: ${error.message}`, 'error');
+                    }
+                });
+            }
+
             // LOGICA DEL PULSANTE DI LOGOUT:
             // Aggiunto il gestore per il pulsante di logout
             const logoutBtn = document.getElementById('logout-button');

@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verifica se l'utente è autenticato (permetti accesso in sviluppo)
     const isDevelopment = window.location.protocol === 'file:' || 
                          window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === 'localhost' ||
+                         window.location.hostname === 'localhost:3000' ||
                          window.location.port === '5500'; // Live Server porta di default
     
     if (!isDevelopment) {
