@@ -156,8 +156,13 @@
         }
 
         async getLocationById(id) {
-            const data = await this.get(`/locations/${id}`);
-            return data.data;
+            try {
+                const data = await this.get(`/locations/${id}`);
+                return data.data;
+            } catch (error) {
+                console.error('Error getting location by id:', error);
+                throw error;
+            }
         }
 
         async createLocation(locationData) {
@@ -347,6 +352,92 @@
 
         async deleteBooking(id) {
             return this.delete(`/bookings/${id}`);
+        }
+
+        // Metodi per la gestione degli spazi
+        async getSpacesByLocation(locationId) {
+            try {
+                // Ottieni tutti gli spazi e filtra per location
+                const data = await this.get('/spaces');
+                const allSpaces = Array.isArray(data.data.items) ? data.data.items : [];
+                
+                // Filtra per location ID
+                const locationSpaces = allSpaces.filter(space => 
+                    space.locationId === parseInt(locationId) || space.location_id === parseInt(locationId)
+                );
+                
+                return locationSpaces;
+            } catch (error) {
+                console.error('Error getting spaces by location:', error);
+                return [];
+            }
+        }
+
+        async getSpaceTypesByLocation(locationId) {
+            try {
+                // Ottieni gli spazi per questa location e estrai i tipi unici
+                const spaces = await this.getSpacesByLocation(locationId);
+                
+                // Crea una mappa dei tipi di spazio unici
+                const spaceTypesMap = new Map();
+                
+                spaces.forEach(space => {
+                    if (space.spaceType) {
+                        const typeId = space.spaceType.id || space.spaceTypeId;
+                        if (!spaceTypesMap.has(typeId)) {
+                            spaceTypesMap.set(typeId, {
+                                id: space.spaceType.id || space.spaceTypeId,
+                                name: space.spaceType.name,
+                                description: space.spaceType.description,
+                                price: space.pricePerHour || space.price_per_hour
+                            });
+                        }
+                    }
+                });
+                
+                return Array.from(spaceTypesMap.values());
+            } catch (error) {
+                console.error('Error getting space types by location:', error);
+                return [];
+            }
+        }
+
+        async getSpaceById(spaceId) {
+            try {
+                const data = await this.get(`/spaces/${spaceId}`);
+                return data.data;
+            } catch (error) {
+                console.error('Error getting space by id:', error);
+                throw error;
+            }
+        }
+
+        // Calcola il prezzo della prenotazione
+        async calculateBookingPrice(spaceId, date, time, duration, services = []) {
+            try {
+                const data = await this.post('/bookings/calculate-price', {
+                    spaceId,
+                    date,
+                    time,
+                    duration: parseInt(duration),
+                    services
+                });
+                return data.data.totalPrice || 0;
+            } catch (error) {
+                console.error('Error calculating booking price:', error);
+                return 0;
+            }
+        }
+
+        // Metodo per creare una prenotazione
+        async createBooking(bookingData) {
+            try {
+                const data = await this.post('/bookings', bookingData);
+                return data.data;
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                throw error;
+            }
         }
     }
 
