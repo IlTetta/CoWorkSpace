@@ -88,8 +88,8 @@ class AuthService {
     logout() {
         this.removeToken();
         this.removeUser();
-        // Redirect alla pagina di login
-        window.location.href = '/login.html';
+        // Redirect alla pagina di login - path relativo per compatibilità con entrambe le porte
+        window.location.href = 'login.html';
     }
 
     // Ottieni header per richieste autenticate
@@ -155,7 +155,7 @@ function handleRegistrationForm() {
                 
                 // Redirect al login o homepage
                 setTimeout(() => {
-                    window.location.href = '/login.html';
+                    window.location.href = 'login.html';
                 }, 1000);
                 
             } catch (error) {
@@ -180,11 +180,11 @@ function handleLogoutButton() {
 
 // Controlla autenticazione su pagine protette
 function checkAuthentication() {
-    const protectedPages = ['/dashboard.html', '/profile.html', '/bookings.html'];
+    const protectedPages = ['dashboard.html', 'profile.html', 'bookings.html'];
     const currentPage = window.location.pathname;
     
-    if (protectedPages.includes(currentPage) && !authService.isAuthenticated()) {
-        window.location.href = '/login.html';
+    if (protectedPages.some(page => currentPage.includes(page)) && !authService.isAuthenticated()) {
+        window.location.href = 'login.html';
     }
 }
 

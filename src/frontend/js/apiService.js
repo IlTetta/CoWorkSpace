@@ -10,11 +10,38 @@
 
     class ApiService {
         constructor() {
-            this.baseURL = 'http://localhost:3000/api';
+            // Determina baseURL dinamicamente in base all'ambiente
+            if (window.location.port === '5500' || window.location.hostname === '127.0.0.1') {
+                // Live Server o sviluppo locale - usa sempre il server backend su porta 3000
+                this.baseURL = 'http://localhost:3000/api';
+            } else if (window.location.port === '3000') {
+                // Servito dal backend Express - usa path relativo
+                this.baseURL = '/api';
+            } else {
+                // Default: assumi server backend su localhost:3000
+                this.baseURL = 'http://localhost:3000/api';
+            }
+            
             this.defaultHeaders = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             };
+        }
+
+        // Metodo privato per ottenere headers con autenticazione
+        #getHeaders(additionalHeaders = {}) {
+            const baseHeaders = { ...this.defaultHeaders, ...additionalHeaders };
+            
+            // Aggiungi token di autenticazione se presente
+            const token = localStorage.getItem('coworkspace_token');
+            if (token) {
+                baseHeaders['Authorization'] = `Bearer ${token}`;
+                console.log('[API] Including auth token in request');
+            } else {
+                console.log('[API] No auth token found');
+            }
+            
+            return baseHeaders;
         }
 
         // Metodo privato per gestire le chiamate HTTP
@@ -22,7 +49,7 @@
             const url = `${this.baseURL}${endpoint}`;
             
             const config = {
-                headers: { ...this.defaultHeaders, ...options.headers },
+                headers: this.#getHeaders(options.headers),
                 ...options
             };
 

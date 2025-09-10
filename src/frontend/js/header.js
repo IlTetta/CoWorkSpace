@@ -34,7 +34,7 @@ function showMessage(message, type) {
             
             // Ascolta gli eventi di storage per aggiornamenti di autenticazione
             window.addEventListener('storage', (e) => {
-                if (e.key === 'jwtToken' || e.key === 'coworkspace_user') {
+                if (e.key === 'coworkspace_token' || e.key === 'coworkspace_user') {
                     this.updateHeaderUI();
                 }
             });
@@ -106,7 +106,7 @@ function showMessage(message, type) {
                             showMessage('Logout effettuato con successo!', 'success');
                         } else {
                             // Fallback: rimuovi token manualmente
-                            localStorage.removeItem('jwtToken');
+                            localStorage.removeItem('coworkspace_token');
                             localStorage.removeItem('coworkspace_user');
                             window.location.href = 'login.html';
                         }
@@ -269,8 +269,8 @@ function showMessage(message, type) {
             const userProfile = document.getElementById('user-profile');
             const userDropdown = document.getElementById('user-dropdown');
         
-            // Controlla se l'utente è autenticato tramite JWT
-            const token = localStorage.getItem('jwtToken');
+            // Controlla se l'utente è autenticato tramite JWT - usa la stessa chiave di authService
+            const token = localStorage.getItem('coworkspace_token');
             const userData = localStorage.getItem('coworkspace_user');
             const isAuthenticated = token && userData;
         

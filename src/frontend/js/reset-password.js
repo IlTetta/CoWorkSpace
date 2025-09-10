@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok && result.status === 'success') {
                 showGeneralStatus('Password cambiata con successo!', true);
                 setTimeout(() => {
-                     window.location.href = '/login.html';
+                     window.location.href = 'login.html';
                 }, 1500);
             } else {
                 if (result.errors) {

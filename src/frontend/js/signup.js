@@ -133,7 +133,7 @@ signupForm.addEventListener('submit', async (e) => {
             if (result.data && result.data.canLogin !== false) {
                 // Salva token se presente nella risposta (per utenti normali)
                 if (result.data.token) {
-                    localStorage.setItem('jwtToken', result.data.token);
+                    localStorage.setItem('coworkspace_token', result.data.token);
                     if (result.data.user) {
                         localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
                     }

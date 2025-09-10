@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
                          window.location.port === '5500'; // Live Server porta di default
     
     if (!isDevelopment) {
-        const token = localStorage.getItem('jwtToken');
+        const token = localStorage.getItem('coworkspace_token');
         if (!token) {
             // Se non c'è token e non siamo in sviluppo, reindirizza al login
             window.location.href = 'login.html';
@@ -92,14 +92,14 @@ function performLogout() {
             window.authService.logout();
         } else {
             // Fallback: rimuovi token manualmente e reindirizza
-            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('coworkspace_token');
             localStorage.removeItem('coworkspace_user');
             window.location.href = 'login.html';
         }
     } catch (error) {
         console.error('Errore durante il logout:', error);
         // Fallback in caso di errore
-        localStorage.removeItem('jwtToken');
+        localStorage.removeItem('coworkspace_token');
         localStorage.removeItem('coworkspace_user');
         window.location.href = 'login.html';
     }

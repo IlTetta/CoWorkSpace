@@ -172,11 +172,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             }
 
             if (result.data && result.data.requiresPasswordReset) {
-                localStorage.setItem('jwtToken', result.data.token);
-                window.location.href = `/reset-password.html?requiresPasswordReset=true`;
+                localStorage.setItem('coworkspace_token', result.data.token);
+                window.location.href = `reset-password.html?requiresPasswordReset=true`;
             } else {
                 // Salva token direttamente
-                localStorage.setItem('jwtToken', result.data.token);
+                localStorage.setItem('coworkspace_token', result.data.token);
                 if (result.data.user) {
                     localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
                 }
