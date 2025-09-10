@@ -4,7 +4,7 @@ const { body } = require('express-validator');
 exports.registerValidation = [
     body('name').trim().notEmpty().withMessage('Nome obbligatorio.'),
     body('surname').trim().notEmpty().withMessage('Cognome obbligatorio.'),
-    body('email').isEmail().withMessage('Email non valida.').normalizeEmail(),
+    body('email').isEmail().withMessage('Email non valida.').toLowerCase(),
     body('password')
         .isLength({ min: 8 }).withMessage('La password deve contenere almeno 8 caratteri.')
         .matches(/\d/).withMessage('La password deve contenere almeno un numero.')
@@ -17,12 +17,12 @@ exports.registerValidation = [
 ];
 
 exports.loginValidation = [
-    body('email').isEmail().withMessage('Email non valida.').normalizeEmail(),
+    body('email').isEmail().withMessage('Email non valida.').toLowerCase(),
     body('password').notEmpty().withMessage('Password obbligatoria.')
 ];
 
 exports.updateProfileValidation = [
     body('name').optional().trim().notEmpty().withMessage('Nome non può essere vuoto.'),
     body('surname').optional().trim().notEmpty().withMessage('Cognome non può essere vuoto.'),
-    body('email').optional().isEmail().withMessage('Email non valida.').normalizeEmail(),
+    body('email').optional().isEmail().withMessage('Email non valida.').toLowerCase(),
 ];

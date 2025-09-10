@@ -8,65 +8,6 @@ function showModalMessage(message, type) {
     }
 }
 
-// Funzione per aprire il modal
-document.querySelector(".forgot-password-link").addEventListener("click", function(e) {
-    e.preventDefault();
-    document.getElementById("forgot-password-modal").style.display = "block";
-    showModalMessage("", "");
-});
-
-// Funzione per chiudere il modal con la X
-document.querySelector(".close-button").addEventListener("click", function() {
-    document.getElementById("forgot-password-modal").style.display = "none";
-});
-
-// Chiudi cliccando fuori dal contenuto
-window.addEventListener("click", function(e) {
-    if (e.target === document.getElementById("forgot-password-modal")) {
-        document.getElementById("forgot-password-modal").style.display = "none";
-    }
-});
-
-// Gestione invio link reset password
-document.getElementById("send-reset-link-button").addEventListener("click", function() {
-    const emailInput = document.getElementById("forgot-password-email");
-    const email = emailInput.value.trim();
-    const messageEl = document.getElementById("modal-message");
-
-    if (messageEl) messageEl.textContent = "";
-
-    if (!email) {
-        if (messageEl) {
-            messageEl.textContent = "Per favore inserisci una email valida.";
-            messageEl.style.color = "red";
-        }
-        return;
-    }
-
-    const apiEndpoint = 'http://localhost:3000/api/users/request-password-reset';
-    
-    fetch(apiEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            messageEl.textContent = "Link di reset inviato con successo!";
-            messageEl.style.color = "green";
-        } else {
-            messageEl.textContent = data.message || "Si è verificato un errore.";
-            messageEl.style.color = "red";
-        }
-    })
-    .catch(err => {
-        messageEl.textContent = "Errore di connessione al server.";
-        messageEl.style.color = "red";
-        console.error(err);
-    });
-});
-
 // gestione di reset e login
 const loginButton = document.querySelector('.login-button');
 const usernameInput = document.getElementById('username');

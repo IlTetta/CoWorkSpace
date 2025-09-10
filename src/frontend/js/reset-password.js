@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Riferimenti ai campi input e al pulsante usando gli ID e le classi del tuo HTML
-    const newPasswordInput = document.getElementById('new-password');
-    const confirmNewPasswordInput = document.getElementById('password'); // Corretto per usare l'ID del tuo HTML
+    const newPasswordInput = document.getElementById('new-password'); // Questo sarà per la password temporanea
+    const confirmNewPasswordInput = document.getElementById('password'); // Questo sarà per la nuova password
     const changePasswordButton = document.querySelector('.password-button'); // Usiamo la classe dato che non ha un ID
 
-    // URL dell'endpoint API per il reset della password
+    // URL dell'endpoint API per il cambio password
     const API_URL = 'http://localhost:3000';
 
     // Funzione per creare e mostrare un messaggio di errore sotto un campo specifico
@@ -72,24 +72,19 @@ document.addEventListener('DOMContentLoaded', () => {
     changePasswordButton.addEventListener('click', async () => {
         clearAllMessages();
 
-        const newPassword = newPasswordInput.value.trim();
-        const confirmPassword = confirmNewPasswordInput.value.trim();
+        const currentPassword = newPasswordInput.value.trim(); // Questo è la password temporanea
+        const newPassword = confirmNewPasswordInput.value.trim(); // Questa è la nuova password
 
         let hasError = false;
 
         // Validazione dei campi
+        if (!currentPassword) {
+            showFieldError(newPasswordInput, 'Per favore, inserisci la password temporanea ricevuta via email.');
+            hasError = true;
+        }
+
         if (!newPassword) {
-            showFieldError(newPasswordInput, 'Per favore, inserisci una password.');
-            hasError = true;
-        }
-
-        if (!confirmPassword) {
-            showFieldError(confirmNewPasswordInput, 'Per favore, conferma la password.');
-            hasError = true;
-        }
-
-        if (newPassword && confirmPassword && newPassword !== confirmPassword) {
-            showFieldError(confirmNewPasswordInput, 'Le password non corrispondono.');
+            showFieldError(confirmNewPasswordInput, 'Per favore, inserisci la nuova password.');
             hasError = true;
         }
 
@@ -102,23 +97,27 @@ document.addEventListener('DOMContentLoaded', () => {
         changePasswordButton.textContent = 'Cambio in corso...';
         showGeneralStatus('Cambio in corso...', true);
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
+        // Ottieni il token JWT dal localStorage (se l'utente è loggato)
+        const token = localStorage.getItem('coworkspace_token');
 
         if (!token) {
-            showGeneralStatus('Errore: Token di reset mancante.', false);
+            showGeneralStatus('Errore: Devi essere loggato per cambiare la password. Fai prima il login con la password temporanea.', false);
             changePasswordButton.disabled = false;
             changePasswordButton.textContent = 'Change Password';
             return;
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/users/reset-password`, {
-                method: 'POST',
+            const response = await fetch(`${API_URL}/api/users/change-password`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ token, newPassword, confirmPassword }),
+                body: JSON.stringify({ 
+                    currentPassword: currentPassword,  // Password temporanea
+                    newPassword: newPassword           // Nuova password
+                }),
             });
 
             const result = await response.json();
@@ -130,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 1500);
             } else {
                 if (result.errors) {
-                    if (result.errors.newPassword) showFieldError(newPasswordInput, result.errors.newPassword);
-                    if (result.errors.confirmPassword) showFieldError(confirmNewPasswordInput, result.errors.confirmPassword);
+                    if (result.errors.currentPassword) showFieldError(newPasswordInput, result.errors.currentPassword);
+                    if (result.errors.newPassword) showFieldError(confirmNewPasswordInput, result.errors.newPassword);
                     showGeneralStatus('Si sono verificati degli errori. Per favore, correggi i campi.', false);
                 } else {
                     showGeneralStatus(result.message || 'Si è verificato un errore. Riprova più tardi.', false);
