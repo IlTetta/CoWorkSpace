@@ -10,7 +10,6 @@ body {
 }
 
 .profile-sidebar {
-    position: fixed;
     top: 120px; /* Staccato dall'header */
     left: 30px; /* Staccato dal margine sinistro */
     display: flex;

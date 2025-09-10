@@ -110,6 +110,9 @@ async function renderGrid(locations) {
         // Insert the generated HTML into the page
         gridContainer.innerHTML = locationsHtml;
         
+        // Aggiungi event listener per il click sulle card
+        addLocationClickListeners();
+        
         console.log(`Renderizzate ${locations.length} locations`);
     } catch (error) {
         console.error('Errore durante il rendering della griglia:', error);
@@ -194,4 +197,31 @@ async function searchLocationsByCity(city) {
     window.displayLocations = displayLocations;
 
 })();
+
+// Funzione per aggiungere event listener alle location card
+function addLocationClickListeners() {
+    const locationCards = document.querySelectorAll('.location-card');
+    console.log(`Adding click listeners to ${locationCards.length} location cards`); // Debug log
+    
+    locationCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const locationId = this.getAttribute('data-location-id');
+            console.log('Card clicked, location ID:', locationId); // Debug log
+            
+            if (locationId && locationId !== 'unknown') {
+                // Salva l'ID della location selezionata
+                sessionStorage.setItem('selectedLocationId', locationId);
+                console.log('Saved location ID to sessionStorage:', locationId); // Debug log
+                
+                // Reindirizza alla pagina workspace
+                window.location.href = `workspace.html?locationId=${locationId}`;
+            } else {
+                console.error('Location ID non valido:', locationId);
+            }
+        });
+        
+        // Aggiungi stile del cursore per indicare che è cliccabile
+        card.style.cursor = 'pointer';
+    });
+}
 
