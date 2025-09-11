@@ -13,7 +13,37 @@ const router = express.Router();
 // Middleware: tutte le route richiedono autenticazione
 router.use(authMiddleware.protect);
 
-router.get('/locations', managerController.getMyLocations);
+// ============================================================================
+// GESTIONE LOCATION - CRUD completo per le location gestite dal manager
+// ============================================================================
+
+/**
+ * @swagger
+ * /api/manager/locations:
+ *   get:
+ *     summary: Ottieni tutte le location gestite dal manager
+ *     tags: [Manager]
+ *   post:
+ *     summary: Crea nuova location
+ *     tags: [Manager]
+ */
+router.route('/locations')
+  .get(managerController.getMyLocations)
+  .post(managerController.createLocation);
+
+/**
+ * @swagger
+ * /api/manager/locations/{locationId}:
+ *   put:
+ *     summary: Aggiorna location gestita
+ *     tags: [Manager]
+ *   delete:
+ *     summary: Elimina location (solo admin)
+ *     tags: [Manager]
+ */
+router.route('/locations/:locationId')
+  .put(managerController.updateLocation)
+  .delete(managerController.deleteLocation);
 
 /**
  * @swagger

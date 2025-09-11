@@ -63,6 +63,36 @@
         </div>
     </div>
 
+    <!-- Sezione gestione location -->
+    <div class="location-management-section">
+        <h2>Gestione Location</h2>
+        
+        <!-- Barra di ricerca e pulsanti azioni -->
+        <div class="location-header">
+            <div class="search-section">
+                <input class="search-bar" id="locations-search-input" type="text" placeholder="Cerca location...">
+                <button class="search-button" id="locations-search-btn">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
+            </div>
+            <div class="location-actions">
+                <button class="action-btn create-btn" id="create-location-btn">
+                    <span class="material-symbols-outlined">add</span>
+                    Aggiungi Location
+                </button>
+                <button class="action-btn refresh-btn" id="refresh-locations-btn">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna Lista
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista location esistenti -->
+        <div class="locations-grid" id="locations-grid">
+            <!-- Le location verranno caricate dinamicamente qui -->
+        </div>
+    </div>
+
     <!-- Sezione gestione spazi di lavoro -->
     <div class="workspace-management-section">
         <h2>Gestione Spazi di Lavoro</h2>
@@ -187,6 +217,42 @@
                 <div class="form-actions">
                     <button type="button" class="cancel-btn" id="cancel-space-form">Annulla</button>
                     <button type="submit" class="save-btn" id="save-space-btn">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal per creare/modificare location -->
+    <div id="location-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="location-modal-title">Aggiungi Nuova Location</h3>
+                <span class="close-button" id="close-location-modal">&times;</span>
+            </div>
+            <form id="location-form">
+                <div class="form-group">
+                    <label for="location-name">Nome Location:</label>
+                    <input type="text" id="location-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-description">Descrizione:</label>
+                    <textarea id="location-description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-address">Indirizzo:</label>
+                    <input type="text" id="location-address" name="address" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-city">Città:</label>
+                    <input type="text" id="location-city" name="city" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancel-location-form">Annulla</button>
+                    <button type="submit" class="save-btn" id="save-location-btn">Salva</button>
                 </div>
             </form>
         </div>

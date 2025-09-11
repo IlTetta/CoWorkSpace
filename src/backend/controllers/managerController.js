@@ -47,6 +47,50 @@ exports.getMyLocations = catchAsync(async (req, res, next) => {
     return ApiResponse.list(res, locations, 'Location gestite recuperate con successo');
 });
 
+/**
+ * Crea una nuova location per il manager
+ */
+exports.createLocation = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        throw AppError.forbidden('Accesso riservato ai manager');
+    }
+    
+    console.log('[MANAGER] Creazione nuova location per manager:', req.user.user_id);
+    
+    // Assegna automaticamente il manager corrente alla location
+    const locationData = {
+        ...req.body,
+        manager_id: req.user.user_id
+    };
+    
+    const location = await LocationService.createLocation(locationData, req.user);
+    return ApiResponse.created(res, location, 'Location creata con successo');
+});
+
+/**
+ * Aggiorna una location gestita dal manager
+ */
+exports.updateLocation = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        throw AppError.forbidden('Accesso riservato ai manager');
+    }
+    
+    console.log('[MANAGER] Aggiornamento location:', req.params.locationId, 'per manager:', req.user.user_id);
+    
+    const location = await LocationService.updateLocation(req.params.locationId, req.body, req.user);
+    return ApiResponse.success(res, location, 'Location aggiornata con successo');
+});
+
+/**
+ * Elimina una location gestita dal manager (solo admin può eliminare)
+ */
+exports.deleteLocation = catchAsync(async (req, res, next) => {
+    console.log('[MANAGER] Tentativo eliminazione location:', req.params.locationId, 'per manager:', req.user.user_id);
+    
+    await LocationService.deleteLocation(req.params.locationId, req.user);
+    return ApiResponse.success(res, null, 'Location eliminata con successo');
+});
+
 // ============================================================================
 // GESTIONE SPAZI - CRUD completo su spazi delle proprie location
 // ============================================================================
@@ -166,6 +210,9 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
 module.exports = {
     getDashboard: exports.getDashboard,
     getMyLocations: exports.getMyLocations,
+    createLocation: exports.createLocation,
+    updateLocation: exports.updateLocation,
+    deleteLocation: exports.deleteLocation,
     getMySpaces: exports.getMySpaces,
     createSpace: exports.createSpace,
     updateSpace: exports.updateSpace,

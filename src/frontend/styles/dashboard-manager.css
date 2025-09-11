@@ -311,6 +311,278 @@ body {
     }
 }
 
+/* Sezione gestione location */
+.location-management-section {
+    margin: 40px 30px;
+    background-color: whitesmoke;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.location-management-section h2 {
+    color: rgb(79, 70, 229);
+    margin-bottom: 20px;
+    font-size: 24px;
+    text-align: center;
+}
+
+/* Header con ricerca e azioni per location */
+.location-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+    position: relative;
+    min-height: 60px;
+    overflow: visible;
+}
+
+.location-header .search-section {
+    display: flex;
+    align-items: center;
+    min-width: 400px;
+    position: absolute;
+    left: 40px;
+}
+
+.location-header .search-bar {
+    width: 60%;
+    height: 35px;
+    margin-left: 0;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(79, 70, 229);
+    border-right: none;
+    border-bottom-left-radius: 20px;
+    border-top-left-radius: 20px;
+    padding: 0px 20px 0px 20px;
+    color: black;
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: normal;
+}
+
+.location-header .search-bar::placeholder {
+    color: rgba(78, 70, 229, 0.753);
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: italic;
+}
+
+.location-header .search-bar:focus {
+    outline: none;
+    border-color: rgb(79, 70, 229);
+    color: black;
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: normal;
+}
+
+.location-header .search-button {
+    width: 50px;
+    height: 39px;
+    margin-left: -20px;
+    background-color: rgb(79, 70, 229);
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(79, 70, 229);
+    border-radius: 20px;
+    transition: ease-in-out 0.15s;
+    cursor: pointer;
+}
+
+.location-header .search-button:hover {
+    transform: scale(1.05);
+    background-color: white;
+    color: rgb(79, 70, 229);
+}
+
+.location-header .search-button:hover .material-symbols-outlined {
+    color: rgb(79, 70, 229);
+}
+
+.location-header .search-button:active {
+    transform: scale(1);
+    box-shadow: inset 0 0 5px rgba(79, 70, 229, 0.9);
+    transition: all 0.01s ease-out;
+}
+
+.location-header .search-button:active .material-symbols-outlined {
+    transform: scale(0.9);
+}
+
+.location-header .search-button .material-symbols-outlined {
+    color: white;
+    margin-top: 5px;
+    font-variation-settings:
+    'FILL' 0,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+    transition: transform 0.15s ease-in-out;
+}
+
+.location-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    position: absolute;
+    right: 40px;
+    z-index: 10;
+}
+
+.location-actions .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+    user-select: none;
+    position: relative;
+}
+
+.location-actions .create-btn {
+    background-color: rgb(79, 70, 229);
+    color: white;
+}
+
+.location-actions .create-btn:hover {
+    background-color: rgb(67, 56, 202);
+    transform: translateY(-2px);
+}
+
+.location-actions .refresh-btn {
+    background-color: rgb(238, 238, 238);
+    color: rgb(67, 56, 202);
+}
+
+.location-actions .refresh-btn:hover {
+    background-color: rgb(204, 204, 204);
+    transform: translateY(-2px);
+}
+
+.locations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, max-content));
+    gap: 20px;
+    padding: 20px;
+    justify-content: center;
+}
+
+.location-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.2);
+    padding-bottom: 20px;
+    transition: transform 0.1s ease-in-out;
+    max-width: 400px;
+}
+
+.location-card:hover {
+    transform: scale(1.05);
+}
+
+.location-name {
+    background-color: var(--random-color, lightgreen);
+    color: rgb(0, 0, 0);
+    box-shadow: 1px 3px 2px rgba(0, 0, 0, 0.2);
+    padding: 20px 20px 15px 20px;
+    border-radius: 10px 10px 10px 10px;
+    font-size: 22px;
+    font-weight: bolder;
+    margin-bottom: 10px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.location-actions-card {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.location-actions-card .action-button {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.location-actions-card .action-button:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.location-actions-card .edit-btn .material-symbols-outlined,
+.location-actions-card .delete-btn .material-symbols-outlined {
+    color: white;
+    font-size: 18px;
+}
+
+.location-info {
+    padding: 15px 30px;
+}
+
+.location-city-address {
+    margin-bottom: 10px;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.location-city {
+    font-weight: bold;
+    color: rgb(66, 66, 66);
+    font-size: 16px;
+}
+
+.location-address {
+    font-weight: normal;
+    color: rgb(90, 90, 90);
+    font-size: 16px;
+}
+
+.location-description {
+    font-size: 14px;
+    color: rgb(110, 110, 110);
+    line-height: 1.4;
+    font-style: italic;
+}
+
+.location-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px 15px 30px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 10px;
+}
+
+.location-spaces-count {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1976d2;
+}
+
 /* Sezione gestione spazi di lavoro */
 .workspace-management-section {
     margin: 40px 30px;
@@ -443,7 +715,7 @@ body {
     padding: 12px 20px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -463,12 +735,12 @@ body {
 }
 
 .refresh-btn {
-    background-color: #f3f4f6;
-    color: #374151;
+    background-color: rgb(238, 238, 238);
+    color: rgb(67, 56, 202);
 }
 
 .refresh-btn:hover {
-    background-color: #e5e7eb;
+    background-color: rgb(204, 204, 204);
     transform: translateY(-2px);
 }
 
@@ -860,13 +1132,28 @@ body {
         margin: 20px 15px;
         padding: 20px;
     }
+
+    .location-management-section {
+        margin: 20px 15px;
+        padding: 20px;
+    }
     
     .spaces-grid {
         grid-template-columns: 1fr;
         justify-items: center;
     }
+
+    .locations-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
     
     .workspace-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .location-actions {
         flex-direction: column;
         align-items: center;
     }
@@ -908,6 +1195,37 @@ body {
         width: 70%;
         max-width: 400px;
     }
+
+    /* Responsive per location header */
+    .location-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 15px;
+        position: relative;
+    }
+    
+    .location-actions {
+        position: relative;
+        right: auto;
+        order: 1;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .location-header .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        order: 2;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .location-header .search-bar {
+        width: 70%;
+        max-width: 400px;
+    }
 }
 
 @media (max-width: 470px) {
@@ -917,6 +1235,13 @@ body {
     }
     
     .workspace-management-section {
+        margin: 15px 8px;
+        padding: 12px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+
+    .location-management-section {
         margin: 15px 8px;
         padding: 12px;
         width: calc(100% - 16px);
@@ -947,8 +1272,20 @@ body {
         box-sizing: border-box;
         padding: 8px;
     }
+
+    .locations-grid {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+    }
     
     .space-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .location-card {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
@@ -982,6 +1319,38 @@ body {
     }
     
     .search-bar {
+        width: calc(100% - 60px);
+        max-width: none;
+    }
+
+    /* Correzione posizionamento search section e location actions */
+    .location-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 8px;
+    }
+    
+    .location-actions {
+        position: relative;
+        right: auto;
+        width: 100%;
+        margin: 0;
+        order: 1;
+        justify-content: center;
+    }
+    
+    .location-header .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        width: 100%;
+        margin: 0;
+        order: 2;
+        justify-content: center;
+    }
+    
+    .location-header .search-bar {
         width: calc(100% - 60px);
         max-width: none;
     }

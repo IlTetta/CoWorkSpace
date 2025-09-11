@@ -1,33 +1,11 @@
 // Dashboard-Manager.js - Gestisce le funzionalità della pagina dashboard manager
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Verifica se l'utente è autenticato (permetti accesso in sviluppo)
-    const isDevelopment = window.location.protocol === 'file:' || 
-                         window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === 'localhost' ||
-                         window.location.hostname.includes('localhost') ||
-                         ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
-    
-    if (!isDevelopment) {
-        const token = localStorage.getItem('coworkspace_token');
-        if (!token) {
-            // Se non c'è token e non siamo in sviluppo, reindirizza al login
-            window.location.href = 'login.html';
-            return;
-        }
-    }
-    
-    // Se siamo in sviluppo e non ci sono dati utente, aggiungi dati di test per manager
-    if (isDevelopment && !localStorage.getItem('coworkspace_user')) {
-        const testManagerUser = {
-            name: 'Giuseppe',
-            surname: 'Verdi', 
-            email: 'giuseppe.verdi@coworkspace.com',
-            role: 'manager',
-            created_at: '2024-02-20T14:15:00Z',
-            manager_request_pending: false
-        };
-        localStorage.setItem('coworkspace_user', JSON.stringify(testManagerUser));
+    // Verifica se l'utente è autenticato
+    const token = localStorage.getItem('coworkspace_token');
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
     }
     
     // Inizializza i gestori dei pulsanti
@@ -38,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSavedProfileImage();
     // Carica e popola le informazioni utente manager
     loadAndPopulateManagerInfo();
+    // Inizializza la gestione delle location
+    initializeLocationManagement();
     // Inizializza la gestione degli spazi
     initializeWorkspaceManagement();
 });
@@ -287,15 +267,8 @@ function populateManagerInfoDisplay() {
         return;
     }
 
-    // In modalità sviluppo, permetti l'accesso anche se il ruolo non è manager
-    const isDevelopment = window.location.protocol === 'file:' || 
-                         window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === 'localhost' ||
-                         window.location.hostname.includes('localhost') ||
-                         ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
-
-    // Verifica che l'utente sia effettivamente un manager (solo in produzione)
-    if (!isDevelopment && user.role !== 'manager') {
+    // Verifica che l'utente sia effettivamente un manager
+    if (user.role !== 'manager') {
         console.warn('L\'utente non ha il ruolo di manager');
         window.location.href = 'home.html';
         return;
@@ -338,59 +311,459 @@ function populateManagerInfoDisplay() {
  */
 async function loadAndPopulateManagerInfo() {
     try {
-        // Prima controlla se abbiamo un token
+        // Controlla se abbiamo un token
         const token = localStorage.getItem('coworkspace_token');
         
+        console.log('Token presente:', !!token);
+        
         if (!token) {
-            // Se non c'è token, usa i dati di test per lo sviluppo
-            const isDevelopment = window.location.protocol === 'file:' || 
-                                 window.location.hostname === '127.0.0.1' || 
-                                 window.location.hostname === 'localhost' ||
-                                 window.location.hostname.includes('localhost') ||
-                                 ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
-            
-            if (isDevelopment) {
-                populateManagerInfoDisplay();
-                return;
-            }
+            console.error('Nessun token trovato, reindirizzo al login');
+            window.location.href = 'login.html';
+            return;
         }
 
-        // Se abbiamo un token, prova a recuperare i dati dal server
+        // Recupera i dati dal server
         if (window.apiService && typeof window.apiService.getCurrentUser === 'function') {
+            console.log('Tentativo di recuperare dati utente corrente...');
             const userResponse = await window.apiService.getCurrentUser();
             
+            console.log('Risposta getCurrentUser:', userResponse);
+            
             if (userResponse) {
+                console.log('Ruolo utente ricevuto:', userResponse.role);
+                
                 // Verifica che l'utente sia un manager
                 if (userResponse.role !== 'manager') {
-                    console.error('Accesso negato: l\'utente non è un manager');
+                    console.error('Accesso negato: l\'utente non è un manager, ruolo:', userResponse.role);
                     alert('Accesso negato. Solo i manager possono accedere a questa pagina.');
                     window.location.href = 'home.html';
                     return;
                 }
+                
+                console.log('Utente manager confermato:', userResponse.name, userResponse.surname);
                 
                 // Salva i dati aggiornati nel localStorage
                 localStorage.setItem('coworkspace_user', JSON.stringify(userResponse));
                 // Popola la pagina con i dati del server
                 populateManagerInfoDisplay();
                 return;
+            } else {
+                console.error('getCurrentUser ha restituito dati vuoti');
             }
+        } else {
+            console.error('apiService non disponibile o getCurrentUser non è una funzione');
         }
 
         // Fallback: usa i dati dal localStorage se disponibili
         const user = getUserData();
         if (user && user.role !== 'manager') {
-            console.error('Accesso negato: l\'utente non è un manager');
+            console.error('Accesso negato: l\'utente localStorage non è un manager');
             alert('Accesso negato. Solo i manager possono accedere a questa pagina.');
             window.location.href = 'home.html';
             return;
         }
         
+        console.log('Usando dati localStorage come fallback');
         populateManagerInfoDisplay();
         
     } catch (error) {
         console.error('Errore nel caricare le informazioni manager dal server:', error);
+        console.error('Status:', error.status);
+        console.error('Message:', error.message);
+        
+        // Se è un errore 403, potrebbe essere un problema di autenticazione
+        if (error.status === 403) {
+            console.error('Errore 403 - Token probabilmente scaduto o non valido');
+            alert('Sessione scaduta. Effettua nuovamente il login.');
+            localStorage.removeItem('coworkspace_token');
+            localStorage.removeItem('coworkspace_user');
+            window.location.href = 'login.html';
+            return;
+        }
+        
         // In caso di errore, usa i dati dal localStorage
         populateManagerInfoDisplay();
+    }
+}
+
+/**
+ * Inizializza la gestione delle location
+ */
+function initializeLocationManagement() {
+    // Event listeners per i pulsanti principali
+    const createLocationBtn = document.getElementById('create-location-btn');
+    const refreshLocationsBtn = document.getElementById('refresh-locations-btn');
+    const closeLocationModalBtn = document.getElementById('close-location-modal');
+    const cancelLocationFormBtn = document.getElementById('cancel-location-form');
+    const locationForm = document.getElementById('location-form');
+    
+    // Event listeners per la ricerca
+    const locationSearchInput = document.getElementById('locations-search-input');
+    const locationSearchBtn = document.getElementById('locations-search-btn');
+
+    if (createLocationBtn) {
+        createLocationBtn.addEventListener('click', openCreateLocationModal);
+    }
+
+    if (refreshLocationsBtn) {
+        refreshLocationsBtn.addEventListener('click', loadManagerLocations);
+    }
+
+    if (closeLocationModalBtn) {
+        closeLocationModalBtn.addEventListener('click', closeLocationModal);
+    }
+
+    if (cancelLocationFormBtn) {
+        cancelLocationFormBtn.addEventListener('click', closeLocationModal);
+    }
+
+    if (locationForm) {
+        locationForm.addEventListener('submit', handleLocationFormSubmit);
+    }
+    
+    // Gestori per la ricerca location
+    if (locationSearchInput) {
+        locationSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterLocations(this.value);
+            }
+        });
+    }
+    
+    if (locationSearchBtn) {
+        locationSearchBtn.addEventListener('click', function() {
+            const searchTerm = locationSearchInput?.value || '';
+            filterLocations(searchTerm);
+        });
+    }
+
+    // Chiude il modal cliccando fuori
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('location-modal');
+        if (event.target === modal) {
+            closeLocationModal();
+        }
+    });
+
+    // Carica i dati iniziali
+    loadManagerLocations();
+    
+    // Forza il caricamento delle location dopo un breve delay per assicurarsi che il DOM sia pronto
+    setTimeout(() => {
+        console.log('Forcing loadManagerLocations after timeout');
+        loadManagerLocations();
+    }, 500);
+}
+
+/**
+ * Carica le location gestite dal manager
+ */
+async function loadManagerLocations() {
+    console.log('loadManagerLocations() chiamata');
+    const locationsGrid = document.getElementById('locations-grid');
+    if (!locationsGrid) {
+        console.log('Elemento locations-grid non trovato!');
+        return;
+    }
+
+    console.log('Elemento locations-grid trovato');
+    
+    // Mostra stato di caricamento
+    locationsGrid.innerHTML = '<div class="loading">Caricamento location...</div>';
+
+    try {
+        if (!window.apiService) {
+            throw new Error('ApiService non disponibile');
+        }
+
+        console.log('Tentativo di chiamare API getMyLocations...');
+        const locations = await window.apiService.getMyLocations();
+        console.log('API chiamata con successo, location caricate:', locations ? locations.length : 0);
+        console.log('Dati location ricevuti:', locations);
+        
+        if (!locations || locations.length === 0) {
+            locationsGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="material-symbols-outlined">location_on</div>
+                    <p>Nessuna location configurata</p>
+                    <p>Aggiungi la prima location per iniziare</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Renderizza le location
+        locationsGrid.innerHTML = '';
+        locations.forEach(location => {
+            console.log('Creando card per location:', location.name);
+            const locationCard = createLocationCard(location);
+            locationsGrid.appendChild(locationCard);
+        });
+
+    } catch (error) {
+        console.error('Errore nel caricamento delle location:', error);
+        console.error('Status code:', error.status);
+        console.error('Error message:', error.message);
+        
+        // Se è un errore 403, gestiscilo specificamente
+        if (error.status === 403) {
+            console.error('Errore 403 su getMyLocations - problema di autorizzazione');
+            locationsGrid.innerHTML = `
+                <div class="empty-state">
+                    <p>Errore di autorizzazione</p>
+                    <p>Verifica di essere loggato come manager</p>
+                    <button class="refresh-btn" onclick="window.location.href='login.html'">Vai al Login</button>
+                </div>
+            `;
+        } else {
+            locationsGrid.innerHTML = `
+                <div class="empty-state">
+                    <p>Errore nel caricamento delle location</p>
+                    <button class="refresh-btn" onclick="loadManagerLocations()">Riprova</button>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * Filtra le location in base al termine di ricerca
+ */
+function filterLocations(searchTerm) {
+    const locationsGrid = document.getElementById('locations-grid');
+    if (!locationsGrid) return;
+    
+    const locationCards = locationsGrid.querySelectorAll('.location-card');
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+    
+    // Rimuovi messaggio precedente se presente
+    const existingMessage = locationsGrid.querySelector('.search-results-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    if (!normalizedSearch) {
+        // Se la ricerca è vuota, mostra tutte le location
+        locationCards.forEach(card => {
+            card.style.display = 'block';
+        });
+        return;
+    }
+    
+    let visibleCount = 0;
+    locationCards.forEach(card => {
+        const locationName = card.querySelector('.location-name')?.textContent.toLowerCase() || '';
+        const locationCity = card.querySelector('.location-city')?.textContent.toLowerCase() || '';
+        const locationAddress = card.querySelector('.location-address')?.textContent.toLowerCase() || '';
+        const locationDescription = card.querySelector('.location-description')?.textContent.toLowerCase() || '';
+        
+        const isMatch = locationName.includes(normalizedSearch) ||
+                       locationCity.includes(normalizedSearch) ||
+                       locationAddress.includes(normalizedSearch) ||
+                       locationDescription.includes(normalizedSearch);
+        
+        if (isMatch) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Mostra messaggio se nessun risultato
+    if (visibleCount === 0) {
+        showNoLocationResultsMessage(searchTerm);
+    }
+}
+
+/**
+ * Mostra messaggio quando non ci sono risultati per le location
+ */
+function showNoLocationResultsMessage(searchTerm) {
+    const locationsGrid = document.getElementById('locations-grid');
+    if (!locationsGrid) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'search-results-message';
+    messageDiv.style.gridColumn = '1 / -1';
+    messageDiv.style.textAlign = 'center';
+    messageDiv.style.padding = '40px 20px';
+    messageDiv.style.color = '#666';
+    messageDiv.style.fontSize = '18px';
+    
+    messageDiv.innerHTML = `
+        <div style="color: #ff5722;">
+            <span class="material-symbols-outlined" style="font-size: 48px; display: block; margin-bottom: 10px;">search_off</span>
+            <strong>Nessuna location trovata</strong><br>
+            <span style="font-size: 16px; color: #999;">Prova con una ricerca diversa per "${searchTerm}"</span>
+        </div>
+    `;
+    
+    locationsGrid.appendChild(messageDiv);
+}
+
+/**
+ * Crea una card per visualizzare una location
+ */
+function createLocationCard(location) {
+    const card = document.createElement('div');
+    card.className = 'location-card';
+    
+    // Genera un colore pastello casuale per l'header
+    const hue = Math.floor(Math.random() * 360);
+    const randomColor = `hsl(${hue}, 65%, 85%)`;
+    
+    card.innerHTML = `
+        <div class="location-name" style="--random-color: ${randomColor}">
+            ${location.name || location.location_name || 'Nome non disponibile'}
+            <div class="location-actions">
+                <button class="action-button edit-btn" onclick="editLocation(${location.location_id || location.id})" title="Modifica">
+                    <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="action-button delete-btn" onclick="deleteLocation(${location.location_id || location.id})" title="Elimina">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        </div>
+        <div class="location-info">
+            <div class="location-city-address">
+                <span class="location-city">${location.city || 'Città non specificata'}</span>
+                <span class="location-address">, ${location.address || 'Indirizzo non disponibile'}</span>
+            </div>
+            <div class="location-description">${location.description || 'Nessuna descrizione disponibile'}</div>
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * Apre il modal per creare una nuova location
+ */
+function openCreateLocationModal() {
+    const modal = document.getElementById('location-modal');
+    const modalTitle = document.getElementById('location-modal-title');
+    const form = document.getElementById('location-form');
+    
+    if (modal && modalTitle && form) {
+        modalTitle.textContent = 'Aggiungi Nuova Location';
+        form.reset();
+        
+        form.dataset.mode = 'create';
+        delete form.dataset.locationId;
+        modal.style.display = 'block';
+    }
+}
+
+/**
+ * Apre il modal per modificare una location esistente
+ */
+async function editLocation(locationId) {
+    try {
+        if (!window.apiService) return;
+        
+        const location = await window.apiService.getLocationById(locationId);
+        const modal = document.getElementById('location-modal');
+        const modalTitle = document.getElementById('location-modal-title');
+        const form = document.getElementById('location-form');
+        
+        if (modal && modalTitle && form && location) {
+            modalTitle.textContent = 'Modifica Location';
+            
+            // Popola il form con i dati esistenti
+            document.getElementById('location-name').value = location.name || location.location_name || '';
+            document.getElementById('location-description').value = location.description || '';
+            document.getElementById('location-address').value = location.address || '';
+            document.getElementById('location-city').value = location.city || '';
+            
+            form.dataset.mode = 'edit';
+            form.dataset.locationId = locationId;
+            modal.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Errore nel caricamento della location:', error);
+        alert('Errore nel caricamento dei dati della location');
+    }
+}
+
+/**
+ * Elimina una location
+ */
+async function deleteLocation(locationId) {
+    if (!confirm('Sei sicuro di voler eliminare questa location? Questa azione eliminerà anche tutti gli spazi associati e non può essere annullata.')) {
+        return;
+    }
+
+    try {
+        if (!window.apiService) return;
+        
+        await window.apiService.deleteLocation(locationId);
+        alert('Location eliminata con successo');
+        loadManagerLocations(); // Ricarica la lista
+        loadLocations(); // Ricarica anche la lista nel form degli spazi
+    } catch (error) {
+        console.error('Errore nell\'eliminazione della location:', error);
+        alert('Errore nell\'eliminazione della location');
+    }
+}
+
+/**
+ * Chiude il modal delle location
+ */
+function closeLocationModal() {
+    const modal = document.getElementById('location-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * Gestisce l'invio del form per creare/modificare location
+ */
+async function handleLocationFormSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const locationData = Object.fromEntries(formData);
+    
+    // Converti i valori necessari
+    locationData.location_name = locationData.name; // Mappa il nome
+    
+    // Rimuovi campi non necessari
+    delete locationData.name;
+
+    // Aggiungi automaticamente l'ID del manager loggato per le nuove location
+    if (form.dataset.mode === 'create') {
+        const user = getUserData();
+        if (user && user.user_id) {
+            locationData.manager_id = user.user_id;
+        }
+    }
+
+    try {
+        if (!window.apiService) {
+            throw new Error('ApiService non disponibile');
+        }
+
+        if (form.dataset.mode === 'edit') {
+            // Modifica location esistente
+            const locationId = parseInt(form.dataset.locationId);
+            await window.apiService.updateLocation(locationId, locationData);
+            alert('Location modificata con successo');
+        } else {
+            // Crea nuova location
+            await window.apiService.createLocation(locationData);
+            alert('Location creata con successo');
+        }
+
+        closeLocationModal();
+        loadManagerLocations(); // Ricarica la lista delle location
+        loadLocations(); // Ricarica anche la lista nel form degli spazi
+    } catch (error) {
+        console.error('Errore nel salvataggio della location:', error);
+        alert('Errore nel salvataggio della location: ' + (error.message || 'Errore sconosciuto'));
     }
 }
 
@@ -495,7 +868,7 @@ async function loadLocations() {
     try {
         if (!window.apiService) return;
         
-        const locations = await window.apiService.getAllLocations();
+        const locations = await window.apiService.getMyLocations();
         const locationSelect = document.getElementById('space-location');
         
         if (locationSelect && locations) {
@@ -527,7 +900,7 @@ async function loadSpaceTypes() {
             spaceTypes.forEach(type => {
                 const option = document.createElement('option');
                 option.value = type.space_type_id || type.id;
-                option.textContent = type.name;
+                option.textContent = type.type_name || type.name;
                 spaceTypeSelect.appendChild(option);
             });
         }
@@ -553,29 +926,14 @@ async function loadSpaces() {
     spacesGrid.innerHTML = '<div class="loading">Caricamento spazi...</div>';
 
     try {
-        let spaces = [];
-        
-        // Controlla se siamo in modalità sviluppo (senza server)
-        const isDevelopment = window.location.protocol === 'file:' || 
-                             window.location.hostname === '127.0.0.1' || 
-                             window.location.hostname === 'localhost' ||
-                             window.location.hostname.includes('localhost');
-        
-        if (!window.apiService || isDevelopment) {
-            console.log('Modalità sviluppo - uso dati di test');
-            spaces = getTestSpaces();
-        } else {
-            try {
-                console.log('Tentativo di chiamare API...');
-                spaces = await window.apiService.getAllSpaces();
-                console.log('API chiamata con successo');
-            } catch (error) {
-                console.log('Errore API, fallback ai dati di test:', error.message);
-                spaces = getTestSpaces();
-            }
+        if (!window.apiService) {
+            throw new Error('ApiService non disponibile');
         }
-        
-        console.log('Spazi caricati:', spaces.length);
+
+        console.log('Tentativo di chiamare API getAllSpaces...');
+        const spaces = await window.apiService.getAllSpaces();
+        console.log('API chiamata con successo, spazi caricati:', spaces ? spaces.length : 0);
+        console.log('Dati spazi ricevuti:', spaces);
         
         if (!spaces || spaces.length === 0) {
             spacesGrid.innerHTML = `
@@ -598,84 +956,28 @@ async function loadSpaces() {
 
     } catch (error) {
         console.error('Errore nel caricamento degli spazi:', error);
-        spacesGrid.innerHTML = `
-            <div class="empty-state">
-                <p>Errore nel caricamento degli spazi</p>
-                <button class="refresh-btn" onclick="loadSpaces()">Riprova</button>
-            </div>
-        `;
-    }
-}
-
-/**
- * Restituisce dati di test per gli spazi quando il server non è disponibile
- */
-function getTestSpaces() {
-    console.log('getTestSpaces() chiamata - restituisco dati di test');
-    const testData = [
-        {
-            id: 1,
-            space_id: 1,
-            name: "Sala Riunioni Executive",
-            description: "Sala riunioni elegante con proiettore 4K, lavagna interattiva e sistema audio professionale",
-            capacity: 12,
-            hourly_rate: 25.00,
-            location: { name: "Milano Centro" },
-            spaceType: { name: "Sala Riunioni" }
-        },
-        {
-            id: 2,
-            space_id: 2,
-            name: "Hot Desk Premium",
-            description: "Postazione di lavoro flessibile in area aperta con WiFi veloce e accesso alla cucina",
-            capacity: 1,
-            hourly_rate: 8.50,
-            location: { name: "Roma EUR" },
-            spaceType: { name: "Hot Desk" }
-        },
-        {
-            id: 3,
-            space_id: 3,
-            name: "Ufficio Privato Studio",
-            description: "Ufficio privato completamente arredato con scrivania ergonomica e libreria",
-            capacity: 3,
-            hourly_rate: 18.00,
-            location: { name: "Torino Centro" },
-            spaceType: { name: "Ufficio Privato" }
-        },
-        {
-            id: 4,
-            space_id: 4,
-            name: "Sala Conferenze Grande",
-            description: "Ampia sala per eventi e conferenze con sistema di videoconferenza e catering",
-            capacity: 50,
-            hourly_rate: 75.00,
-            location: { name: "Milano Centro" },
-            spaceType: { name: "Sala Conferenze" }
-        },
-        {
-            id: 5,
-            space_id: 5,
-            name: "Postazione Creativa",
-            description: "Spazio di lavoro colorato e stimolante, perfetto per team creativi e brainstorming",
-            capacity: 6,
-            hourly_rate: 15.00,
-            location: { name: "Firenze Centro" },
-            spaceType: { name: "Spazio Creativo" }
-        },
-        {
-            id: 6,
-            space_id: 6,
-            name: "Phone Booth",
-            description: "Cabina telefonica insonorizzata per chiamate private e videochiamate",
-            capacity: 1,
-            hourly_rate: 5.00,
-            location: { name: "Roma EUR" },
-            spaceType: { name: "Phone Booth" }
+        console.error('Status code:', error.status);
+        console.error('Error message:', error.message);
+        
+        // Se è un errore 403, gestiscilo specificamente
+        if (error.status === 403) {
+            console.error('Errore 403 su getAllSpaces - problema di autorizzazione');
+            spacesGrid.innerHTML = `
+                <div class="empty-state">
+                    <p>Errore di autorizzazione</p>
+                    <p>Verifica di essere loggato come manager</p>
+                    <button class="refresh-btn" onclick="window.location.href='login.html'">Vai al Login</button>
+                </div>
+            `;
+        } else {
+            spacesGrid.innerHTML = `
+                <div class="empty-state">
+                    <p>Errore nel caricamento degli spazi</p>
+                    <button class="refresh-btn" onclick="loadSpaces()">Riprova</button>
+                </div>
+            `;
         }
-    ];
-    console.log('Restituisco', testData.length, 'spazi di test');
-    return testData;
+    }
 }
 
 /**
@@ -990,6 +1292,14 @@ async function handleSpaceFormSubmit(event) {
         return;
     }
     
+    // Converti gli orari nel formato corretto (HH:MM:SS)
+    if (spaceData.opening_time && !spaceData.opening_time.includes(':00', 5)) {
+        spaceData.opening_time += ':00';
+    }
+    if (spaceData.closing_time && !spaceData.closing_time.includes(':00', 5)) {
+        spaceData.closing_time += ':00';
+    }
+    
     // Valida gli orari
     const openingTime = spaceData.opening_time;
     const closingTime = spaceData.closing_time;
@@ -1026,3 +1336,6 @@ async function handleSpaceFormSubmit(event) {
 // Funzioni globali per i pulsanti nelle card
 window.editSpace = editSpace;
 window.deleteSpace = deleteSpace;
+window.editLocation = editLocation;
+window.deleteLocation = deleteLocation;
+window.loadManagerLocations = loadManagerLocations;
