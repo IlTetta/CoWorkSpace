@@ -206,7 +206,7 @@ class LocationService {
             paramCount++;
         }
 
-        // Filtro disponibilità temporale
+        // Filtro disponibilità temporale per prenotazioni giornaliere
         if (startDate && endDate) {
             conditions.push(`
                 NOT EXISTS (
@@ -214,9 +214,9 @@ class LocationService {
                     WHERE b.space_id = s.space_id 
                     AND b.status IN ('confirmed', 'pending')
                     AND (
-                        (b.start_time <= $${paramCount} AND b.end_time > $${paramCount}) OR
-                        (b.start_time < $${paramCount + 1} AND b.end_time >= $${paramCount + 1}) OR
-                        (b.start_time >= $${paramCount} AND b.end_time <= $${paramCount + 1})
+                        (b.start_date <= $${paramCount + 1} AND b.end_date >= $${paramCount}) OR
+                        (b.start_date <= $${paramCount} AND b.end_date >= $${paramCount}) OR
+                        (b.start_date <= $${paramCount + 1} AND b.end_date >= $${paramCount + 1})
                     )
                 )
             `);

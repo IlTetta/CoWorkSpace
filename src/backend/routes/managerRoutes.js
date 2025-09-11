@@ -106,10 +106,10 @@ router.use(authMiddleware.protect);
  *                               type: number
  *                               format: decimal
  *                               example: 15750.00
- *                             total_hours_booked:
+ *                             total_days_booked:
  *                               type: number
  *                               format: decimal
- *                               example: 1250.5
+ *                               example: 350.0
  *                             unique_customers:
  *                               type: integer
  *                               example: 85
@@ -138,8 +138,8 @@ router.use(authMiddleware.protect);
  *                                     format: time
  *                                   end_time:
  *                                     type: string
- *                                     format: time
- *                                   total_hours:
+ *                                     format: date
+ *                                   total_days:
  *                                     type: number
  *                                     format: decimal
  *                                   total_price:

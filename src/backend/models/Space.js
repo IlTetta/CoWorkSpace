@@ -61,18 +61,25 @@ class Space {
             description,
             capacity,
             price_per_hour,
-            price_per_day
+            opening_time = '09:00:00',
+            closing_time = '18:00:00'
         } = spaceData;
 
         // Validazione input
         this.validateSpaceData(spaceData);
 
+        // Calcola automaticamente il prezzo giornaliero se non fornito
+        let { price_per_day } = spaceData;
+        if (!price_per_day && price_per_hour && opening_time && closing_time) {
+            price_per_day = this.calculateDailyPrice(price_per_hour, opening_time, closing_time);
+        }
+
         const query = `
             INSERT INTO spaces (
                 location_id, space_type_id, space_name, description, 
-                capacity, price_per_hour, price_per_day
+                capacity, price_per_hour, price_per_day, opening_time, closing_time
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
         `;
 
@@ -84,7 +91,9 @@ class Space {
                 description,
                 capacity,
                 price_per_hour,
-                price_per_day
+                price_per_day,
+                opening_time,
+                closing_time
             ]);
 
             return new Space(result.rows[0]);
@@ -293,6 +302,30 @@ class Space {
         // Validazione input
         this.validateSpaceData(updateData, true);
 
+        // Ricalcola il prezzo giornaliero se necessario
+        const needsPriceRecalculation = updateData.price_per_hour || 
+                                       updateData.opening_time || 
+                                       updateData.closing_time;
+
+        if (needsPriceRecalculation && !updateData.price_per_day) {
+            // Recupera i dati attuali dello spazio
+            const currentSpace = await this.findById(id);
+            if (!currentSpace) {
+                throw AppError.notFound('Spazio non trovato');
+            }
+
+            const newPricePerHour = updateData.price_per_hour || currentSpace.price_per_hour;
+            const newOpeningTime = updateData.opening_time || currentSpace.opening_time;
+            const newClosingTime = updateData.closing_time || currentSpace.closing_time;
+
+            // Calcola il nuovo prezzo giornaliero
+            updateData.price_per_day = this.calculateDailyPrice(
+                newPricePerHour, 
+                newOpeningTime, 
+                newClosingTime
+            );
+        }
+
         const fields = [];
         const values = [];
         let paramCount = 1;
@@ -300,7 +333,8 @@ class Space {
         // Costruisci query dinamicamente
         const allowedFields = [
             'space_name', 'description', 'capacity', 
-            'price_per_hour', 'price_per_day', 'space_type_id'
+            'price_per_hour', 'price_per_day', 'space_type_id',
+            'opening_time', 'closing_time', 'available_days'
         ];
 
         for (const [key, value] of Object.entries(updateData)) {
@@ -516,9 +550,51 @@ class Space {
             errors.push('Descrizione troppo lunga (max 1000 caratteri)');
         }
 
+        // Validazione orari
+        if (!isUpdate || data.opening_time !== undefined) {
+            if (data.opening_time && !this.isValidTime(data.opening_time)) {
+                errors.push('Orario di apertura non valido (formato HH:MM:SS)');
+            }
+        }
+
+        if (!isUpdate || data.closing_time !== undefined) {
+            if (data.closing_time && !this.isValidTime(data.closing_time)) {
+                errors.push('Orario di chiusura non valido (formato HH:MM:SS)');
+            }
+        }
+
+        // Validazione coerenza orari
+        if (data.opening_time && data.closing_time) {
+            const opening = this.parseTime(data.opening_time);
+            const closing = this.parseTime(data.closing_time);
+            if (opening >= closing) {
+                errors.push('Orario di apertura deve essere precedente a quello di chiusura');
+            }
+        }
+
         if (errors.length > 0) {
             throw AppError.badRequest(`Dati non validi: ${errors.join(', ')}`);
         }
+    }
+
+    /**
+     * Valida formato orario
+     * @param {string} time - Orario in formato HH:MM:SS
+     * @returns {boolean} - True se valido
+     */
+    static isValidTime(time) {
+        const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+        return timeRegex.test(time);
+    }
+
+    /**
+     * Converte orario in minuti
+     * @param {string} time - Orario in formato HH:MM:SS
+     * @returns {number} - Minuti dal midnight
+     */
+    static parseTime(time) {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
     }
 
     /**
@@ -645,6 +721,124 @@ class Space {
 
         } catch (error) {
             throw AppError.internal('Errore durante la verifica disponibilità', error);
+        }
+    }
+
+    /**
+     * Verifica disponibilità di uno spazio per prenotazioni giornaliere
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDate - Data inizio (YYYY-MM-DD)
+     * @param {string} endDate - Data fine (YYYY-MM-DD)
+     * @returns {Promise<Object>} - Risultato verifica con dettagli
+     */
+    static async checkDailyAvailability(spaceId, startDate, endDate) {
+        try {
+            // 1. Ottieni informazioni spazio
+            const space = await this.findById(spaceId);
+            if (!space) {
+                throw AppError.notFound('Spazio non trovato');
+            }
+
+            if (space.status !== 'active') {
+                return {
+                    available: false,
+                    reason: 'space_inactive',
+                    message: `Lo spazio è in stato: ${space.status}`
+                };
+            }
+
+            // 2. Verifica date
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (start > end) {
+                return {
+                    available: false,
+                    reason: 'invalid_date_range',
+                    message: 'La data di inizio deve essere precedente o uguale a quella di fine'
+                };
+            }
+
+            // 3. Verifica advance booking
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const daysInAdvance = Math.floor((start - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysInAdvance > space.booking_advance_days) {
+                return {
+                    available: false,
+                    reason: 'too_far_in_advance',
+                    message: `Non è possibile prenotare con più di ${space.booking_advance_days} giorni di anticipo`,
+                    max_advance_days: space.booking_advance_days
+                };
+            }
+
+            // 4. Verifica giorni settimanali
+            const currentDate = new Date(start);
+            const unavailableDays = [];
+            
+            while (currentDate <= end) {
+                const dayOfWeek = currentDate.getDay(); // 0=Domenica, 1=Lunedì, ...
+                const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek; // Converti a ISO (1=Lunedì, 7=Domenica)
+                
+                if (!space.available_days.includes(dayOfWeekISO)) {
+                    unavailableDays.push({
+                        date: currentDate.toISOString().split('T')[0],
+                        day_name: this.getDayName(dayOfWeekISO)
+                    });
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            if (unavailableDays.length > 0) {
+                return {
+                    available: false,
+                    reason: 'days_not_available',
+                    message: 'Alcune date non sono disponibili per questo spazio',
+                    unavailable_days: unavailableDays,
+                    available_days: space.available_days
+                };
+            }
+
+            // 5. Verifica sovrapposizioni con altre prenotazioni
+            const Booking = require('./Booking');
+            const conflicts = await this.checkDateRangeConflicts(spaceId, startDate, endDate);
+            
+            if (conflicts.length > 0) {
+                return {
+                    available: false,
+                    reason: 'conflicting_bookings',
+                    message: 'Periodo in conflitto con altre prenotazioni',
+                    conflicting_bookings: conflicts
+                };
+            }
+
+            // 6. Verifica eccezioni nella tabella availability
+            const availabilityExceptions = await this.checkAvailabilityExceptions(spaceId, startDate, endDate);
+            
+            if (availabilityExceptions.length > 0) {
+                return {
+                    available: false,
+                    reason: 'availability_exceptions',
+                    message: 'Alcune date sono bloccate per eccezioni',
+                    blocked_dates: availabilityExceptions
+                };
+            }
+
+            // Tutto ok!
+            return {
+                available: true,
+                message: 'Spazio disponibile per il periodo richiesto',
+                space_info: {
+                    name: space.space_name,
+                    price_per_day: space.price_per_day,
+                    available_days: space.available_days
+                }
+            };
+
+        } catch (error) {
+            throw AppError.internal('Errore durante la verifica disponibilità giornaliera', error);
         }
     }
 
@@ -845,6 +1039,97 @@ class Space {
             7: 'Domenica'
         };
         return days[dayOfWeek] || 'Sconosciuto';
+    }
+
+    /**
+     * Verifica conflitti di prenotazione per un intervallo di date
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDate - Data inizio (YYYY-MM-DD)
+     * @param {string} endDate - Data fine (YYYY-MM-DD)
+     * @returns {Promise<Array>} - Array di prenotazioni in conflitto
+     */
+    static async checkDateRangeConflicts(spaceId, startDate, endDate) {
+        try {
+            const query = `
+                SELECT 
+                    b.booking_id,
+                    b.start_date,
+                    b.end_date,
+                    b.status,
+                    u.name as user_name,
+                    u.surname as user_surname
+                FROM bookings b
+                JOIN users u ON b.user_id = u.user_id
+                WHERE b.space_id = $1 
+                AND b.status NOT IN ('cancelled')
+                AND (
+                    (b.start_date <= $3 AND b.end_date >= $2)
+                )
+                ORDER BY b.start_date
+            `;
+
+            const result = await db.query(query, [spaceId, startDate, endDate]);
+            return result.rows;
+        } catch (error) {
+            throw AppError.internal('Errore durante la verifica dei conflitti', error);
+        }
+    }
+
+    /**
+     * Verifica eccezioni di disponibilità per un intervallo di date
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDate - Data inizio (YYYY-MM-DD)
+     * @param {string} endDate - Data fine (YYYY-MM-DD)
+     * @returns {Promise<Array>} - Array di date bloccate
+     */
+    static async checkAvailabilityExceptions(spaceId, startDate, endDate) {
+        try {
+            const query = `
+                SELECT 
+                    availability_date,
+                    is_available
+                FROM availability
+                WHERE space_id = $1 
+                AND availability_date >= $2
+                AND availability_date <= $3
+                AND is_available = false
+                ORDER BY availability_date
+            `;
+
+            const result = await db.query(query, [spaceId, startDate, endDate]);
+            return result.rows.map(row => ({
+                date: row.availability_date,
+                reason: 'blocked_by_availability_rule'
+            }));
+        } catch (error) {
+            throw AppError.internal('Errore durante la verifica delle eccezioni di disponibilità', error);
+        }
+    }
+
+    /**
+     * Calcola il prezzo giornaliero basandosi su prezzo orario e orari di apertura
+     * @param {number} pricePerHour - Prezzo all'ora
+     * @param {string} openingTime - Orario di apertura (HH:MM:SS)
+     * @param {string} closingTime - Orario di chiusura (HH:MM:SS)
+     * @returns {number} - Prezzo giornaliero calcolato
+     */
+    static calculateDailyPrice(pricePerHour, openingTime, closingTime) {
+        try {
+            const openingMinutes = this.parseTime(openingTime);
+            const closingMinutes = this.parseTime(closingTime);
+            
+            // Calcola le ore di apertura
+            const totalMinutes = closingMinutes - openingMinutes;
+            const totalHours = totalMinutes / 60;
+
+            // Calcola il prezzo giornaliero
+            const dailyPrice = pricePerHour * totalHours;
+            
+            // Arrotonda a 2 decimali
+            return Math.round(dailyPrice * 100) / 100;
+        } catch (error) {
+            throw new Error('Errore nel calcolo del prezzo giornaliero: ' + error.message);
+        }
     }
 }
 

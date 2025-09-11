@@ -260,60 +260,24 @@ class AvailabilityService {
     }
 
     /**
-     * Verifica la disponibilità per una prenotazione
+     * Verifica la disponibilità per una prenotazione giornaliera
      * @param {number} spaceId - ID dello spazio
-     * @param {string} bookingDate - Data prenotazione
-     * @param {string} startTime - Ora inizio
-     * @param {string} endTime - Ora fine
+     * @param {string} startDate - Data di inizio prenotazione
+     * @param {string} endDate - Data di fine prenotazione (opzionale, default = startDate)
      * @returns {Promise<Object>} Risultato della verifica
      */
-    static async checkBookingAvailability(spaceId, bookingDate, startTime, endTime) {
+    static async checkBookingAvailability(spaceId, startDate, endDate = null) {
         try {
-            // Verifica esistenza spazio e recupera configurazione
-            const space = await Space.findById(spaceId);
-            if (!space) {
-                throw new AppError('Spazio non trovato', 404);
+            // Se non specificata, la data di fine è uguale a quella di inizio (prenotazione singolo giorno)
+            if (!endDate) {
+                endDate = startDate;
             }
 
-            // Verifica che il giorno sia tra quelli disponibili
-            const dayOfWeek = new Date(bookingDate).getDay();
-            if (!space.available_days.includes(dayOfWeek)) {
-                return {
-                    isAvailable: false,
-                    message: 'Lo spazio non è disponibile in questo giorno della settimana',
-                    conflicts: []
-                };
-            }
+            // Usa la nuova logica di controllo giornaliero dal modello Space
+            const Space = require('../models/Space');
+            const availabilityCheck = await Space.checkDailyAvailability(spaceId, startDate, endDate);
 
-            // Verifica orario di apertura
-            if (!this.isWithinOpeningHours(startTime, endTime, space)) {
-                return {
-                    isAvailable: false,
-                    message: 'Orario richiesto fuori dall\'orario di apertura',
-                    conflicts: []
-                };
-            }
-
-            // Verifica blocchi di disponibilità
-            const availableBlocks = await Availability.findAvailableBlocks(
-                spaceId, bookingDate, startTime, endTime
-            );
-
-            // Verifica prenotazioni esistenti
-            const conflictingBookings = await Availability.findConflictingBookings(
-                spaceId, bookingDate, startTime, endTime
-            );
-
-            const isAvailable = availableBlocks.length > 0 && conflictingBookings.length === 0;
-
-            return {
-                isAvailable,
-                message: isAvailable ? 
-                    'Spazio disponibile per la prenotazione' : 
-                    'Spazio non disponibile nel periodo richiesto',
-                availableBlocks,
-                conflicts: conflictingBookings
-            };
+            return availabilityCheck;
         } catch (error) {
             if (error instanceof AppError) throw error;
             throw new AppError('Errore nella verifica della disponibilità', 500);

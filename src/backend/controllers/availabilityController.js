@@ -85,19 +85,28 @@ exports.generateAvailabilitySchedule = catchAsync(async (req, res, next) => {
     });
 });
 
-// Middleware per verificare la disponibilità per una prenotazione
+// Middleware per verificare la disponibilità per una prenotazione giornaliera
 exports.checkBookingAvailability = catchAsync(async (req, res, next) => {
-    const { space_id, booking_date, start_time, end_time } = req.query;
+    let { space_id, start_date, end_date } = req.query;
 
-    if (!space_id || !booking_date || !start_time || !end_time) {
-        return next(new AppError('Tutti i parametri sono obbligatori', 400));
+    // Supporto per formato legacy
+    if (!start_date && req.query.booking_date) {
+        start_date = req.query.booking_date;
+    }
+    
+    if (!end_date && req.query.booking_date) {
+        end_date = req.query.booking_date; // Per singolo giorno
     }
 
-    const availabilityCheck = await AvailabilityService.checkBookingAvailability(
+    if (!space_id || !start_date || !end_date) {
+        return next(new AppError('space_id, start_date e end_date sono obbligatori', 400));
+    }
+
+    const Space = require('../models/Space');
+    const availabilityCheck = await Space.checkDailyAvailability(
         parseInt(space_id),
-        booking_date,
-        start_time,
-        end_time
+        start_date,
+        end_date
     );
 
     return ApiResponse.success(res, 200, 'Verifica disponibilità completata', availabilityCheck);

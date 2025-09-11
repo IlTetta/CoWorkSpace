@@ -523,6 +523,10 @@ router.get('/:id', spaceController.getSpaceById);
  * /spaces:
  *   post:
  *     summary: Crea un nuovo spazio (Manager/Admin)
+ *     description: |
+ *       Crea un nuovo spazio. Il prezzo giornaliero viene calcolato automaticamente
+ *       basandosi su prezzo orario, orario di apertura e orario di chiusura.
+ *       Formula: price_per_day = price_per_hour × (closing_time - opening_time)
  *     tags: [Spaces]
  *     security:
  *       - bearerAuth: []
@@ -537,7 +541,9 @@ router.get('/:id', spaceController.getSpaceById);
  *               - location_id
  *               - space_type_id
  *               - capacity
- *               - hourly_rate
+ *               - price_per_hour
+ *               - opening_time
+ *               - closing_time
  *             properties:
  *               space_name:
  *                 type: string
@@ -561,12 +567,33 @@ router.get('/:id', spaceController.getSpaceById);
  *                 minimum: 1
  *                 description: Capacità massima dello spazio
  *                 example: 8
- *               hourly_rate:
+ *               price_per_hour:
  *                 type: number
  *                 format: decimal
  *                 minimum: 0
- *                 description: Tariffa oraria
+ *                 description: Prezzo all'ora
  *                 example: 25.00
+ *               opening_time:
+ *                 type: string
+ *                 format: time
+ *                 description: Orario di apertura
+ *                 example: '09:00:00'
+ *               closing_time:
+ *                 type: string
+ *                 format: time
+ *                 description: Orario di chiusura
+ *                 example: '18:00:00'
+ *               available_days:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Giorni della settimana disponibili (1=Lunedì, 7=Domenica)
+ *                 example: [1, 2, 3, 4, 5]
+ *               price_per_day:
+ *                 type: number
+ *                 format: decimal
+ *                 description: Prezzo giornaliero (calcolato automaticamente se non fornito)
+ *                 example: 225.00
  *               amenities:
  *                 type: array
  *                 items:

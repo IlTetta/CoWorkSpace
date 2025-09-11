@@ -4,16 +4,16 @@ const AppError = require('../utils/AppError');
 
 /**
  * Model per gestire le prenotazioni degli spazi di co-working
- * Supporta prenotazioni multi-giorno con datetime completi
+ * Supporta prenotazioni giornaliere complete
  */
 class Booking {
     constructor(data) {
         this.booking_id = data.booking_id;
         this.user_id = data.user_id;
         this.space_id = data.space_id;
-        this.start_datetime = data.start_datetime;
-        this.end_datetime = data.end_datetime;
-        this.total_hours = data.total_hours;
+        this.start_date = data.start_date;
+        this.end_date = data.end_date;
+        this.total_days = data.total_days;
         this.total_price = data.total_price;
         this.status = data.status || 'pending';
         this.payment_status = data.payment_status || 'pending';
@@ -28,22 +28,22 @@ class Booking {
         this.location_name = data.location_name;
         this.location_address = data.location_address;
         
-        // Campi calcolati per comodità
-        this.booking_date = data.start_datetime ? new Date(data.start_datetime).toISOString().split('T')[0] : null;
-        this.duration_days = this.calculateDurationDays();
+        // Supporto per retrocompatibilità con il frontend
+        this.booking_date = this.start_date;
+        this.duration_days = this.total_days || this.calculateDurationDays();
     }
 
     /**
      * Calcola la durata in giorni della prenotazione
-     * @returns {number} - Numero di giorni (inclusi parziali)
+     * @returns {number} - Numero di giorni
      */
     calculateDurationDays() {
-        if (!this.start_datetime || !this.end_datetime) return 0;
+        if (!this.start_date || !this.end_date) return 0;
         
-        const start = new Date(this.start_datetime);
-        const end = new Date(this.end_datetime);
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const start = new Date(this.start_date);
+        const end = new Date(this.end_date);
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 per includere il giorno di fine
         
         return diffDays;
     }
@@ -59,17 +59,17 @@ class Booking {
      */
     static async create(bookingData) {
         const {
-            user_id, space_id, start_datetime, end_datetime,
+            user_id, space_id, start_date, end_date,
             total_price, status = 'pending', payment_status = 'pending', notes
         } = bookingData;
 
         // Validazione dati obbligatori
         this.validateBookingData(bookingData);
 
-        // Verifica disponibilità prima di creare (con orari di apertura)
+        // Verifica disponibilità prima di creare
         const Space = require('./Space');
-        const availabilityCheck = await Space.checkAvailabilityWithSchedule(
-            space_id, start_datetime, end_datetime
+        const availabilityCheck = await Space.checkDailyAvailability(
+            space_id, start_date, end_date
         );
         
         if (!availabilityCheck.available) {
@@ -82,14 +82,14 @@ class Booking {
         try {
             const query = `
                 INSERT INTO bookings (
-                    user_id, space_id, start_datetime, end_datetime,
+                    user_id, space_id, start_date, end_date,
                     total_price, status, payment_status, notes
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 RETURNING *
             `;
             
             const values = [
-                user_id, space_id, start_datetime, end_datetime,
+                user_id, space_id, start_date, end_date,
                 total_price, status, payment_status, notes
             ];
 
@@ -108,11 +108,11 @@ class Booking {
                 }
             }
             if (error.code === '23514') { // Check constraint violation
-                if (error.constraint?.includes('booking_datetime_order')) {
-                    throw AppError.badRequest('La data/ora di inizio deve essere precedente a quella di fine');
+                if (error.constraint?.includes('booking_date_order')) {
+                    throw AppError.badRequest('La data di inizio deve essere precedente o uguale a quella di fine');
                 }
                 if (error.constraint?.includes('booking_future_date')) {
-                    throw AppError.badRequest('La prenotazione deve essere per una data futura');
+                    throw AppError.badRequest('La prenotazione deve essere per una data futura o odierna');
                 }
             }
             throw AppError.internal('Errore durante la creazione della prenotazione', error);
@@ -218,41 +218,41 @@ class Booking {
                 values.push(filters.payment_status);
             }
 
-            // Filtri per datetime
+            // Filtri per date
             if (filters.start_date) {
-                query += ` AND DATE(b.start_datetime) >= $${paramCount++}`;
+                query += ` AND b.start_date >= $${paramCount++}`;
                 values.push(filters.start_date);
             }
 
             if (filters.end_date) {
-                query += ` AND DATE(b.end_datetime) <= $${paramCount++}`;
+                query += ` AND b.end_date <= $${paramCount++}`;
                 values.push(filters.end_date);
             }
 
             if (filters.date_from) {
-                query += ` AND b.start_datetime >= $${paramCount++}`;
+                query += ` AND b.start_date >= $${paramCount++}`;
                 values.push(filters.date_from);
             }
 
             if (filters.date_to) {
-                query += ` AND b.end_datetime <= $${paramCount++}`;
+                query += ` AND b.end_date <= $${paramCount++}`;
                 values.push(filters.date_to);
             }
 
             // Filtro per prenotazioni che toccano una data specifica
             if (filters.intersects_date) {
-                query += ` AND DATE(b.start_datetime) <= $${paramCount} AND DATE(b.end_datetime) >= $${paramCount++}`;
+                query += ` AND b.start_date <= $${paramCount} AND b.end_date >= $${paramCount++}`;
                 values.push(filters.intersects_date);
             }
 
             // Filtro per prenotazioni attive in un periodo
             if (filters.active_between_start && filters.active_between_end) {
-                query += ` AND b.start_datetime < $${paramCount++} AND b.end_datetime > $${paramCount++}`;
+                query += ` AND b.start_date < $${paramCount++} AND b.end_date > $${paramCount++}`;
                 values.push(filters.active_between_end, filters.active_between_start);
             }
 
             // Ordinamento
-            query += ` ORDER BY b.start_datetime DESC, b.created_at DESC`;
+            query += ` ORDER BY b.start_date DESC, b.created_at DESC`;
 
             // Limite risultati
             if (filters.limit) {
@@ -282,7 +282,7 @@ class Booking {
 
         // Campi aggiornabili
         const allowedFields = [
-            'start_datetime', 'end_datetime', 'total_price', 
+            'start_date', 'end_date', 'total_price', 
             'status', 'payment_status', 'notes'
         ];
         
@@ -302,14 +302,14 @@ class Booking {
             throw AppError.badRequest('Nessun campo valido da aggiornare');
         }
 
-        // Verifica disponibilità se si modificano datetime (con orari di apertura)
-        if (updateData.start_datetime || updateData.end_datetime) {
-            const newStartDatetime = updateData.start_datetime || existing.start_datetime;
-            const newEndDatetime = updateData.end_datetime || existing.end_datetime;
+        // Verifica disponibilità se si modificano le date
+        if (updateData.start_date || updateData.end_date) {
+            const newStartDate = updateData.start_date || existing.start_date;
+            const newEndDate = updateData.end_date || existing.end_date;
 
             const Space = require('./Space');
-            const availabilityCheck = await Space.checkAvailabilityWithSchedule(
-                existing.space_id, newStartDatetime, newEndDatetime
+            const availabilityCheck = await Space.checkDailyAvailability(
+                existing.space_id, newStartDate, newEndDate
             );
             
             if (!availabilityCheck.available) {
@@ -368,67 +368,33 @@ class Booking {
     // ============================================================================
 
     /**
-     * Verifica disponibilità di uno spazio per un determinato periodo
-     * @param {number} spaceId - ID dello spazio
-     * @param {string} startDatetime - Data/ora inizio (ISO string)
-     * @param {string} endDatetime - Data/ora fine (ISO string)
-     * @param {number} excludeBookingId - ID prenotazione da escludere (per update)
-     * @returns {Promise<boolean>} - true se disponibile
-     */
-    static async checkSpaceAvailability(spaceId, startDatetime, endDatetime, excludeBookingId = null) {
-        try {
-            let query = `
-                SELECT COUNT(*) as conflicts
-                FROM bookings
-                WHERE space_id = $1 
-                AND status NOT IN ('cancelled')
-                AND (
-                    (start_datetime < $3 AND end_datetime > $2) OR
-                    (start_datetime >= $2 AND start_datetime < $3) OR
-                    (end_datetime > $2 AND end_datetime <= $3)
-                )
-            `;
-
-            const values = [spaceId, startDatetime, endDatetime];
-
-            if (excludeBookingId) {
-                query += ` AND booking_id != $4`;
-                values.push(excludeBookingId);
-            }
-
-            const result = await pool.query(query, values);
-            return parseInt(result.rows[0].conflicts) === 0;
-        } catch (error) {
-            throw AppError.internal('Errore durante la verifica disponibilità', error);
-        }
-    }
-
-    /**
-     * Verifica disponibilità di uno spazio per una data specifica
+     * Verifica se uno spazio è prenotato per una data specifica
      * @param {number} spaceId - ID dello spazio
      * @param {string} date - Data nel formato YYYY-MM-DD
-     * @returns {Promise<Array>} - Array di orari occupati
+     * @returns {Promise<Array>} - Array di prenotazioni per quella data
      */
     static async getSpaceAvailabilityForDate(spaceId, date) {
         try {
             const query = `
                 SELECT 
-                    start_datetime,
-                    end_datetime,
-                    status
+                    start_date,
+                    end_date,
+                    status,
+                    booking_id
                 FROM bookings
                 WHERE space_id = $1 
-                AND DATE(start_datetime) <= $2
-                AND DATE(end_datetime) >= $2
+                AND start_date <= $2
+                AND end_date >= $2
                 AND status NOT IN ('cancelled')
-                ORDER BY start_datetime
+                ORDER BY start_date
             `;
 
             const result = await pool.query(query, [spaceId, date]);
             return result.rows.map(row => ({
-                start_datetime: row.start_datetime,
-                end_datetime: row.end_datetime,
-                status: row.status
+                start_date: row.start_date,
+                end_date: row.end_date,
+                status: row.status,
+                booking_id: row.booking_id
             }));
         } catch (error) {
             throw AppError.internal('Errore durante la verifica disponibilità giornaliera', error);
@@ -436,13 +402,13 @@ class Booking {
     }
 
     /**
-     * Trova prenotazioni che si sovrappongono con un periodo specificato
+     * Trova prenotazioni che si sovrappongono con un periodo di date specificato
      * @param {number} spaceId - ID dello spazio
-     * @param {string} startDatetime - Data/ora inizio
-     * @param {string} endDatetime - Data/ora fine
+     * @param {string} startDate - Data inizio (YYYY-MM-DD)
+     * @param {string} endDate - Data fine (YYYY-MM-DD)
      * @returns {Promise<Array<Booking>>} - Prenotazioni che si sovrappongono
      */
-    static async findOverlappingBookings(spaceId, startDatetime, endDatetime) {
+    static async findOverlappingBookings(spaceId, startDate, endDate) {
         try {
             const query = `
                 SELECT b.*, 
@@ -455,14 +421,14 @@ class Booking {
                 WHERE b.space_id = $1 
                 AND b.status NOT IN ('cancelled')
                 AND (
-                    (b.start_datetime < $3 AND b.end_datetime > $2) OR
-                    (b.start_datetime >= $2 AND b.start_datetime < $3) OR
-                    (b.end_datetime > $2 AND b.end_datetime <= $3)
+                    (b.start_date <= $3 AND b.end_date >= $2) OR
+                    (b.start_date >= $2 AND b.start_date <= $3) OR
+                    (b.end_date >= $2 AND b.end_date <= $3)
                 )
-                ORDER BY b.start_datetime
+                ORDER BY b.start_date
             `;
 
-            const result = await pool.query(query, [spaceId, startDatetime, endDatetime]);
+            const result = await pool.query(query, [spaceId, startDate, endDate]);
             return result.rows.map(row => new Booking(row));
         } catch (error) {
             throw AppError.internal('Errore durante la ricerca delle sovrapposizioni', error);
@@ -499,12 +465,12 @@ class Booking {
             }
 
             if (filters.date_from) {
-                baseQuery += ` AND b.start_datetime >= $${paramCount++}`;
+                baseQuery += ` AND b.start_date >= $${paramCount++}`;
                 values.push(filters.date_from);
             }
 
             if (filters.date_to) {
-                baseQuery += ` AND b.end_datetime <= $${paramCount++}`;
+                baseQuery += ` AND b.end_date <= $${paramCount++}`;
                 values.push(filters.date_to);
             }
 
@@ -517,10 +483,10 @@ class Booking {
                     COUNT(CASE WHEN b.status = 'cancelled' THEN 1 END) as cancelled_bookings,
                     COUNT(CASE WHEN b.status = 'completed' THEN 1 END) as completed_bookings,
                     COALESCE(SUM(CASE WHEN b.status != 'cancelled' THEN b.total_price ELSE 0 END), 0) as total_revenue,
-                    COALESCE(SUM(CASE WHEN b.status != 'cancelled' THEN b.total_hours ELSE 0 END), 0) as total_hours,
+                    COALESCE(SUM(CASE WHEN b.status != 'cancelled' THEN b.total_days ELSE 0 END), 0) as total_days,
                     COALESCE(AVG(CASE WHEN b.status != 'cancelled' THEN b.total_price ELSE NULL END), 0) as avg_booking_price,
-                    COUNT(CASE WHEN EXTRACT(EPOCH FROM (b.end_datetime - b.start_datetime)) > 86400 THEN 1 END) as multi_day_bookings,
-                    COALESCE(AVG(CASE WHEN b.status != 'cancelled' THEN EXTRACT(EPOCH FROM (b.end_datetime - b.start_datetime)) / 3600 ELSE NULL END), 0) as avg_duration_hours
+                    COUNT(CASE WHEN b.total_days > 1 THEN 1 END) as multi_day_bookings,
+                    COALESCE(AVG(CASE WHEN b.status != 'cancelled' THEN b.total_days ELSE NULL END), 0) as avg_duration_days
                 ${baseQuery}
             `;
 
@@ -594,34 +560,35 @@ class Booking {
      * @throws {AppError} - Se validazione fallisce
      */
     static validateBookingData(bookingData) {
-        const { user_id, space_id, start_datetime, end_datetime, total_price } = bookingData;
+        const { user_id, space_id, start_date, end_date, total_price } = bookingData;
 
-        if (!user_id || !space_id || !start_datetime || !end_datetime) {
-            throw AppError.badRequest('user_id, space_id, start_datetime e end_datetime sono obbligatori');
+        if (!user_id || !space_id || !start_date || !end_date) {
+            throw AppError.badRequest('user_id, space_id, start_date e end_date sono obbligatori');
         }
 
-        // Validazione formato datetime (deve essere ISO string o Date valida)
-        const startDate = new Date(start_datetime);
-        const endDate = new Date(end_datetime);
-
-        if (isNaN(startDate.getTime())) {
-            throw AppError.badRequest('Formato start_datetime non valido (deve essere ISO string)');
+        // Validazione formato date (deve essere YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(start_date)) {
+            throw AppError.badRequest('Formato start_date non valido (deve essere YYYY-MM-DD)');
         }
 
-        if (isNaN(endDate.getTime())) {
-            throw AppError.badRequest('Formato end_datetime non valido (deve essere ISO string)');
+        if (!dateRegex.test(end_date)) {
+            throw AppError.badRequest('Formato end_date non valido (deve essere YYYY-MM-DD)');
         }
 
-        // Validazione logica datetime
-        if (startDate >= endDate) {
-            throw AppError.badRequest('La data/ora di inizio deve essere precedente a quella di fine');
+        const startDate = new Date(start_date);
+        const endDate = new Date(end_date);
+
+        // Validazione logica date
+        if (startDate > endDate) {
+            throw AppError.badRequest('La data di inizio deve essere precedente o uguale a quella di fine');
         }
 
-        // Validazione che la prenotazione sia nel futuro (con tolleranza di 1 giorno)
-        const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        // Validazione che la prenotazione sia nel futuro o oggi
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        if (startDate < yesterday) {
+        if (startDate < today) {
             throw AppError.badRequest('Non è possibile creare prenotazioni per date passate');
         }
 
@@ -631,13 +598,6 @@ class Booking {
         
         if (diffDays > 30) {
             throw AppError.badRequest('La durata massima di una prenotazione è di 30 giorni');
-        }
-
-        // Validazione durata minima (es. min 1 ora)
-        const diffHours = diffTime / (1000 * 60 * 60);
-        
-        if (diffHours < 1) {
-            throw AppError.badRequest('La durata minima di una prenotazione è di 1 ora');
         }
 
         // Validazione numero positivo per prezzo

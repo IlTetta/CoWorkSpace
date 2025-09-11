@@ -689,10 +689,9 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
         const query = `
             SELECT 
                 b.booking_id,
-                b.booking_date,
-                b.start_time,
-                b.end_time,
-                b.total_hours,
+                b.start_date,
+                b.end_date,
+                b.total_days,
                 b.total_price,
                 b.status,
                 b.created_at,
@@ -714,10 +713,9 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
         const result = await db.query(query, [locationId]);
         return result.rows.map(row => ({
             id: row.booking_id,
-            date: row.booking_date,
-            startTime: row.start_time,
-            endTime: row.end_time,
-            totalHours: parseFloat(row.total_hours),
+            startDate: row.start_date,
+            endDate: row.end_date,
+            totalDays: parseFloat(row.total_days),
             totalPrice: parseFloat(row.total_price),
             status: row.status,
             createdAt: row.created_at,
