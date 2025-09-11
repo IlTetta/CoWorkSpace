@@ -1,10 +1,10 @@
 const admin = require('firebase-admin');
-const path = require('path');
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || path.join(__dirname, "../../firebase-service-account.json");
+// Legge il JSON dalla variabile d'ambiente su Render
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccountPath)
+  credential: admin.credential.cert(serviceAccount),
 });
 
 module.exports = admin;

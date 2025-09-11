@@ -25,7 +25,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./firebase-service-account.json:/usr/src/firebase-service-account.json:ro
+    #  - ./firebase-service-account.json:/usr/src/firebase-service-account.json:ro
     environment:
       - FIREBASE_SERVICE_ACCOUNT_PATH=/usr/src/firebase-service-account.json
   # Servizio Database (PostgreSQL)
