@@ -86,10 +86,37 @@ function showMessage(message, type) {
             if (profileBtn) {
                 profileBtn.addEventListener('click', () => {
                     try {
-                        // Naviga alla pagina profilo
-                        window.location.href = 'profile.html';
+                        // Determina la pagina di destinazione in base al ruolo dell'utente
+                        let destinationPage = 'profile.html'; // Default per utenti normali
+                        
+                        if (window.authService) {
+                            const user = window.authService.getUser();
+                            console.log('Current user:', user); // Debug log
+                            console.log('User role:', user?.role); // Debug log
+                            console.log('IsAdmin:', window.authService.isAdmin()); // Debug log
+                            console.log('IsManager:', window.authService.isManager()); // Debug log
+                            console.log('IsUser:', window.authService.isUser()); // Debug log
+                            
+                            if (window.authService.isAdmin()) {
+                                destinationPage = 'dashboard-admin.html';
+                                console.log('Redirecting to admin dashboard'); // Debug log
+                            } else if (window.authService.isManager()) {
+                                destinationPage = 'dashboard-manger.html'; // Nota: file esistente con typo
+                                console.log('Redirecting to manager dashboard'); // Debug log
+                            } else {
+                                destinationPage = 'profile.html'; // Utenti normali
+                                console.log('Redirecting to user profile'); // Debug log
+                            }
+                        } else {
+                            console.warn('AuthService not available, defaulting to profile.html');
+                        }
+                        
+                        // Naviga alla pagina appropriata
+                        window.location.href = destinationPage;
                     } catch (error) {
-                        showMessage(`Errore durante la navigazione al profilo: ${error.message}`, 'error');
+                        showMessage(`Errore durante la navigazione: ${error.message}`, 'error');
+                        // Fallback alla pagina profilo in caso di errore
+                        window.location.href = 'profile.html';
                     }
                 });
             }
