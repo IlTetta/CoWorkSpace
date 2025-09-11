@@ -10,11 +10,38 @@
 
     class ApiService {
         constructor() {
-            this.baseURL = 'http://localhost:3000/api';
+            // Determina baseURL dinamicamente in base all'ambiente
+            if (window.location.port === '5500' || window.location.hostname === '127.0.0.1') {
+                // Live Server o sviluppo locale - usa sempre il server backend su porta 3000
+                this.baseURL = 'http://localhost:3000/api';
+            } else if (window.location.port === '3000') {
+                // Servito dal backend Express - usa path relativo
+                this.baseURL = '/api';
+            } else {
+                // Default: assumi server backend su localhost:3000
+                this.baseURL = 'http://localhost:3000/api';
+            }
+            
             this.defaultHeaders = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             };
+        }
+
+        // Metodo privato per ottenere headers con autenticazione
+        #getHeaders(additionalHeaders = {}) {
+            const baseHeaders = { ...this.defaultHeaders, ...additionalHeaders };
+            
+            // Aggiungi token di autenticazione se presente
+            const token = localStorage.getItem('coworkspace_token');
+            if (token) {
+                baseHeaders['Authorization'] = `Bearer ${token}`;
+                console.log('[API] Including auth token in request');
+            } else {
+                console.log('[API] No auth token found');
+            }
+            
+            return baseHeaders;
         }
 
         // Metodo privato per gestire le chiamate HTTP
@@ -22,7 +49,7 @@
             const url = `${this.baseURL}${endpoint}`;
             
             const config = {
-                headers: { ...this.defaultHeaders, ...options.headers },
+                headers: this.#getHeaders(options.headers),
                 ...options
             };
 
@@ -129,8 +156,13 @@
         }
 
         async getLocationById(id) {
-            const data = await this.get(`/locations/${id}`);
-            return data.data;
+            try {
+                const data = await this.get(`/locations/${id}`);
+                return data.data;
+            } catch (error) {
+                console.error('Error getting location by id:', error);
+                throw error;
+            }
         }
 
         async createLocation(locationData) {
@@ -145,6 +177,55 @@
 
         async deleteLocation(id) {
             return this.delete(`/locations/${id}`);
+        }
+
+        // Ottieni locations ordinate alfabeticamente
+        async getLocationsAlphabetical(order = 'asc', filters = {}) {
+            try {
+                const cleanFilters = Object.keys(filters).reduce((acc, key) => {
+                    const value = filters[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+
+                // Usa l'endpoint alphabetical con il parametro corretto
+                const data = await this.get('/locations/alphabetical', {
+                    ...cleanFilters,
+                    sortOrder: order
+                });
+                
+                return Array.isArray(data.data.items) ? data.data.items : [];
+            } catch (error) {
+                console.error('Error in getLocationsAlphabetical:', error);
+                return [];
+            }
+        }
+
+        // Ottieni locations filtrate per tipo di spazio
+        async getFilteredLocations(filters = {}, sortOptions = {}) {
+            try {
+                const params = {
+                    ...filters,
+                    sortBy: sortOptions.sortBy || 'name',
+                    sortOrder: sortOptions.sortOrder || 'asc'
+                };
+
+                const cleanParams = Object.keys(params).reduce((acc, key) => {
+                    const value = params[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+
+                const data = await this.get('/locations/filter', cleanParams);
+                return Array.isArray(data.data.items) ? data.data.items : [];
+            } catch (error) {
+                console.error('Error in getFilteredLocations:', error);
+                return [];
+            }
         }
 
         // --- SPACES ---
@@ -271,6 +352,92 @@
 
         async deleteBooking(id) {
             return this.delete(`/bookings/${id}`);
+        }
+
+        // Metodi per la gestione degli spazi
+        async getSpacesByLocation(locationId) {
+            try {
+                // Ottieni tutti gli spazi e filtra per location
+                const data = await this.get('/spaces');
+                const allSpaces = Array.isArray(data.data.items) ? data.data.items : [];
+                
+                // Filtra per location ID
+                const locationSpaces = allSpaces.filter(space => 
+                    space.locationId === parseInt(locationId) || space.location_id === parseInt(locationId)
+                );
+                
+                return locationSpaces;
+            } catch (error) {
+                console.error('Error getting spaces by location:', error);
+                return [];
+            }
+        }
+
+        async getSpaceTypesByLocation(locationId) {
+            try {
+                // Ottieni gli spazi per questa location e estrai i tipi unici
+                const spaces = await this.getSpacesByLocation(locationId);
+                
+                // Crea una mappa dei tipi di spazio unici
+                const spaceTypesMap = new Map();
+                
+                spaces.forEach(space => {
+                    if (space.spaceType) {
+                        const typeId = space.spaceType.id || space.spaceTypeId;
+                        if (!spaceTypesMap.has(typeId)) {
+                            spaceTypesMap.set(typeId, {
+                                id: space.spaceType.id || space.spaceTypeId,
+                                name: space.spaceType.name,
+                                description: space.spaceType.description,
+                                price: space.pricePerHour || space.price_per_hour
+                            });
+                        }
+                    }
+                });
+                
+                return Array.from(spaceTypesMap.values());
+            } catch (error) {
+                console.error('Error getting space types by location:', error);
+                return [];
+            }
+        }
+
+        async getSpaceById(spaceId) {
+            try {
+                const data = await this.get(`/spaces/${spaceId}`);
+                return data.data;
+            } catch (error) {
+                console.error('Error getting space by id:', error);
+                throw error;
+            }
+        }
+
+        // Calcola il prezzo della prenotazione
+        async calculateBookingPrice(spaceId, date, time, duration, services = []) {
+            try {
+                const data = await this.post('/bookings/calculate-price', {
+                    spaceId,
+                    date,
+                    time,
+                    duration: parseInt(duration),
+                    services
+                });
+                return data.data.totalPrice || 0;
+            } catch (error) {
+                console.error('Error calculating booking price:', error);
+                return 0;
+            }
+        }
+
+        // Metodo per creare una prenotazione
+        async createBooking(bookingData) {
+            try {
+                const data = await this.post('/bookings', bookingData);
+                return data.data;
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                throw error;
+            }
         }
     }
 

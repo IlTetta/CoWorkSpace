@@ -21,67 +21,113 @@
         </div>
     </div>
 
-    <div class="workspace-card">
-        <div class="workspace-title-block">
-            <h1 class="workspace-title">Workspace Moderno</h1>
-        </div>
-        <p class="workspace-type">Ufficio Privato</p>
-
-        <div class="booking-section">
-            <form id="booking-form" class="form-fields">
-                <div class="form-group">
-                    <label for="date">Data:</label>
-                    <input type="text" id="date" name="date" class="date-bar" required readonly>
-                    <span id="date-error" class="field-error" style="display:none;"></span>
-                </div>
-                
-                <div class="form-group">
-                    <label for="time">Orario:</label>
-                    <input type="time" id="time" name="time" class="time-bar" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="duration">Durata (ore):</label>
-                    <input type="number" id="duration" name="duration" class="duration-bar" min="1" max="12" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="price">Prezzo (€):</label>
-                    <input type="number" id="price" name="price" class="price-bar" readonly placeholder="0">
-                </div>
-                
-                <button type="submit" class="booking-button">Prenota e Paga</button>
-            </form>
-            
-            <div class="calendar" id="custom-calendar">
-                <header class="calendar__header">
-                    <select class="calendar__month" id="calendar-month"></select>
-                    <select class="calendar__year" id="calendar-year"></select>
-                </header>
-                <div class="calendar__grid">
-                    <div class="calendar__day-names">
-                        <span class="calendar__day-name">D</span>
-                        <span class="calendar__day-name">L</span>
-                        <span class="calendar__day-name">M</span>
-                        <span class="calendar__day-name">M</span>
-                        <span class="calendar__day-name">G</span>
-                        <span class="calendar__day-name">V</span>
-                        <span class="calendar__day-name">S</span>
+    <div class="workspace-container">
+        <!-- Sezione sinistra: Informazioni della Location -->
+        <div class="location-info-section">
+            <div class="location-card-detail">
+                <div class="location-header">
+                    <h1 class="location-name" id="location-name">Workspace Moderno</h1>
+                    <div class="location-meta">
+                        <p class="location-city" id="location-city">Milano</p>
+                        <p class="location-address" id="location-address">Via Roma 10</p>
                     </div>
-                    <div class="calendar__day-numbers" id="calendar-day-numbers">
-                        <!-- I giorni del calendario verranno inseriti qui dal JS -->
+                </div>
+                
+                <div class="location-description">
+                    <h3>Descrizione</h3>
+                    <p id="location-description">Sede moderna nel cuore di Milano, comoda ai trasporti.</p>
+                </div>
+                
+                <div class="location-spaces">
+                    <h3>Spazi Disponibili</h3>
+                    <div id="space-types-list" class="space-types-grid">
+                        <!-- I tipi di spazio verranno inseriti qui dinamicamente -->
                     </div>
+                </div>
+                
+                <div class="location-manager">
+                    <h3>Manager</h3>
+                    <p id="manager-info">Manager Name</p>
+                </div>
+                
+                <div class="back-button-container">
+                    <button id="back-to-home" class="back-button">← Torna alla Home</button>
                 </div>
             </div>
         </div>
-        
-        <div id="payment-section" class="payment-section">
-            <h3 class="payment-title">Riepilogo e Pagamento</h3>
-            <p class="payment-total">Totale: <span id="total-price"></span> €</p>
-            <button id="pay-button" class="pay-button">Paga ora</button>
+
+        <!-- Sezione destra: Prenotazione (esistente) -->
+        <div class="booking-section-container">
+            <div class="workspace-card">
+                <div class="workspace-title-block">
+                    <h2 class="workspace-title">Prenota Spazio</h2>
+                    <p class="workspace-type" id="selected-space-type">Seleziona uno spazio</p>
+                </div>
+
+                <div class="booking-section">
+                    <form id="booking-form" class="form-fields">
+                        <div class="form-group">
+                            <label for="space-select">Spazio:</label>
+                            <select id="space-select" name="space" class="space-select" required>
+                                <option value="">Seleziona uno spazio</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="date">Data:</label>
+                            <input type="text" id="date" name="date" class="date-bar" required readonly>
+                            <span id="date-error" class="field-error" style="display:none;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="time">Orario:</label>
+                            <input type="time" id="time" name="time" class="time-bar" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="duration">Durata (ore):</label>
+                            <input type="number" id="duration" name="duration" class="duration-bar" min="1" max="12" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price">Prezzo (€):</label>
+                            <input type="number" id="price" name="price" class="price-bar" readonly placeholder="0">
+                        </div>
+                        
+                        <button type="submit" class="booking-button">Prenota e Paga</button>
+                    </form>
+                    
+                    <div class="calendar" id="custom-calendar">
+                        <header class="calendar__header">
+                            <select class="calendar__month" id="calendar-month"></select>
+                            <select class="calendar__year" id="calendar-year"></select>
+                        </header>
+                        <div class="calendar__grid">
+                            <div class="calendar__day-names">
+                                <span class="calendar__day-name">D</span>
+                                <span class="calendar__day-name">L</span>
+                                <span class="calendar__day-name">M</span>
+                                <span class="calendar__day-name">M</span>
+                                <span class="calendar__day-name">G</span>
+                                <span class="calendar__day-name">V</span>
+                                <span class="calendar__day-name">S</span>
+                            </div>
+                            <div class="calendar__day-numbers" id="calendar-day-numbers">
+                                <!-- I giorni del calendario verranno inseriti qui dal JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="payment-section" class="payment-section">
+                    <h3 class="payment-title">Riepilogo e Pagamento</h3>
+                    <p class="payment-total">Totale: <span id="total-price"></span> €</p>
+                    <button id="pay-button" class="pay-button">Paga ora</button>
+                </div>
+                
+                <div id="booking-message"></div>
+            </div>
         </div>
-        
-        <div id="booking-message"></div>
     </div>
     
     <script src="js/apiService.js"></script>

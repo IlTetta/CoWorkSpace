@@ -15,7 +15,7 @@ class AuthService {
         return localStorage.getItem(this.tokenKey);
     }
 
-    // Rimuove token dal localStorage
+    // Rimuove token dal localStorage   
     removeToken() {
         localStorage.removeItem(this.tokenKey);
     }
@@ -88,8 +88,8 @@ class AuthService {
     logout() {
         this.removeToken();
         this.removeUser();
-        // Redirect alla pagina di login
-        window.location.href = '/login.html';
+        // Redirect alla pagina di login - path relativo per compatibilità con entrambe le porte
+        window.location.href = 'login.html';
     }
 
     // Ottieni header per richieste autenticate
@@ -123,34 +123,7 @@ class AuthService {
 // Crea istanza globale
 const authService = new AuthService();
 
-// Login form handler
-function handleLoginForm() {
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            if (!email || !password) {
-                FrontendUtils.showError('Email e password sono richiesti');
-                return;
-            }
-            
-            try {
-                const response = await authService.login(email, password);
-                FrontendUtils.showSuccess('Login effettuato con successo!');
-                
-                // Usa il metodo centralizzato per il redirect
-                authService.redirectAfterLogin();
-                
-            } catch (error) {
-                FrontendUtils.showError('Errore nel login: ' + error.message);
-            }
-        });
-    }
-}
+// Il login form è gestito da login.js
 
 // Registration form handler
 function handleRegistrationForm() {
@@ -182,7 +155,7 @@ function handleRegistrationForm() {
                 
                 // Redirect al login o homepage
                 setTimeout(() => {
-                    window.location.href = '/login.html';
+                    window.location.href = 'login.html';
                 }, 1000);
                 
             } catch (error) {
@@ -207,11 +180,11 @@ function handleLogoutButton() {
 
 // Controlla autenticazione su pagine protette
 function checkAuthentication() {
-    const protectedPages = ['/dashboard.html', '/profile.html', '/bookings.html'];
+    const protectedPages = ['dashboard.html', 'profile.html', 'bookings.html'];
     const currentPage = window.location.pathname;
     
-    if (protectedPages.includes(currentPage) && !authService.isAuthenticated()) {
-        window.location.href = '/login.html';
+    if (protectedPages.some(page => currentPage.includes(page)) && !authService.isAuthenticated()) {
+        window.location.href = 'login.html';
     }
 }
 
@@ -251,7 +224,6 @@ function updateAuthUI() {
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthentication();
     updateAuthUI();
-    handleLoginForm();
     handleRegistrationForm();
     handleLogoutButton();
 });

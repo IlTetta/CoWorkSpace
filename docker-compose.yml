@@ -4,6 +4,10 @@ services:
     container_name: coworking_app
     ports:
       - "3000:3000"
+    volumes:
+      # Mount source code for development hot reload
+      - ./src:/usr/src/app/src
+      - ./firebase-service-account.json:/usr/src/app/src/firebase-service-account.json
     environment:
       # Variabili per la connessione al database
       DATABASE_URL: postgres://coworkspace_user:cachemeifyoucan@db:5432/coworkspace_db
@@ -16,7 +20,7 @@ services:
       JWT_SECRET: c7a5M0RarP+bX4LsdyGgcOjAAe32hRUHoqxDoHJlhUkujIFZAR4m/q8TJdfHRijI
       JWT_EXPIRES_IN: 24h
       JWT_REFRESH_SECRET: c7a5M0RarP+bX4LsdyGgcOjAAe32hRUHoqxDoHJlhUkujIFZAR4m/q8TJdfHRijI_REFRESH
-      FRONTEND_URL: http://localhost:3000
+      # Remove FRONTEND_URL to let the CORS logic handle multiple origins in development
       EMAIL_USER: coworkspace.webdev@gmail.com
       EMAIL_PASS: vknf nbmg oaoh ryww
       EMAIL_FROM: CoWorkSpace <coworkspace.webdev@gmail.com>
@@ -36,7 +40,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./seed.sql:/docker-entrypoint-initdb.d/seed_data.sql
+      - ./seed_data.sql:/docker-entrypoint-initdb.d/seed_data.sql
     ports:
       - "5432:5432"
     restart: always

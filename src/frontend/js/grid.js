@@ -25,58 +25,40 @@ async function getAllLocations(city = null) {
     }
 }
 
-// Funzione per ottenere i tipi di spazi di una location
-async function getLocationSpaceTypes(locationId) {
+// Funzione per estrarre i tipi di spazio dai dati della location (ora inclusi nella query)
+function extractLocationTypes(location) {
     try {
-        // Validazione: controlla che locationId sia valido
-        if (!locationId || locationId === 'undefined') {
-            console.warn('LocationId non valido:', locationId);
-            return 'Spazio generico';
-        }
-
-        // Controlla se apiService è disponibile
-        if (!window.apiService) {
-            console.warn('ApiService not available for space types');
-            return 'Spazio generico';
-        }
-
-        const spaces = await window.apiService.getAllSpaces({ location_id: locationId });
+        // Il backend ora include i tipi di spazio direttamente nella response
+        const spaceTypes = location.space_types || location.spaceTypes || [];
         
-        // Controllo sicurezza
-        if (!Array.isArray(spaces) || spaces.length === 0) {
-            console.log(`Nessun spazio configurato per location ${locationId}`);
+        if (!Array.isArray(spaceTypes) || spaceTypes.length === 0) {
+            console.log(`Nessun tipo di spazio configurato per location ${location.location_id || location.id}`);
             return 'Spazio non configurato';
         }
         
-        // Estrae i tipi di spazi - gestisce la struttura del backend attuale
-        const spaceTypes = spaces.map(space => {
-            // Il tipo potrebbe essere in diversi campi
-            return space.spaceType?.name || // Backend attuale: spaceType.name
-                   space.type_name ||       // Formato alternativo
-                   space.typeName ||        // CamelCase
-                   space.space_type ||      // Snake_case
-                   space.type ||            // Campo semplice
-                   'Tipo sconosciuto';
-        }).filter(type => type && type !== 'Tipo sconosciuto');
+        // Estrae i nomi dei tipi di spazio
+        const typeNames = spaceTypes.map(type => {
+            return type.name || type.type_name || type.typeName || 'Tipo sconosciuto';
+        }).filter(name => name && name !== 'Tipo sconosciuto');
         
-        if (spaceTypes.length === 0) {
+        if (typeNames.length === 0) {
             return 'Spazio generico';
         }
         
-        const typeCount = {};
+        // Restituisci tutti i tipi di spazio separati da a capo
+        // Ordina alfabeticamente per consistenza
+        const sortedTypes = typeNames.sort();
         
-        spaceTypes.forEach(type => {
-            typeCount[type] = (typeCount[type] || 0) + 1;
-        });
+        // Se ci sono più di 4 tipi, mostra i primi 3 e aggiungi "e altri X"
+        if (sortedTypes.length > 4) {
+            const remaining = sortedTypes.length - 3;
+            return `${sortedTypes.slice(0, 3).join('<br>')}<br>e altri ${remaining}`;
+        }
         
-        // Trova il tipo più comune
-        const mostCommonType = Object.keys(typeCount).reduce((a, b) => 
-            typeCount[a] > typeCount[b] ? a : b, 'Spazio generico'
-        );
-        
-        return mostCommonType;
+        // Altrimenti mostra tutti i tipi separati da a capo
+        return sortedTypes.join('<br>');
     } catch (error) {
-        console.error('Errore nel recupero dei tipi di spazi per location', locationId, ':', error);
+        console.error('Errore nell\'estrazione dei tipi di spazio:', error);
         return 'Spazio generico';
     }
 }
@@ -103,8 +85,8 @@ async function renderGrid(locations) {
         // Generate the HTML for each location
         let locationsHtml = '';
         
-        // Processa le locations in parallelo per ottimizzare le performance
-        const locationPromises = locations.map(async (location) => {
+        // Processa le locations sincronamente (ora i tipi sono già inclusi)
+        locations.forEach((location) => {
             // Gestisci entrambi i formati: backend potrebbe restituire 'id' o 'location_id', 'name' o 'location_name'
             const location_id = location.location_id || location.id;
             const location_name = location.location_name || location.name;
@@ -112,10 +94,10 @@ async function renderGrid(locations) {
             
             const randomColor = getRandomPastelColor();
             
-            // Ottieni il tipo di location principale
-            const locationType = await getLocationSpaceTypes(location_id);
+            // Estrai il tipo di location dai dati già inclusi
+            const locationType = extractLocationTypes(location);
             
-            return `
+            locationsHtml += `
                 <div class="location-card" data-location-id="${location_id || 'unknown'}">
                     <div class="location-name" style="--random-color: ${randomColor}">${location_name || 'Nome sconosciuto'}</div>
                     <div class="location-type">${locationType}</div>
@@ -125,12 +107,11 @@ async function renderGrid(locations) {
             `;
         });
 
-        // Attendi che tutte le promise si risolvano
-        const locationCards = await Promise.all(locationPromises);
-        locationsHtml = locationCards.join('');
-
         // Insert the generated HTML into the page
         gridContainer.innerHTML = locationsHtml;
+        
+        // Aggiungi event listener per il click sulle card
+        addLocationClickListeners();
         
         console.log(`Renderizzate ${locations.length} locations`);
     } catch (error) {
@@ -216,4 +197,31 @@ async function searchLocationsByCity(city) {
     window.displayLocations = displayLocations;
 
 })();
+
+// Funzione per aggiungere event listener alle location card
+function addLocationClickListeners() {
+    const locationCards = document.querySelectorAll('.location-card');
+    console.log(`Adding click listeners to ${locationCards.length} location cards`); // Debug log
+    
+    locationCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const locationId = this.getAttribute('data-location-id');
+            console.log('Card clicked, location ID:', locationId); // Debug log
+            
+            if (locationId && locationId !== 'unknown') {
+                // Salva l'ID della location selezionata
+                sessionStorage.setItem('selectedLocationId', locationId);
+                console.log('Saved location ID to sessionStorage:', locationId); // Debug log
+                
+                // Reindirizza alla pagina workspace
+                window.location.href = `workspace.html?locationId=${locationId}`;
+            } else {
+                console.error('Location ID non valido:', locationId);
+            }
+        });
+        
+        // Aggiungi stile del cursore per indicare che è cliccabile
+        card.style.cursor = 'pointer';
+    });
+}
 

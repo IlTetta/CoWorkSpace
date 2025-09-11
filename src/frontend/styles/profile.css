@@ -1,0 +1,280 @@
+body {
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+    font-family: sans-serif, Arial;
+    padding-top: 100px;
+    background: radial-gradient(circle at top left, rgba(60, 52, 200, 0.5), rgba(40, 35, 150, 0.9));
+    background-size: 100% 100%;
+    overflow-x: hidden; /* evita scroll orizzontale */
+}
+
+.profile-sidebar {
+    top: 120px; /* Staccato dall'header */
+    left: 30px; /* Staccato dal margine sinistro */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1002;
+}
+
+.people-icon {
+    background-color: white;
+    border-radius: 8px; /* Bordo quadrato arrotondato */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px; /* Stessa larghezza del menu */
+    height: 200px; /* Stessa altezza per mantenere il quadrato */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 5px; /* Ridotto spazio tra icona e menu */
+    cursor: pointer; /* Indica che è cliccabile */
+    position: relative;
+    overflow: hidden; /* Nasconde le parti dell'immagine che escono dal contenitore */
+}
+
+.people-icon:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+}
+
+.account-icon {
+    font-size: 150px !important; /* Aumentato per adattarsi al contenitore più grande */
+    color: rgb(79, 70, 229);
+    font-variation-settings: 'FILL' 1;
+}
+
+#profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Mantiene le proporzioni e riempie il contenitore */
+    border-radius: 8px; /* Stesso border-radius del contenitore */
+}
+
+/* Menu contestuale per l'immagine del profilo */
+.profile-context-menu {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none;
+    min-width: 150px;
+}
+
+.context-menu-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background-color: #f5f5f5;
+}
+
+.context-menu-item:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.context-menu-item:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.context-menu-item.remove {
+    color: #dc3545;
+}
+
+.context-menu-item.remove:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Form Info Utente - integrato nella pagina accanto alla sidebar */
+.modal {
+    display: none;
+    position: absolute;
+    z-index: 1000;
+    left: 130px; /* Spazio per la sidebar (200px + 40px margin) */
+    top: 120px; /* Più in alto - posizionato più vicino all'header */
+    width: calc(100% - 260px); /* Larghezza restante dopo la sidebar */
+    padding: 20px 0 50px 0;
+    box-sizing: border-box;
+}
+
+.modal-content {
+    background: white;
+    margin: 0 auto;
+    padding: 25px;
+    width: 450px;
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover {
+    color: #333;
+}
+
+.modal-content h2 {
+    color: rgb(79, 70, 229);
+    text-align: center;
+    margin-bottom: 20px;
+    font-family: sans-serif, Arial;
+}
+
+.user-info-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 4px;
+    color: #555;
+    font-weight: bold;
+    font-family: sans-serif, Arial;
+    font-size: 14px;
+}
+
+.form-group input {
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: sans-serif, Arial;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: rgb(79, 70, 229);
+    background-color: #fff;
+}
+
+.profile-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 200px;
+}
+
+.menu-item {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    border: none;
+    font-weight: bold;
+}
+
+.menu-item:hover {
+    transform: scale(1.05);
+    background-color: rgb(79, 70, 229);
+    color: white;
+    transition: ease-in-out 0.15s;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.menu-item:active {
+    transform: scale(0.95);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0), 2px 2px 5px rgba(255, 255, 255, 0.5) inset;
+    transition: all 0.01s ease-out;
+}
+
+.menu-item span {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: sans-serif, Arial;
+}
+
+
+@media (max-width: 1000px) {
+    .header {
+        height: 100px;
+        justify-content: space-between;
+        padding: 0;
+    }
+
+    .profile-sidebar {
+        top: 130px;
+        left: 15px;
+    }
+
+    .people-icon {
+        width: 150px; /* Stessa larghezza del menu responsive */
+        height: 150px; /* Mantiene la forma quadrata */
+        margin-bottom: 5px; /* Stesso spacing ridotto per mobile */
+    }
+
+    .account-icon {
+        font-size: 100px !important; /* Ridotto per dispositivi piccoli */
+    }
+
+    #profile-image {
+        border-radius: 8px; /* Mantiene il border-radius anche su mobile */
+    }
+
+    .account-icon {
+        font-size: 70px !important;
+    }
+
+    .profile-menu {
+        width: 150px;
+    }
+
+    .menu-item {
+        padding: 12px 15px;
+    }
+
+    .menu-item span {
+        font-size: 14px;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .modal {
+        left: 0; /* Su mobile la sidebar non interferisce */
+        top: 350px; /* Posizionato sotto la sidebar su mobile ma più in alto */
+        width: 100%; /* Occupa tutta la larghezza disponibile */
+        padding: 20px 0 40px 0;
+    }
+
+    .form-group input {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+}

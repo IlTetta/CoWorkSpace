@@ -1,11 +1,11 @@
 // Riferimenti ai campi input
-const signupForm = document.getElementById('signup-form');
+const signupForm = document.getElementById ('signup-form');
 const signupButton = document.querySelector('.signup-button');
-const nameInput = document.getElementById('name'); // Corretto: da 'username' a 'name'
+const nameInput = document.getElementById('name');
 const surnameInput = document.getElementById('surname');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
-const roleInput = document.getElementById('role');
+const managerRequestCheckbox = document.getElementById('manager-request');
 
 // URL dell'endpoint API per la registrazione
 const API_ENDPOINT = 'http://localhost:3000/api/users/register';
@@ -32,22 +32,25 @@ function clearFieldError(input) {
 }
 
 // Messaggi generali sotto il pulsante signup
-function showGeneralError(message) {
+function showGeneralError(message, isSuccess = false) {
     let errorContainer = document.querySelector('.signup-error-container');
     if (!errorContainer) {
         errorContainer = document.createElement('div');
         errorContainer.className = 'signup-error-container';
-        errorContainer.style.color = 'red';
         errorContainer.style.marginTop = '10px';
         errorContainer.style.fontSize = '14px';
         signupButton.parentElement.appendChild(errorContainer);
     }
+    errorContainer.style.color = isSuccess ? 'green' : 'red';
     errorContainer.textContent = message;
 }
 
 function clearGeneralError() {
     const errorContainer = document.querySelector('.signup-error-container');
-    if (errorContainer) errorContainer.textContent = '';
+    if (errorContainer) errorContainer.remove();
+    
+    const loadingContainer = document.querySelector('.signup-loading-container');
+    if (loadingContainer) loadingContainer.remove();
 }
 
 // Funzione per cancellare tutti i messaggi di errore e i messaggi generali
@@ -69,7 +72,7 @@ signupForm.addEventListener('submit', async (e) => {
     const surname = surnameInput.value.trim();
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-    const role = roleInput.value.trim();
+    const requestManagerRole = managerRequestCheckbox.checked;
 
     let hasError = false;
 
@@ -90,10 +93,6 @@ signupForm.addEventListener('submit', async (e) => {
         showFieldError(passwordInput, 'Per favore inserisci una password.');
         hasError = true;
     }
-    if (!role) {
-        showFieldError(roleInput, 'Per favora inserisci il tuo ruolo.');
-        hasError = true;
-    }
 
     if (hasError) {
         return;
@@ -103,7 +102,14 @@ signupForm.addEventListener('submit', async (e) => {
     signupButton.disabled = true;
     signupButton.textContent = 'Registrazione in corso...';
     // Visualizza il messaggio di caricamento sotto il pulsante
-    showGeneralError('Registrazione in corso...');
+    clearGeneralError();
+    const loadingContainer = document.createElement('div');
+    loadingContainer.className = 'signup-loading-container';
+    loadingContainer.style.color = 'blue';
+    loadingContainer.style.marginTop = '10px';
+    loadingContainer.style.fontSize = '14px';
+    loadingContainer.textContent = 'Registrazione in corso...';
+    signupButton.parentElement.appendChild(loadingContainer);
 
     try {
         const response = await fetch(API_ENDPOINT, {
@@ -111,31 +117,42 @@ signupForm.addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ name, surname, email, password, role })
+            body: JSON.stringify({ name, surname, email, password, requestManagerRole })
         });
 
         const result = await response.json();
 
+        // Rimuovi il messaggio di caricamento prima di mostrare i risultati
+        clearGeneralError();
+
         if (response.ok && result.status === 'success') {
             // Visualizza il messaggio di successo sotto il pulsante
-            showGeneralError(result.message || 'Registrazione avvenuta con successo!');
+            showGeneralError(result.message || 'Registrazione avvenuta con successo!', true);
 
-            // Salva token se presente nella risposta
-            if (result.data && result.data.token) {
-                localStorage.setItem('jwtToken', result.data.token);
-                if (result.data.user) {
-                    localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
+            // Controlla se l'utente può fare login immediatamente
+            if (result.data && result.data.canLogin !== false) {
+                // Salva token se presente nella risposta (per utenti normali)
+                if (result.data.token) {
+                    localStorage.setItem('coworkspace_token', result.data.token);
+                    if (result.data.user) {
+                        localStorage.setItem('coworkspace_user', JSON.stringify(result.data.user));
+                    }
+
+                    // Redirect a home.html dopo registrazione con login automatico
+                    setTimeout(() => {
+                        window.location.href = 'home.html';
+                    }, 2000);
+                } else {
+                    // Redirect a login se non c'è auto-login
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
                 }
-
-                // Redirect a home.html dopo registrazione con login automatico
-                setTimeout(() => {
-                    window.location.href = 'home.html';
-                }, 1500);
             } else {
-                // Redirect a login se non c'è auto-login
+                // Utente ha richiesto di essere manager - deve aspettare approvazione
                 setTimeout(() => {
                     window.location.href = 'login.html';
-                }, 1500);
+                }, 3000); // Tempo più lungo per leggere il messaggio
             }
         } else {
             // Gestione errori specifici dal backend
@@ -144,7 +161,6 @@ signupForm.addEventListener('submit', async (e) => {
                 if (result.errors.surname) showFieldError(surnameInput, result.errors.surname);
                 if (result.errors.email) showFieldError(emailInput, result.errors.email);
                 if (result.errors.password) showFieldError(passwordInput, result.errors.password);
-                if (result.errors.role) showFieldError(roleInput, result.errors.role);
                 // Visualizza un messaggio generale sotto il pulsante
                 showGeneralError('Si sono verificati degli errori. Per favore, correggi i campi.');
             } else {

@@ -133,6 +133,55 @@ label {
     display: block;   /* messaggio visibile occupa spazio solo quando presente */
 }
 
+.manager-request-container {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.manager-request-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.manager-request-label {
+    display: inline-block;
+    position: relative;
+    padding-left: 30px;
+    cursor: pointer;
+    color: #555;
+    font-family: sans-serif, Arial;
+    font-size: 16px;
+}
+
+.manager-request-label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgb(79, 70, 229);
+    border-radius: 5px;
+    background-color: white;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.manager-request-checkbox:checked+.manager-request-label::before {
+    background-color: rgb(79, 70, 229);
+    content: '✓';
+    color: white;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 @media (max-width: 1000px) {
     .header {
         height: 100px;

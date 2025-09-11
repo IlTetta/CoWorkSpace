@@ -1,4 +1,10 @@
-// Header functionality and navigation
+// Funzione per mostrare messaggi (locale invece di import)
+function showMessage(message, type) {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    // Potresti implementare qui la logica per mostrare toast/notifiche
+}
+
+// Funzionalità dell'header e navigazione
 (function() {
     'use strict';
     
@@ -17,7 +23,21 @@
             this.setupNavigation();
             this.setupUserMenu();
             this.setupSearch();
+            // NUOVO: Avvia l'ascoltatore di autenticazione di Firebase all'inizializzazione del servizio.
+            this.setupAuthListener(); 
+        }
+        
+        // Gestisce l'autenticazione JWT
+        setupAuthListener() {
+            // Verifica lo stato di autenticazione al caricamento
             this.updateHeaderUI();
+            
+            // Ascolta gli eventi di storage per aggiornamenti di autenticazione
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'coworkspace_token' || e.key === 'coworkspace_user') {
+                    this.updateHeaderUI();
+                }
+            });
         }
 
         setupNavigation() {
@@ -41,22 +61,61 @@
         }
 
         setupUserMenu() {
-            // User menu dropdown
-            const userMenuBtn = document.getElementById('user-menu-btn');
-            const userMenuDropdown = document.getElementById('user-menu-dropdown');
+            // Riferimento agli elementi per gestire il menu utente
+            const userIcon = document.getElementById('user-icon');
+            const userDropdown = document.getElementById('user-dropdown');
             
-            if (userMenuBtn && userMenuDropdown) {
-                userMenuBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    userMenuDropdown.classList.toggle('show');
+            // LOGICA DEL MENU A TENDINA E DEL LOGOUT:
+            // L'icona del profilo utente ora apre/chiude il menu a tendina.
+            if (userIcon && userDropdown) {
+                userIcon.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Impedisce che il click si propaghi al documento
+                    userDropdown.style.display = userDropdown.style.display === 'block' ? 'none' : 'block';
                 });
 
-                // Close dropdown when clicking outside
-                document.addEventListener('click', () => {
-                    userMenuDropdown.classList.remove('show');
+                // Chiudi il menu a tendina quando si clicca al di fuori di esso.
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('#user-profile') === null) {
+                        userDropdown.style.display = 'none';
+                    }
                 });
             }
 
+            // LOGICA DEL PULSANTE PROFILO:
+            const profileBtn = document.getElementById('profile-button');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', () => {
+                    try {
+                        // Naviga alla pagina profilo
+                        window.location.href = 'profile.html';
+                    } catch (error) {
+                        showMessage(`Errore durante la navigazione al profilo: ${error.message}`, 'error');
+                    }
+                });
+            }
+
+            // LOGICA DEL PULSANTE DI LOGOUT:
+            // Aggiunto il gestore per il pulsante di logout
+            const logoutBtn = document.getElementById('logout-button');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    try {
+                        // Usa authService per il logout
+                        if (window.authService) {
+                            window.authService.logout();
+                            showMessage('Logout effettuato con successo!', 'success');
+                        } else {
+                            // Fallback: rimuovi token manualmente
+                            localStorage.removeItem('coworkspace_token');
+                            localStorage.removeItem('coworkspace_user');
+                            window.location.href = 'login.html';
+                        }
+                    } catch (error) {
+                        showMessage(`Errore durante il logout: ${error.message}`, 'error');
+                    }
+                });
+            }
+            
             // Login/Signup buttons
             const loginBtn = document.getElementById('login-btn');
             const signupBtn = document.getElementById('signup-btn');
@@ -111,9 +170,10 @@
                 
                 if (!Array.isArray(allLocations) || allLocations.length === 0) {
                     if (window.FrontendUtils) {
-                        FrontendUtils.showError('Nessuna location disponibile');
+                        window.FrontendUtils.showError('Nessuna location disponibile');
                     } else {
-                        alert('Nessuna location disponibile');
+                        // Utilizza showMessage al posto di alert
+                        showMessage('Nessuna location disponibile', 'error');
                     }
                     return;
                 }
@@ -150,18 +210,18 @@
                     this.displaySearchResults(filteredLocations);
                 } else {
                     if (window.FrontendUtils) {
-                        FrontendUtils.showError(`Nessuna location trovata per "${trimmedQuery}"`);
+                        window.FrontendUtils.showError(`Nessuna location trovata per "${trimmedQuery}"`);
                     } else {
-                        alert(`Nessuna location trovata per "${trimmedQuery}"`);
+                         showMessage(`Nessuna location trovata per "${trimmedQuery}"`, 'error');
                     }
                 }
                 
             } catch (error) {
                 console.error('Search error:', error);
                 if (window.FrontendUtils) {
-                    FrontendUtils.showError('Errore nella ricerca');
+                    window.FrontendUtils.showError('Errore nella ricerca');
                 } else {
-                    alert('Errore nella ricerca');
+                    showMessage('Errore nella ricerca', 'error');
                 }
             }
         }
@@ -169,6 +229,13 @@
         displaySearchResults(locations) {
             // Se siamo nella pagina home, aggiorna la griglia
             if (window.location.pathname.includes('home') && typeof renderGrid === 'function') {
+                // Notifica al bottom-buttons della nuova query di ricerca
+                if (window.bottomButtons && window.bottomButtons.updateSearchQuery) {
+                    const searchInput = document.getElementById('search-input');
+                    const currentQuery = searchInput ? searchInput.value.trim() : '';
+                    window.bottomButtons.updateSearchQuery(currentQuery);
+                }
+                
                 renderGrid(locations);
             } else {
                 // Redirect alla home con risultati
@@ -189,71 +256,49 @@
             if (routes[page]) {
                 // Check authentication for protected pages
                 const protectedPages = ['bookings', 'profile', 'admin'];
-                if (protectedPages.includes(page) && window.authService && !window.authService.isAuthenticated()) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                // Check admin role for admin page
-                if (page === 'admin' && window.authService && !window.authService.isAdmin()) {
-                    if (window.FrontendUtils) {
-                        FrontendUtils.showError('Accesso non autorizzato');
-                    } else {
-                        alert('Accesso non autorizzato');
-                    }
-                    return;
-                }
-                
+                // La logica di reindirizzamento deve essere gestita da un listener globale per la pagina
+                // e non direttamente qui per evitare conflitti.
                 window.location.href = routes[page];
             }
         }
 
+        // Aggiorna l'interfaccia utente in base allo stato di autenticazione JWT
         updateHeaderUI() {
-            const isAuthenticated = window.authService ? window.authService.isAuthenticated() : false;
-            const user = window.authService ? window.authService.getUser() : null;
-
-            // Show/hide authentication elements
-            const authElements = document.querySelectorAll('[data-auth="true"]');
-            const noAuthElements = document.querySelectorAll('[data-auth="false"]');
-            
-            authElements.forEach(el => {
-                el.style.display = isAuthenticated ? 'flex' : 'none';
-            });
-            
-            noAuthElements.forEach(el => {
-                el.style.display = isAuthenticated ? 'none' : 'flex';
-            });
-
-            // Update user information
-            if (isAuthenticated && user) {
-                const userNameElement = document.getElementById('user-name');
-                const userEmailElement = document.getElementById('user-email');
-                const userAvatarElement = document.getElementById('user-avatar');
+            // Riferimenti agli elementi HTML
+            const authButtons = document.getElementById('auth-buttons');
+            const userProfile = document.getElementById('user-profile');
+            const userDropdown = document.getElementById('user-dropdown');
+        
+            // Controlla se l'utente è autenticato tramite JWT - usa la stessa chiave di authService
+            const token = localStorage.getItem('coworkspace_token');
+            const userData = localStorage.getItem('coworkspace_user');
+            const isAuthenticated = token && userData;
+        
+            if (isAuthenticated) {
+                // L'utente è loggato: mostra l'icona e nasconde i pulsanti.
+                if (authButtons) authButtons.style.display = 'none';
+                if (userProfile) userProfile.style.display = 'flex';
+                // Chiudi il dropdown quando l'utente si autentica
+                if (userDropdown) userDropdown.style.display = 'none';
                 
-                if (userNameElement) {
-                    userNameElement.textContent = `${user.name} ${user.surname}`;
+                // Opzionale: mostra informazioni utente
+                try {
+                    const user = JSON.parse(userData);
+                    console.log('Utente loggato:', user.name || user.email);
+                } catch (e) {
+                    console.warn('Errore nel parsing dei dati utente');
                 }
-                
-                if (userEmailElement) {
-                    userEmailElement.textContent = user.email;
-                }
-                
-                if (userAvatarElement) {
-                    // Set user initials as avatar
-                    const initials = `${user.name[0]}${user.surname[0]}`.toUpperCase();
-                    userAvatarElement.textContent = initials;
-                }
-
-                // Show admin menu if user is admin
-                const adminMenuItems = document.querySelectorAll('[data-role="admin"]');
-                adminMenuItems.forEach(item => {
-                    item.style.display = (window.authService && window.authService.isAdmin()) ? 'block' : 'none';
-                });
+            } else {
+                // L'utente non è loggato: mostra i pulsanti e nasconde l'icona.
+                if (authButtons) authButtons.style.display = 'flex';
+                if (userProfile) userProfile.style.display = 'none';
+                // Chiudi il dropdown se non c'è un utente loggato
+                if (userDropdown) userDropdown.style.display = 'none';
             }
         }
     }
 
-    // Mobile menu functionality
+    // Funzionalità del menu mobile
     class MobileMenuService {
         constructor() {
             this.initializeMobileMenu();
@@ -278,7 +323,7 @@
                 });
             }
 
-            // Close menu when clicking on links
+            // Chiude il menu quando si clicca sui link
             const mobileNavLinks = mobileMenu?.querySelectorAll('a');
             mobileNavLinks?.forEach(link => {
                 link.addEventListener('click', () => {
@@ -289,11 +334,11 @@
         }
     }
 
-    // Expose to global scope
+    // Esponi al campo di applicazione globale
     window.HeaderService = HeaderService;
     window.MobileMenuService = MobileMenuService;
 
-    // Initialize header services when DOM is loaded
+    // Inizializza i servizi dell'header quando il DOM è caricato
     function initializeHeader() {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -309,13 +354,13 @@
     }
 
     function handleSearchResults() {
-        // Handle search results from session storage
+        // Gestisce i risultati di ricerca dalla session storage
         const searchResults = sessionStorage.getItem('searchResults');
         if (searchResults && window.location.pathname.includes('home')) {
             const locations = JSON.parse(searchResults);
             sessionStorage.removeItem('searchResults');
             
-            // Wait for grid.js to load then display results
+            // Attendi che grid.js sia caricato e poi visualizza i risultati
             setTimeout(() => {
                 if (typeof renderGrid === 'function') {
                     renderGrid(locations);
@@ -324,7 +369,6 @@
         }
     }
 
-    // Initialize immediately
+    // Inizializza immediatamente
     initializeHeader();
-
 })();
