@@ -590,6 +590,33 @@ body {
     text-align: right;
 }
 
+.space-schedule {
+    padding: 8px 30px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.schedule-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.schedule-time .material-symbols-outlined {
+    font-size: 16px;
+    color: #6b7280;
+}
+
+.schedule-days {
+    font-size: 13px;
+    color: #6b7280;
+    margin-left: 22px;
+}
+
 /* Stili legacy per compatibilità */
 .space-card h3 {
     display: none;
@@ -681,6 +708,69 @@ body {
 
 .form-group {
     margin-bottom: 18px;
+}
+
+.form-group-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.form-group-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.days-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.day-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    font-size: 13px;
+}
+
+.day-checkbox:hover {
+    background-color: #f3f4f6;
+    border-color: rgb(79, 70, 229);
+}
+
+.day-checkbox input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
+.day-checkbox input[type="checkbox"]:checked + span {
+    font-weight: 600;
+    color: rgb(79, 70, 229);
+}
+
+.day-checkbox.checked {
+    background-color: rgba(79, 70, 229, 0.1);
+    border-color: rgb(79, 70, 229);
+}
+
+.day-checkbox input[type="checkbox"]:checked + span {
+    font-weight: 600;
+    color: rgb(79, 70, 229);
+}
+
+.day-checkbox.checked {
+    background-color: rgba(79, 70, 229, 0.1);
+    border-color: rgb(79, 70, 229);
 }
 
 .form-group label {

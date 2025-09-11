@@ -459,11 +459,33 @@ function initializeWorkspaceManagement() {
     loadSpaceTypes();
     loadSpaces();
     
+    // Inizializza gestori per i checkbox dei giorni
+    initializeDayCheckboxes();
+    
     // Forza il caricamento degli spazi dopo un breve delay per assicurarsi che il DOM sia pronto
     setTimeout(() => {
         console.log('Forcing loadSpaces after timeout');
         loadSpaces();
     }, 500);
+}
+
+/**
+ * Inizializza i gestori per i checkbox dei giorni
+ */
+function initializeDayCheckboxes() {
+    // Aggiungi gestori di eventi per tutti i checkbox dei giorni
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'available_days' && e.target.type === 'checkbox') {
+            const label = e.target.closest('.day-checkbox');
+            if (label) {
+                if (e.target.checked) {
+                    label.classList.add('checked');
+                } else {
+                    label.classList.remove('checked');
+                }
+            }
+        }
+    });
 }
 
 /**
@@ -743,9 +765,33 @@ function createSpaceCard(space) {
     const hue = Math.floor(Math.random() * 360);
     const randomColor = `hsl(${hue}, 65%, 85%)`;
     
+    // Formatta i giorni disponibili
+    const dayNames = {
+        1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Gio', 
+        5: 'Ven', 6: 'Sab', 7: 'Dom'
+    };
+    
+    const availableDays = space.available_days || space.availableDays || [1, 2, 3, 4, 5];
+    const dayText = availableDays.map(day => dayNames[day]).join(', ');
+    
+    // Formatta gli orari
+    const openingTime = space.opening_time || space.openingTime || '09:00';
+    const closingTime = space.closing_time || space.closingTime || '18:00';
+    const scheduleText = `${openingTime} - ${closingTime}`;
+    
+    const scheduleHtml = `
+        <div class="space-schedule">
+            <div class="schedule-time">
+                <span class="material-symbols-outlined">schedule</span>
+                ${scheduleText}
+            </div>
+            <div class="schedule-days">${dayText}</div>
+        </div>
+    `;
+    
     card.innerHTML = `
         <div class="space-name" style="--random-color: ${randomColor}">
-            ${space.name || 'Nome non disponibile'}
+            ${space.name || space.space_name || 'Nome non disponibile'}
             <div class="space-actions">
                 <button class="action-button edit-btn" onclick="editSpace(${space.space_id || space.id})" title="Modifica">
                     <span class="material-symbols-outlined">edit</span>
@@ -762,8 +808,9 @@ function createSpaceCard(space) {
                 <span class="material-symbols-outlined">group</span>
                 ${space.capacity || 'N/A'} person${space.capacity !== 1 ? 'e' : 'a'}
             </div>
-            <div class="space-rate">€${space.hourly_rate || '0.00'}/ora</div>
+            <div class="space-rate">€${space.hourly_rate || space.pricePerHour || space.price_per_hour || '0.00'}/ora</div>
         </div>
+        ${scheduleHtml}
         <div class="space-location">${space.location?.name || 'Location non specificata'}</div>
     `;
     
@@ -781,6 +828,27 @@ function openCreateSpaceModal() {
     if (modal && modalTitle && form) {
         modalTitle.textContent = 'Crea Nuovo Spazio';
         form.reset();
+        
+        // Imposta valori default per i nuovi campi
+        document.getElementById('space-opening-time').value = '09:00';
+        document.getElementById('space-closing-time').value = '18:00';
+        
+        // Seleziona Lunedì-Venerdì per default e aggiorna le classi CSS
+        const dayCheckboxes = form.querySelectorAll('input[name="available_days"]');
+        dayCheckboxes.forEach(checkbox => {
+            const isDefaultSelected = ['1', '2', '3', '4', '5'].includes(checkbox.value);
+            checkbox.checked = isDefaultSelected;
+            
+            const label = checkbox.closest('.day-checkbox');
+            if (label) {
+                if (isDefaultSelected) {
+                    label.classList.add('checked');
+                } else {
+                    label.classList.remove('checked');
+                }
+            }
+        });
+        
         form.dataset.mode = 'create';
         delete form.dataset.spaceId;
         modal.style.display = 'block';
@@ -803,12 +871,52 @@ async function editSpace(spaceId) {
             modalTitle.textContent = 'Modifica Spazio';
             
             // Popola il form con i dati esistenti
-            document.getElementById('space-name').value = space.name || '';
+            document.getElementById('space-name').value = space.name || space.space_name || '';
             document.getElementById('space-description').value = space.description || '';
-            document.getElementById('space-location').value = space.location_id || '';
-            document.getElementById('space-type').value = space.space_type_id || '';
+            document.getElementById('space-location').value = space.location_id || space.locationId || '';
+            document.getElementById('space-type').value = space.space_type_id || space.spaceTypeId || '';
             document.getElementById('space-capacity').value = space.capacity || '';
-            document.getElementById('space-hourly-rate').value = space.hourly_rate || '';
+            document.getElementById('space-hourly-rate').value = space.hourly_rate || space.pricePerHour || space.price_per_hour || '';
+            
+            // Popola gli orari di apertura/chiusura
+            document.getElementById('space-opening-time').value = space.opening_time || space.openingTime || '09:00';
+            document.getElementById('space-closing-time').value = space.closing_time || space.closingTime || '18:00';
+            
+            // Popola i giorni disponibili
+            const dayCheckboxes = form.querySelectorAll('input[name="available_days"]');
+            dayCheckboxes.forEach(checkbox => {
+                checkbox.checked = false; // Reset tutti
+                const label = checkbox.closest('.day-checkbox');
+                if (label) {
+                    label.classList.remove('checked');
+                }
+            });
+            
+            const availableDays = space.available_days || space.availableDays || [1, 2, 3, 4, 5];
+            if (Array.isArray(availableDays)) {
+                availableDays.forEach(day => {
+                    const checkbox = form.querySelector(`input[name="available_days"][value="${day}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        const label = checkbox.closest('.day-checkbox');
+                        if (label) {
+                            label.classList.add('checked');
+                        }
+                    }
+                });
+            } else {
+                // Default: Lunedì-Venerdì se non specificato
+                [1, 2, 3, 4, 5].forEach(day => {
+                    const checkbox = form.querySelector(`input[name="available_days"][value="${day}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        const label = checkbox.closest('.day-checkbox');
+                        if (label) {
+                            label.classList.add('checked');
+                        }
+                    }
+                });
+            }
             
             form.dataset.mode = 'edit';
             form.dataset.spaceId = spaceId;
@@ -862,9 +970,34 @@ async function handleSpaceFormSubmit(event) {
     
     // Converti i valori numerici
     spaceData.capacity = parseInt(spaceData.capacity);
-    spaceData.hourly_rate = parseFloat(spaceData.hourly_rate);
+    spaceData.price_per_hour = parseFloat(spaceData.hourly_rate);
+    spaceData.price_per_day = parseFloat(spaceData.hourly_rate) * 8; // Calcola prezzo giornaliero
     spaceData.location_id = parseInt(spaceData.location_id);
     spaceData.space_type_id = parseInt(spaceData.space_type_id);
+    spaceData.space_name = spaceData.name; // Mappa il nome
+    
+    // Rimuovi campi non necessari
+    delete spaceData.hourly_rate;
+    delete spaceData.name;
+    
+    // Gestisci i giorni disponibili
+    const availableDaysCheckboxes = form.querySelectorAll('input[name="available_days"]:checked');
+    spaceData.available_days = Array.from(availableDaysCheckboxes).map(cb => parseInt(cb.value));
+    
+    // Valida che almeno un giorno sia selezionato
+    if (spaceData.available_days.length === 0) {
+        alert('Seleziona almeno un giorno della settimana');
+        return;
+    }
+    
+    // Valida gli orari
+    const openingTime = spaceData.opening_time;
+    const closingTime = spaceData.closing_time;
+    
+    if (openingTime >= closingTime) {
+        alert('L\'orario di apertura deve essere precedente a quello di chiusura');
+        return;
+    }
 
     try {
         if (!window.apiService) {

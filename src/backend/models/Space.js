@@ -61,7 +61,10 @@ class Space {
             description,
             capacity,
             price_per_hour,
-            price_per_day
+            price_per_day,
+            opening_time,
+            closing_time,
+            available_days
         } = spaceData;
 
         // Validazione input
@@ -70,9 +73,10 @@ class Space {
         const query = `
             INSERT INTO spaces (
                 location_id, space_type_id, space_name, description, 
-                capacity, price_per_hour, price_per_day
+                capacity, price_per_hour, price_per_day,
+                opening_time, closing_time, available_days
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *
         `;
 
@@ -84,7 +88,10 @@ class Space {
                 description,
                 capacity,
                 price_per_hour,
-                price_per_day
+                price_per_day,
+                opening_time || '09:00:00',
+                closing_time || '18:00:00',
+                available_days || [1, 2, 3, 4, 5]
             ]);
 
             return new Space(result.rows[0]);
@@ -300,7 +307,8 @@ class Space {
         // Costruisci query dinamicamente
         const allowedFields = [
             'space_name', 'description', 'capacity', 
-            'price_per_hour', 'price_per_day', 'space_type_id'
+            'price_per_hour', 'price_per_day', 'space_type_id',
+            'opening_time', 'closing_time', 'available_days'
         ];
 
         for (const [key, value] of Object.entries(updateData)) {
@@ -516,9 +524,58 @@ class Space {
             errors.push('Descrizione troppo lunga (max 1000 caratteri)');
         }
 
+        // Validazioni per orari
+        if (!isUpdate || data.opening_time !== undefined) {
+            if (data.opening_time && !this.isValidTimeFormat(data.opening_time)) {
+                errors.push('Formato orario di apertura non valido (formato: HH:MM)');
+            }
+        }
+
+        if (!isUpdate || data.closing_time !== undefined) {
+            if (data.closing_time && !this.isValidTimeFormat(data.closing_time)) {
+                errors.push('Formato orario di chiusura non valido (formato: HH:MM)');
+            }
+        }
+
+        // Validazione che l'orario di apertura sia precedente alla chiusura
+        if (data.opening_time && data.closing_time) {
+            if (data.opening_time >= data.closing_time) {
+                errors.push('L\'orario di apertura deve essere precedente a quello di chiusura');
+            }
+        }
+
+        // Validazioni per giorni disponibili
+        if (!isUpdate || data.available_days !== undefined) {
+            if (data.available_days) {
+                if (!Array.isArray(data.available_days)) {
+                    errors.push('I giorni disponibili devono essere un array');
+                } else {
+                    if (data.available_days.length === 0) {
+                        errors.push('Deve essere selezionato almeno un giorno della settimana');
+                    }
+                    
+                    const validDays = [1, 2, 3, 4, 5, 6, 7]; // 1=Lunedì, 7=Domenica
+                    const invalidDays = data.available_days.filter(day => !validDays.includes(day));
+                    if (invalidDays.length > 0) {
+                        errors.push('Giorni della settimana non validi (valori consentiti: 1-7)');
+                    }
+                }
+            }
+        }
+
         if (errors.length > 0) {
             throw AppError.badRequest(`Dati non validi: ${errors.join(', ')}`);
         }
+    }
+
+    /**
+     * Valida il formato dell'orario (HH:MM)
+     * @param {string} time - Orario da validare
+     * @returns {boolean} - true se valido
+     */
+    static isValidTimeFormat(time) {
+        const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        return timeRegex.test(time);
     }
 
     /**
@@ -535,6 +592,9 @@ class Space {
             capacity: this.capacity,
             pricePerHour: parseFloat(this.price_per_hour),
             pricePerDay: parseFloat(this.price_per_day),
+            openingTime: this.opening_time,
+            closingTime: this.closing_time,
+            availableDays: this.available_days,
             location: this.location,
             spaceType: this.space_type
         };
