@@ -5,13 +5,12 @@ FROM node:18-alpine
 WORKDIR /usr/src/app
 
 # Copia package.json e package-lock.json dalla root
-COPY package*.json ./
-
+COPY ../../package*.json ./
 # Installa le dipendenze di produzione
 RUN npm install --only=production
 
 # Copia tutto il backend
-COPY src/backend/ .
+COPY . .
 
 # Espone la porta
 EXPOSE 5000

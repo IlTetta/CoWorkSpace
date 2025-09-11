@@ -1,0 +1,44 @@
+1️⃣ Clonare il progetto
+# Rimuovi eventuali vecchie copie
+rm -rf CoWorkSpace
+
+# Clona il repository GitHub
+git clone https://github.com/IlTetta/CoWorkSpace.git
+
+# Vai nella root del progetto
+cd ~/CoWorkSpace
+
+2️⃣ Backend
+Build dell’immagine
+docker build -f src/backend/Dockerfile -t coworkspace-backend .
+
+Creare repository ECR (solo la prima volta)
+aws ecr create-repository --repository-name coworkspace-backend --region eu-west-3
+
+Login su ECR
+aws ecr get-login-password --region eu-west-3 \
+| docker login --username AWS --password-stdin 267259336945.dkr.ecr.eu-west-3.amazonaws.com
+
+Tag dell’immagine per ECR
+docker tag coworkspace-backend:latest 267259336945.dkr.ecr.eu-west-3.amazonaws.com/coworkspace-backend:latest
+
+Push su ECR
+docker push 267259336945.dkr.ecr.eu-west-3.amazonaws.com/coworkspace-backend:latest
+
+3️⃣ Frontend
+Build dell’immagine
+cd ~/CoWorkSpace/src/frontend
+docker build -t coworkspace-frontend .
+
+Creare repository ECR (solo la prima volta)
+aws ecr create-repository --repository-name coworkspace-frontend --region eu-west-3
+
+Login su ECR (puoi saltare se già loggato)
+aws ecr get-login-password --region eu-west-3 \
+| docker login --username AWS --password-stdin 267259336945.dkr.ecr.eu-west-3.amazonaws.com
+
+Tag dell’immagine per ECR
+docker tag coworkspace-frontend:latest 267259336945.dkr.ecr.eu-west-3.amazonaws.com/coworkspace-frontend:latest
+
+Push su ECR
+docker push 267259336945.dkr.ecr.eu-west-3.amazonaws.com/coworkspace-frontend:latest
