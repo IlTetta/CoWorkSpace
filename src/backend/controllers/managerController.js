@@ -32,6 +32,22 @@ exports.getDashboard = catchAsync(async (req, res, next) => {
 });
 
 // ============================================================================
+// GESTIONE LOCATION - Location gestite dal manager
+// ============================================================================
+
+/**
+ * Ottieni tutte le location gestite dal manager
+ */
+exports.getMyLocations = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        return ApiResponse.forbidden(res, 'Accesso riservato ai manager');
+    }
+
+    const locations = await LocationService.getLocationsByManager(req.user.user_id);
+    return ApiResponse.list(res, locations, 'Location gestite recuperate con successo');
+});
+
+// ============================================================================
 // GESTIONE SPAZI - CRUD completo su spazi delle proprie location
 // ============================================================================
 
@@ -149,6 +165,7 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
 
 module.exports = {
     getDashboard: exports.getDashboard,
+    getMyLocations: exports.getMyLocations,
     getMySpaces: exports.getMySpaces,
     createSpace: exports.createSpace,
     updateSpace: exports.updateSpace,

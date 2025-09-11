@@ -66,6 +66,13 @@ const createTestApp = () => {
   app.use('/api/users', require('../../src/backend/routes/userRoutes'));
   app.use('/api/bookings', require('../../src/backend/routes/bookingRoutes'));
   app.use('/api/spaces', require('../../src/backend/routes/spaceRoutes'));
+  app.use('/api/manager', require('../../src/backend/routes/managerRoutes'));
+  app.use('/api/admin', require('../../src/backend/routes/adminRoutes'));
+  app.use('/api/locations', require('../../src/backend/routes/locationRoutes'));
+  app.use('/api/space-types', require('../../src/backend/routes/spaceTypeRoutes'));
+  app.use('/api/availability', require('../../src/backend/routes/availabilityRoutes'));
+  app.use('/api/payments', require('../../src/backend/routes/paymentRoutes'));
+  app.use('/api/notifications', require('../../src/backend/routes/notificationRoutes'));
 
   // Error handler globale per i test
   app.use((error, req, res, next) => {

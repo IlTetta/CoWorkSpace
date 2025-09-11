@@ -265,6 +265,79 @@ router.use(authMiddleware.protect);
 router.get('/dashboard', managerController.getDashboard);
 
 // ============================================================================
+// GESTIONE LOCATION - Location gestite dal manager
+// ============================================================================
+
+/**
+ * @swagger
+ * /api/manager/locations:
+ *   get:
+ *     summary: Ottieni tutte le location gestite dal manager
+ *     description: Restituisce l'elenco delle location che il manager attualmente gestisce
+ *     tags: [Manager]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista delle location gestite dal manager
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                             example: 1
+ *                           name:
+ *                             type: string
+ *                             example: 'CoWork Milano Centro'
+ *                           address:
+ *                             type: string
+ *                             example: 'Via Duomo 123'
+ *                           city:
+ *                             type: string
+ *                             example: 'Milano'
+ *                           description:
+ *                             type: string
+ *                             example: 'Spazio coworking nel centro di Milano'
+ *                           managerId:
+ *                             type: integer
+ *                             example: 1
+ *                           manager:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                                 example: 1
+ *                               name:
+ *                                 type: string
+ *                                 example: 'Mario'
+ *                               surname:
+ *                                 type: string
+ *                                 example: 'Rossi'
+ *       401:
+ *         description: Non autorizzato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Accesso negato (solo manager)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/locations', managerController.getMyLocations);
+
+// ============================================================================
 // GESTIONE SPAZI - CRUD completo
 // ============================================================================
 
