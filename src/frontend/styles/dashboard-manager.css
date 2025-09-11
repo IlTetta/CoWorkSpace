@@ -520,13 +520,9 @@ body {
     transform: scale(1.1);
 }
 
-.edit-btn .material-symbols-outlined {
-    color: #1976d2;
-    font-size: 18px;
-}
-
+.edit-btn .material-symbols-outlined,
 .delete-btn .material-symbols-outlined {
-    color: #d32f2f;
+    color: white;
     font-size: 18px;
 }
 
