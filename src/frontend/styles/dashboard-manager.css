@@ -1,12 +1,15 @@
 body {
     margin: 0;
     min-height: 100vh;
-    width: 100vw;
+    width: 100%;
     font-family: sans-serif, Arial;
     padding-top: 100px;
     background: radial-gradient(circle at top left, rgba(60, 52, 200, 0.5), rgba(40, 35, 150, 0.9));
-    background-size: 100% 100%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     overflow-x: hidden; /* mantieni solo per evitare scroll orizzontale */
+    box-sizing: border-box;
 }
 
 .profile-container {
@@ -61,9 +64,9 @@ body {
 .user-info-display {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 20px;
     align-items: flex-start;
-    margin-top: 15px;
+    margin-top: 20px;
     justify-content: flex-start;
     max-width: 100%;
 }
@@ -71,33 +74,41 @@ body {
 .info-item {
     background-color: white;
     border-radius: 8px;
-    padding: 6px 16px;
+    padding: 12px 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    min-width: 160px;
+    gap: 6px;
+    min-width: 180px;
     width: fit-content;
-    max-width: 300px;
+    max-width: 350px;
     height: auto;
-    min-height: 45px;
+    min-height: 60px;
+    transition: all 0.2s ease;
+}
+
+.info-item:hover {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
 }
 
 .info-item label {
     font-weight: bold;
     color: rgb(79, 70, 229);
-    font-size: 12px;
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
-    margin-top: 4px;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    line-height: 1.2;
 }
 
 .info-item span {
     color: #333;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    line-height: 1.3;
 }
 
 /* Menu contestuale per l'immagine del profilo */
@@ -212,19 +223,21 @@ body {
     .user-info-display {
         gap: 15px;
         justify-content: flex-start;
+        margin-top: 15px;
     }
 
     .info-item {
-        min-width: 120px;
-        padding: 10px 12px;
+        min-width: 140px;
+        padding: 10px 16px;
+        min-height: 55px;
     }
 
     .info-item label {
-        font-size: 11px;
+        font-size: 13px;
     }
 
     .info-item span {
-        font-size: 13px;
+        font-size: 16px;
     }
 
     .profile-menu {
@@ -760,6 +773,7 @@ body {
     
     .spaces-grid {
         grid-template-columns: 1fr;
+        justify-items: center;
     }
     
     .workspace-actions {
@@ -771,5 +785,114 @@ body {
         width: 100%;
         max-width: 250px;
         justify-content: center;
+    }
+}
+
+@media (max-width: 900px) {
+    .workspace-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 15px;
+        position: relative;
+    }
+    
+    .workspace-actions {
+        position: relative;
+        right: auto;
+        order: 1;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        order: 2;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .search-bar {
+        width: 70%;
+        max-width: 400px;
+    }
+}
+
+@media (max-width: 470px) {
+    body {
+        background-size: 150% 100%;
+        background-position: center top;
+    }
+    
+    .workspace-management-section {
+        margin: 15px 8px;
+        padding: 12px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+    
+    .profile-container {
+        margin-left: 8px;
+        margin-top: 20px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+    
+    .user-info-display {
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: center;
+    }
+    
+    .info-item {
+        min-width: calc(100% - 20px);
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .spaces-grid {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+    }
+    
+    .space-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Correzione posizionamento search section e workspace actions */
+    .workspace-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 8px;
+    }
+    
+    .workspace-actions {
+        position: relative;
+        right: auto;
+        width: 100%;
+        margin: 0;
+        order: 1;
+        justify-content: center;
+    }
+    
+    .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        width: 100%;
+        margin: 0;
+        order: 2;
+        justify-content: center;
+    }
+    
+    .search-bar {
+        width: calc(100% - 60px);
+        max-width: none;
     }
 }
