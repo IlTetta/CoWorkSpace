@@ -8,6 +8,51 @@ jest.mock('express-rate-limit', () => {
   return () => (req, res, next) => next(); // Bypass del rate limiting nei test
 });
 
+// Mock del middleware di autenticazione per i test
+jest.mock('../../src/backend/middleware/authMiddleware', () => ({
+  protect: (req, res, next) => {
+    // Simula un utente autenticato se il token è presente
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      // Simula diversi utenti basati sul token
+      if (token === 'mock-admin-token') {
+        req.user = { user_id: 1, role: 'admin', email: 'admin@test.com' };
+      } else if (token === 'mock-manager-token') {
+        req.user = { user_id: 2, role: 'manager', email: 'manager@test.com' };
+      } else if (token === 'mock-user-token') {
+        req.user = { user_id: 3, role: 'user', email: 'user@test.com' };
+      } else {
+        return res.status(401).json({ 
+          status: 'error', 
+          message: 'Token non valido' 
+        });
+      }
+    } else {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'Token di autenticazione richiesto' 
+      });
+    }
+    next();
+  },
+  authorize: (...roles) => (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'Utente non autenticato' 
+      });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        status: 'error', 
+        message: 'Non autorizzato per questo ruolo' 
+      });
+    }
+    next();
+  }
+}));
+
 const createTestApp = () => {
   const app = express();
 
@@ -20,6 +65,7 @@ const createTestApp = () => {
   // Routes
   app.use('/api/users', require('../../src/backend/routes/userRoutes'));
   app.use('/api/bookings', require('../../src/backend/routes/bookingRoutes'));
+  app.use('/api/spaces', require('../../src/backend/routes/spaceRoutes'));
 
   // Error handler globale per i test
   app.use((error, req, res, next) => {

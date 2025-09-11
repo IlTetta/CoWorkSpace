@@ -357,4 +357,450 @@ describe('BookingService', () => {
       expect(result).toEqual([1, null, 2]); // Include anche null se presente
     });
   });
+
+  describe('createBooking', () => {
+    it('dovrebbe creare una prenotazione per un utente normale', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingData = {
+        user_id: 1,
+        space_id: 1,
+        start_date: '2025-09-20',
+        end_date: '2025-09-22'
+      };
+
+      const mockSpace = {
+        space_id: 1,
+        name: 'Sala Riunioni A',
+        price_per_day: 50.00,
+        location_id: 1
+      };
+
+      const mockCreatedBooking = {
+        booking_id: 1,
+        ...bookingData,
+        total_price: 150.00,
+        status: 'pending'
+      };
+
+      Space.findById.mockResolvedValue(mockSpace);
+      
+      // Crea un nuovo spy temporaneo per questo test
+      const calculatePriceSpy = jest.spyOn(BookingService, 'calculateDailyBookingPrice')
+        .mockResolvedValue({ finalPrice: 150.00 });
+      
+      Booking.create.mockResolvedValue(mockCreatedBooking);
+
+      // Act
+      const result = await BookingService.createBooking(currentUser, bookingData);
+
+      // Assert
+      expect(Space.findById).toHaveBeenCalledWith(1);
+      expect(calculatePriceSpy).toHaveBeenCalledWith(1, '2025-09-20', '2025-09-22');
+      expect(Booking.create).toHaveBeenCalledWith({
+        ...bookingData,
+        total_price: 150.00
+      });
+      expect(result).toEqual(mockCreatedBooking);
+
+      // Cleanup
+      calculatePriceSpy.mockRestore();
+    });
+
+    it('dovrebbe lanciare errore se l\'utente non è autenticato', async () => {
+      // Arrange
+      const currentUser = null;
+      const bookingData = { space_id: 1 };
+
+      // Act & Assert
+      await expect(BookingService.createBooking(currentUser, bookingData))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe lanciare errore se un utente normale tenta di prenotare per altri', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingData = { user_id: 2, space_id: 1 }; // Diverso user_id
+
+      // Act & Assert
+      await expect(BookingService.createBooking(currentUser, bookingData))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe lanciare errore se lo spazio non esiste', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingData = { user_id: 1, space_id: 999 };
+
+      Space.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(BookingService.createBooking(currentUser, bookingData))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe lanciare errore per date passate', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const bookingData = {
+        user_id: 1,
+        space_id: 1,
+        start_date: yesterday.toISOString().split('T')[0]
+      };
+
+      const mockSpace = { space_id: 1, price_per_day: 50.00 };
+      Space.findById.mockResolvedValue(mockSpace);
+
+      // Act & Assert
+      await expect(BookingService.createBooking(currentUser, bookingData))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe permettere ai manager di prenotare per clienti nelle loro location', async () => {
+      // Arrange
+      const currentUser = { user_id: 2, role: 'manager' };
+      const bookingData = {
+        user_id: 3, // Cliente diverso
+        space_id: 1,
+        start_date: '2025-09-20',
+        end_date: '2025-09-20'
+      };
+
+      const mockSpace = {
+        space_id: 1,
+        location_id: 1,
+        price_per_day: 50.00
+      };
+
+      Space.findById.mockResolvedValue(mockSpace);
+      
+      jest.spyOn(BookingService, 'canManageSpaceLocation')
+        .mockResolvedValue(true);
+      
+      const calculatePriceSpy = jest.spyOn(BookingService, 'calculateDailyBookingPrice')
+        .mockResolvedValue({ finalPrice: 50.00 });
+      
+      const mockCreatedBooking = { booking_id: 1, ...bookingData };
+      Booking.create.mockResolvedValue(mockCreatedBooking);
+
+      // Act
+      const result = await BookingService.createBooking(currentUser, bookingData);
+
+      // Assert
+      expect(BookingService.canManageSpaceLocation)
+        .toHaveBeenCalledWith(mockSpace, currentUser);
+      expect(result).toEqual(mockCreatedBooking);
+
+      // Cleanup
+      calculatePriceSpy.mockRestore();
+    });
+  });
+
+  describe('updateBooking', () => {
+    it('dovrebbe aggiornare una prenotazione con permessi validi', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingId = 1;
+      const updateData = { start_date: '2025-09-25' };
+
+      const mockBooking = {
+        booking_id: 1,
+        user_id: 1,
+        space_id: 1,
+        status: 'pending',
+        start_date: '2025-09-20',
+        end_date: '2025-09-22'
+      };
+
+      const mockUpdatedBooking = { ...mockBooking, ...updateData };
+
+      Booking.findById.mockResolvedValue(mockBooking);
+      jest.spyOn(BookingService, 'canManageBooking').mockResolvedValue(true);
+      
+      const calculatePriceSpy = jest.spyOn(BookingService, 'calculateDailyBookingPrice')
+        .mockResolvedValue({ finalPrice: 125.00 });
+      
+      Booking.update.mockResolvedValue(mockUpdatedBooking);
+
+      // Act
+      const result = await BookingService.updateBooking(currentUser, bookingId, updateData);
+
+      // Assert
+      expect(Booking.findById).toHaveBeenCalledWith(bookingId);
+      expect(BookingService.canManageBooking).toHaveBeenCalledWith(mockBooking, currentUser);
+      expect(Booking.update).toHaveBeenCalledWith(bookingId, {
+        ...updateData,
+        total_price: 125.00
+      });
+      expect(result).toEqual(mockUpdatedBooking);
+
+      // Cleanup
+      calculatePriceSpy.mockRestore();
+    });
+
+    it('dovrebbe lanciare errore se la prenotazione non esiste', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingId = 999;
+      const updateData = { start_date: '2025-09-25' };
+
+      Booking.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(BookingService.updateBooking(currentUser, bookingId, updateData))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe limitare le modifiche per prenotazioni confermate', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingId = 1;
+      const updateData = { start_date: '2025-09-25' }; // Campo non permesso
+
+      const mockBooking = {
+        booking_id: 1,
+        user_id: 1,
+        status: 'confirmed' // Prenotazione confermata
+      };
+
+      Booking.findById.mockResolvedValue(mockBooking);
+      jest.spyOn(BookingService, 'canManageBooking').mockResolvedValue(true);
+
+      // Act & Assert
+      await expect(BookingService.updateBooking(currentUser, bookingId, updateData))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe permettere solo cancellazione per utenti con prenotazioni confermate', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingId = 1;
+      const updateData = { status: 'cancelled' };
+
+      const mockBooking = {
+        booking_id: 1,
+        user_id: 1,
+        status: 'confirmed'
+      };
+
+      Booking.findById.mockResolvedValue(mockBooking);
+      jest.spyOn(BookingService, 'canManageBooking').mockResolvedValue(true);
+      Booking.update.mockResolvedValue({ ...mockBooking, status: 'cancelled' });
+
+      // Act
+      const result = await BookingService.updateBooking(currentUser, bookingId, updateData);
+
+      // Assert
+      expect(Booking.update).toHaveBeenCalledWith(bookingId, updateData);
+      expect(result.status).toBe('cancelled');
+    });
+  });
+
+  describe('deleteBooking', () => {
+    it('dovrebbe eliminare una prenotazione con permessi validi', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'admin' };
+      const bookingId = 1;
+
+      const mockBooking = {
+        booking_id: 1,
+        user_id: 2,
+        status: 'pending'
+      };
+
+      Booking.findById.mockResolvedValue(mockBooking);
+      jest.spyOn(BookingService, 'canManageBooking').mockResolvedValue(true);
+      Booking.delete.mockResolvedValue(true);
+
+      // Act
+      const result = await BookingService.deleteBooking(currentUser, bookingId);
+
+      // Assert
+      expect(Booking.findById).toHaveBeenCalledWith(bookingId);
+      expect(BookingService.canManageBooking).toHaveBeenCalledWith(mockBooking, currentUser);
+      expect(Booking.delete).toHaveBeenCalledWith(bookingId);
+      expect(result).toBe(true);
+    });
+
+    it('dovrebbe lanciare errore se la prenotazione non esiste', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'admin' };
+      const bookingId = 999;
+
+      Booking.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(BookingService.deleteBooking(currentUser, bookingId))
+        .rejects.toThrow(AppError);
+    });
+
+    it('dovrebbe impedire a non-admin di eliminare prenotazioni confermate', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const bookingId = 1;
+
+      const mockBooking = {
+        booking_id: 1,
+        user_id: 1,
+        status: 'confirmed'
+      };
+
+      Booking.findById.mockResolvedValue(mockBooking);
+      jest.spyOn(BookingService, 'canManageBooking').mockResolvedValue(true);
+
+      // Act & Assert
+      await expect(BookingService.deleteBooking(currentUser, bookingId))
+        .rejects.toThrow(AppError);
+    });
+  });
+
+  describe('calculateDailyBookingPrice', () => {
+    beforeEach(() => {
+      // Rimuove eventuali spy esistenti su questo metodo
+      if (BookingService.calculateDailyBookingPrice.mockRestore) {
+        BookingService.calculateDailyBookingPrice.mockRestore();
+      }
+    });
+
+    it('dovrebbe calcolare il prezzo per prenotazioni multi-giorno', async () => {
+      // Arrange
+      const spaceId = 1;
+      const startDate = '2025-09-20';
+      const endDate = '2025-09-22';
+
+      const mockSpace = {
+        space_id: 1,
+        space_name: 'Sala Conferenze',
+        price_per_day: 75.00
+      };
+
+      Space.findById.mockResolvedValue(mockSpace);
+
+      // Act
+      const result = await BookingService.calculateDailyBookingPrice(spaceId, startDate, endDate);
+
+      // Assert
+      expect(result).toEqual({
+        spaceId: 1,
+        startDate: '2025-09-20',
+        endDate: '2025-09-22',
+        totalDays: 3, // 20, 21, 22
+        pricePerDay: 75.00,
+        finalPrice: 225.00, // 3 giorni * 75€
+        space: {
+          id: 1,
+          name: 'Sala Conferenze',
+          price_per_day: 75.00
+        }
+      });
+    });
+
+    it('dovrebbe calcolare il prezzo per un singolo giorno', async () => {
+      // Arrange
+      const spaceId = 1;
+      const startDate = '2025-09-20';
+      const endDate = '2025-09-20';
+
+      const mockSpace = {
+        space_id: 1,
+        space_name: 'Ufficio Privato',
+        price_per_day: 100.00
+      };
+
+      Space.findById.mockResolvedValue(mockSpace);
+
+      // Act
+      const result = await BookingService.calculateDailyBookingPrice(spaceId, startDate, endDate);
+
+      // Assert
+      expect(result.totalDays).toBe(1);
+      expect(result.finalPrice).toBe(100.00);
+    });
+
+    it('dovrebbe lanciare errore se lo spazio non esiste', async () => {
+      // Arrange
+      const spaceId = 999;
+      const startDate = '2025-09-20';
+      const endDate = '2025-09-22';
+
+      Space.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(BookingService.calculateDailyBookingPrice(spaceId, startDate, endDate))
+        .rejects.toThrow(AppError);
+    });
+  });
+
+  describe('getBookings', () => {
+    it('dovrebbe restituire solo le prenotazioni dell\'utente per ruolo user', async () => {
+      // Arrange
+      const currentUser = { user_id: 1, role: 'user' };
+      const filters = { status: 'confirmed' };
+
+      const mockBookings = [
+        { booking_id: 1, user_id: 1, status: 'confirmed' },
+        { booking_id: 2, user_id: 1, status: 'confirmed' }
+      ];
+
+      Booking.findAll.mockResolvedValue(mockBookings);
+
+      // Act
+      const result = await BookingService.getBookings(currentUser, filters);
+
+      // Assert
+      expect(Booking.findAll).toHaveBeenCalledWith({
+        status: 'confirmed',
+        user_id: 1 // Filtrato per l'utente
+      });
+      expect(result).toEqual(mockBookings);
+    });
+
+    it('dovrebbe restituire prenotazioni delle location gestite per manager', async () => {
+      // Arrange
+      const currentUser = { user_id: 2, role: 'manager' };
+      const filters = {};
+
+      const mockBookings = [
+        { booking_id: 1, user_id: 3, space_id: 1 },
+        { booking_id: 2, user_id: 4, space_id: 2 }
+      ];
+
+      jest.spyOn(BookingService, 'getManagedLocationIds')
+        .mockResolvedValue([1, 2]);
+      Booking.findAll.mockResolvedValue(mockBookings);
+
+      // Act
+      const result = await BookingService.getBookings(currentUser, filters);
+
+      // Assert
+      expect(BookingService.getManagedLocationIds).toHaveBeenCalledWith(2);
+      expect(Booking.findAll).toHaveBeenCalledWith({
+        location_id: [1, 2] // Filtrato per le location del manager
+      });
+      expect(result).toEqual(mockBookings);
+    });
+
+    it('dovrebbe restituire solo prenotazioni personali se manager non gestisce location', async () => {
+      // Arrange
+      const currentUser = { user_id: 2, role: 'manager' };
+      const filters = {};
+
+      jest.spyOn(BookingService, 'getManagedLocationIds')
+        .mockResolvedValue([]); // Nessuna location gestita
+      
+      const mockBookings = [{ booking_id: 1, user_id: 2 }];
+      Booking.findAll.mockResolvedValue(mockBookings);
+
+      // Act
+      const result = await BookingService.getBookings(currentUser, filters);
+
+      // Assert
+      expect(Booking.findAll).toHaveBeenCalledWith({
+        user_id: 2 // Fallback alle proprie prenotazioni
+      });
+      expect(result).toEqual(mockBookings);
+    });
+  });
 });
