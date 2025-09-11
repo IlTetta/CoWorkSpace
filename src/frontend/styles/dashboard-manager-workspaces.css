@@ -1,0 +1,170 @@
+/* Dashboard Manager - Workspace Management Styles */
+
+.workspace-management-section {
+    margin: 40px 30px;
+    background-color: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.workspace-management-section h2 {
+    color: rgb(79, 70, 229);
+    margin-bottom: 20px;
+    font-size: 24px;
+    text-align: center;
+}
+
+/* Header con ricerca e azioni */
+.workspace-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+    position: relative;
+    min-height: 60px;
+    overflow: visible;
+}
+
+.workspace-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    position: absolute;
+    right: 40px;
+    z-index: 10;
+}
+
+.spaces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, max-content));
+    gap: 20px;
+    padding: 20px;
+    justify-content: center;
+}
+
+.space-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.2);
+    padding-bottom: 20px;
+    transition: transform 0.1s ease-in-out;
+    max-width: 400px;
+}
+
+.space-card:hover {
+    transform: scale(1.05);
+}
+
+.space-name {
+    background-color: var(--random-color, lightblue);
+    color: rgb(0, 0, 0);
+    box-shadow: 1px 3px 2px rgba(0, 0, 0, 0.2);
+    padding: 20px 20px 15px 20px;
+    border-radius: 10px 10px 10px 10px;
+    font-size: 22px;
+    font-weight: bolder;
+    margin-bottom: 10px;
+    text-align: center;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.space-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.space-type {
+    padding: 5px 30px 15px 30px;
+    font-size: 18px;
+    font-weight: bolder;
+    color: rgb(66, 66, 66);
+    font-style: normal;
+}
+
+.space-description {
+    padding: 0px 30px 15px 30px;
+    font-size: 16px;
+    color: rgb(90, 90, 90);
+    line-height: 1.4;
+}
+
+.space-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 30px 15px 30px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 10px;
+}
+
+.space-capacity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    color: rgb(90, 90, 90);
+}
+
+.space-capacity .material-symbols-outlined {
+    font-size: 20px;
+    color: #1976d2;
+}
+
+.space-rate {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1976d2;
+}
+
+.space-location {
+    padding: 0px 30px 0px 30px;
+    font-size: 16px;
+    font-style: italic;
+    color: rgb(110, 110, 110);
+    text-align: right;
+}
+
+.space-schedule {
+    padding: 8px 30px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.schedule-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.schedule-time .material-symbols-outlined {
+    font-size: 16px;
+    color: #6b7280;
+}
+
+.schedule-days {
+    font-size: 13px;
+    color: #6b7280;
+    margin-left: 22px;
+}
+
+/* Stili legacy per compatibilità */
+.space-card h3 {
+    display: none;
+}
+
+.space-info {
+    display: none;
+}
