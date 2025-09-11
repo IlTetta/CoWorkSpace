@@ -34,14 +34,18 @@ router.route('/locations')
 /**
  * @swagger
  * /api/manager/locations/{locationId}:
+ *   get:
+ *     summary: Ottieni location gestita per ID
+ *     tags: [Manager]
  *   put:
  *     summary: Aggiorna location gestita
  *     tags: [Manager]
  *   delete:
- *     summary: Elimina location (solo admin)
+ *     summary: Elimina location (manager può eliminare le proprie)
  *     tags: [Manager]
  */
 router.route('/locations/:locationId')
+  .get(managerController.getLocationById)
   .put(managerController.updateLocation)
   .delete(managerController.deleteLocation);
 
@@ -317,6 +321,9 @@ router.route('/spaces')
 /**
  * @swagger
  * /api/manager/spaces/{spaceId}:
+ *   get:
+ *     summary: Ottieni spazio per ID
+ *     tags: [Manager]
  *   put:
  *     summary: Aggiorna spazio
  *     tags: [Manager]
@@ -325,6 +332,7 @@ router.route('/spaces')
  *     tags: [Manager]
  */
 router.route('/spaces/:spaceId')
+  .get(managerController.getSpaceById)
   .put(managerController.updateSpace)
   .delete(managerController.deleteSpace);
 

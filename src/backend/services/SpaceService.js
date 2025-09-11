@@ -114,6 +114,30 @@ class SpaceService {
     }
 
     /**
+     * Ottieni dati base di uno spazio per ID (per modifica)
+     * @param {number} spaceId - ID dello spazio
+     * @param {Object} currentUser - Utente che fa la richiesta
+     * @returns {Promise<Object>} - Spazio con dati base
+     */
+    static async getSpaceById(spaceId, currentUser = null) {
+        // Usa il metodo semplice del modello senza statistiche
+        const space = await Space.findById(spaceId);
+        if (!space) {
+            throw AppError.notFound('Spazio non trovato');
+        }
+
+        // Verifica permessi se è un manager
+        if (currentUser && currentUser.role === 'manager') {
+            const canView = await this.canManageSpace(space, currentUser);
+            if (!canView) {
+                throw AppError.forbidden('Non hai i permessi per visualizzare questo spazio');
+            }
+        }
+
+        return space;
+    }
+
+    /**
      * Ottieni dettagli completi di uno spazio
      * @param {number} spaceId - ID dello spazio
      * @param {Object} currentUser - Utente che fa la richiesta (può essere null)

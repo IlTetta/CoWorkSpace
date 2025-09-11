@@ -48,14 +48,25 @@ exports.getMyLocations = catchAsync(async (req, res, next) => {
 });
 
 /**
+ * Ottieni location gestita per ID
+ */
+exports.getLocationById = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        throw AppError.forbidden('Accesso riservato ai manager');
+    }
+    
+    const { locationId } = req.params;
+    const location = await LocationService.getLocationById(locationId, req.user);
+    return ApiResponse.success(res, 200, 'Location trovata', location);
+});
+
+/**
  * Crea una nuova location per il manager
  */
 exports.createLocation = catchAsync(async (req, res, next) => {
     if (req.user.role !== 'manager' && req.user.role !== 'admin') {
         throw AppError.forbidden('Accesso riservato ai manager');
     }
-    
-    console.log('[MANAGER] Creazione nuova location per manager:', req.user.user_id);
     
     // Assegna automaticamente il manager corrente alla location
     const locationData = {
@@ -75,20 +86,16 @@ exports.updateLocation = catchAsync(async (req, res, next) => {
         throw AppError.forbidden('Accesso riservato ai manager');
     }
     
-    console.log('[MANAGER] Aggiornamento location:', req.params.locationId, 'per manager:', req.user.user_id);
-    
     const location = await LocationService.updateLocation(req.params.locationId, req.body, req.user);
-    return ApiResponse.success(res, location, 'Location aggiornata con successo');
+    return ApiResponse.success(res, 200, 'Location aggiornata con successo', location);
 });
 
 /**
  * Elimina una location gestita dal manager (solo admin può eliminare)
  */
 exports.deleteLocation = catchAsync(async (req, res, next) => {
-    console.log('[MANAGER] Tentativo eliminazione location:', req.params.locationId, 'per manager:', req.user.user_id);
-    
     await LocationService.deleteLocation(req.params.locationId, req.user);
-    return ApiResponse.success(res, null, 'Location eliminata con successo');
+    return ApiResponse.success(res, 200, 'Location eliminata con successo', null);
 });
 
 // ============================================================================
@@ -98,6 +105,20 @@ exports.deleteLocation = catchAsync(async (req, res, next) => {
 exports.getMySpaces = catchAsync(async (req, res, next) => {
     const spaces = await SpaceService.getSpaces(req.query, req.user);
     return ApiResponse.list(res, spaces, 'Spazi recuperati');
+});
+
+/**
+ * Ottieni spazio per ID (solo per i manager delle location)
+ */
+exports.getSpaceById = catchAsync(async (req, res, next) => {
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        throw AppError.forbidden('Accesso riservato ai manager');
+    }
+    
+    const { spaceId } = req.params;
+    // Usa un metodo più semplice che ottiene solo i dati base senza statistiche complesse
+    const space = await SpaceService.getSpaceById(spaceId, req.user);
+    return ApiResponse.success(res, 200, 'Spazio trovato', space);
 });
 
 exports.createSpace = catchAsync(async (req, res, next) => {
@@ -210,10 +231,12 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
 module.exports = {
     getDashboard: exports.getDashboard,
     getMyLocations: exports.getMyLocations,
+    getLocationById: exports.getLocationById,
     createLocation: exports.createLocation,
     updateLocation: exports.updateLocation,
     deleteLocation: exports.deleteLocation,
     getMySpaces: exports.getMySpaces,
+    getSpaceById: exports.getSpaceById,
     createSpace: exports.createSpace,
     updateSpace: exports.updateSpace,
     deleteSpace: exports.deleteSpace,

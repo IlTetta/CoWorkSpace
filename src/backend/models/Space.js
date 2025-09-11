@@ -467,7 +467,7 @@ class Space {
                 WHERE b.space_id = $1 AND p.status = 'completed'
             `,
             averageBookingDuration: `
-                SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (end_time - start_time))/3600), 0) as avg_hours
+                SELECT COALESCE(AVG(total_days * 24), 0) as avg_hours
                 FROM bookings 
                 WHERE space_id = $1 AND status = 'completed'
             `

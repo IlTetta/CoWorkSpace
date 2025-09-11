@@ -83,12 +83,39 @@ class LocationService {
             throw AppError.notFound('Location non trovata');
         }
 
-        // Solo admin può eliminare locations
-        if (currentUser.role !== 'admin') {
-            throw AppError.forbidden('Solo gli amministratori possono eliminare locations');
+        // Admin può eliminare tutte le locations, manager solo le proprie
+        if (currentUser.role === 'admin') {
+            // Admin può eliminare qualsiasi location
+        } else if (currentUser.role === 'manager' && location.manager_id === currentUser.user_id) {
+            // Manager può eliminare solo le proprie location
+        } else {
+            throw AppError.forbidden('Non hai i permessi per eliminare questa location');
         }
 
         return await Location.delete(locationId);
+    }
+
+    /**
+     * Ottieni una location per ID con controlli di accesso
+     * @param {number} locationId - ID della location
+     * @param {Object} currentUser - Utente che fa la richiesta (opzionale)
+     * @returns {Promise<Location>} - Location trovata
+     */
+    static async getLocationById(locationId, currentUser = null) {
+        const location = await Location.findById(locationId);
+        if (!location) {
+            throw AppError.notFound('Location non trovata');
+        }
+
+        // Se c'è un utente, verifica i permessi
+        if (currentUser) {
+            // Manager possono vedere solo le loro location
+            if (currentUser.role === 'manager' && location.manager_id !== currentUser.user_id) {
+                throw AppError.forbidden('Non hai i permessi per visualizzare questa location');
+            }
+        }
+
+        return location;
     }
 
     /**

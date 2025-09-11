@@ -433,7 +433,7 @@
 
         async getSpaceById(spaceId) {
             try {
-                const data = await this.get(`/spaces/${spaceId}`);
+                const data = await this.get(`/manager/spaces/${spaceId}`);
                 return data.data;
             } catch (error) {
                 console.error('Error getting space by id:', error);
