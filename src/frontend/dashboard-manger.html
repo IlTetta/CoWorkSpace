@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CoWorkSpace - Dasboard Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/dashboard-manager.css">
+    <link rel="stylesheet" href="styles/dashboard-manager-header.css">
+    <link rel="stylesheet" href="styles/background.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=account_circle" />
+</head>
+
+<body>
+    <div class="header">
+        <div class="left-section"></div>
+        <div class="middle-section">
+            <div class="logo">CoWorkSpace</div>
+        </div>
+        <div class="right-section">
+            <button class="home-button" id="home-btn">Home</button>
+            <button class="logout-button" id="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div class="profile-container">
+        <div class="profile-left-section">
+            <div class="people-icon" id="profile-icon-container">
+                <span class="material-symbols-outlined account-icon" id="default-icon">account_circle</span>
+                <img id="profile-image" src="" alt="Profile Image" style="display: none;">
+            </div>
+            <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
+            
+            <!-- Menu contestuale per l'immagine del profilo -->
+            <div id="profile-context-menu" class="profile-context-menu">
+                <div class="context-menu-item" id="change-image">Cambia immagine</div>
+                <div class="context-menu-item remove" id="remove-image">Rimuovi immagine</div>
+            </div>
+        </div>
+        
+        <div class="user-info-display">
+            <div class="info-item">
+                <label>Nome:</label>
+                <span id="display-name"></span>
+            </div>
+            <div class="info-item">
+                <label>Cognome:</label>
+                <span id="display-surname"></span>
+            </div>
+            <div class="info-item">
+                <label>Email:</label>
+                <span id="display-email"></span>
+            </div>
+            <div class="info-item">
+                <label>Ruolo:</label>
+                <span id="display-role"></span>
+            </div>
+            <div class="info-item">
+                <label>Data Registrazione:</label>
+                <span id="display-registration"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione gestione spazi di lavoro -->
+    <div class="workspace-management-section">
+        <h2>Gestione Spazi di Lavoro</h2>
+        
+        <!-- Barra di ricerca e pulsanti azioni -->
+        <div class="workspace-header">
+            <div class="search-section">
+                <input class="search-bar" id="spaces-search-input" type="text" placeholder="Search">
+                <button class="search-button" id="spaces-search-btn">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
+            </div>
+            <div class="workspace-actions">
+                <button class="action-btn create-btn" id="create-space-btn">
+                    <span class="material-symbols-outlined">add</span>
+                    Crea Nuovo Spazio
+                </button>
+                <button class="action-btn refresh-btn" id="refresh-spaces-btn">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna Lista
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista spazi esistenti -->
+        <div class="spaces-grid" id="spaces-grid">
+            <!-- Gli spazi verranno caricati dinamicamente qui -->
+        </div>
+    </div>
+
+    <!-- Modal per creare/modificare spazio -->
+    <div id="space-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Crea Nuovo Spazio</h3>
+                <span class="close-button" id="close-space-modal">&times;</span>
+            </div>
+            <form id="space-form">
+                <div class="form-group">
+                    <label for="space-name">Nome Spazio:</label>
+                    <input type="text" id="space-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-description">Descrizione:</label>
+                    <textarea id="space-description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-location">Location:</label>
+                    <select id="space-location" name="location_id" required>
+                        <option value="">Seleziona una location</option>
+                        <!-- Le location verranno caricate dinamicamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-type">Tipo Spazio:</label>
+                    <select id="space-type" name="space_type_id" required>
+                        <option value="">Seleziona un tipo</option>
+                        <!-- I tipi verranno caricati dinamicamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-capacity">Capacità:</label>
+                    <input type="number" id="space-capacity" name="capacity" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-hourly-rate">Tariffa Oraria (€):</label>
+                    <input type="number" id="space-hourly-rate" name="hourly_rate" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancel-space-form">Annulla</button>
+                    <button type="submit" class="save-btn" id="save-space-btn">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/apiService.js"></script>
+    <script src="js/authService.js"></script>
+    <script src="js/dashboard-manager.js"></script>
+</body>
+</html>
