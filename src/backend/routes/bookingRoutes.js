@@ -37,29 +37,23 @@ router.get('/public/space/:spaceId/availability',
  *             type: object
  *             required:
  *               - space_id
- *               - booking_date
- *               - start_time
- *               - end_time
+ *               - start_date
+ *               - end_date
  *             properties:
  *               space_id:
  *                 type: integer
  *                 description: ID dello spazio
  *                 example: 1
- *               booking_date:
+ *               start_date:
  *                 type: string
  *                 format: date
- *                 description: Data della prenotazione
+ *                 description: Data di inizio della prenotazione
  *                 example: '2024-01-20'
- *               start_time:
+ *               end_date:
  *                 type: string
- *                 format: time
- *                 description: Ora di inizio
- *                 example: '09:00:00'
- *               end_time:
- *                 type: string
- *                 format: time
- *                 description: Ora di fine
- *                 example: '17:00:00'
+ *                 format: date
+ *                 description: Data di fine della prenotazione
+ *                 example: '2024-01-22'
  *     responses:
  *       200:
  *         description: Risultato verifica disponibilità
@@ -186,39 +180,27 @@ router.use(authMiddleware.protect);
  *             type: object
  *             required:
  *               - space_id
- *               - booking_date
- *               - start_time
- *               - end_time
+ *               - start_date
+ *               - end_date
  *             properties:
  *               space_id:
  *                 type: integer
  *                 description: ID dello spazio da prenotare
  *                 example: 1
- *               booking_date:
+ *               start_date:
  *                 type: string
  *                 format: date
- *                 description: Data della prenotazione
+ *                 description: Data di inizio della prenotazione
  *                 example: '2024-01-20'
- *               start_time:
+ *               end_date:
  *                 type: string
- *                 format: time
- *                 description: Ora di inizio
- *                 example: '09:00:00'
- *               end_time:
- *                 type: string
- *                 format: time
- *                 description: Ora di fine
- *                 example: '17:00:00'
+ *                 format: date
+ *                 description: Data di fine della prenotazione
+ *                 example: '2024-01-22'
  *               notes:
  *                 type: string
  *                 description: Note aggiuntive
  *                 example: 'Richiesta accesso anticipato'
- *               additionalServices:
- *                 type: array
- *                 items:
- *                   type: integer
- *                 description: ID dei servizi aggiuntivi
- *                 example: [1, 2]
  *     responses:
  *       201:
  *         description: Prenotazione creata con successo
@@ -332,18 +314,14 @@ router.get('/', BookingController.getBookings);
  *           schema:
  *             type: object
  *             properties:
- *               booking_date:
+ *               start_date:
  *                 type: string
  *                 format: date
  *                 example: '2024-01-21'
- *               start_time:
+ *               end_date:
  *                 type: string
- *                 format: time
- *                 example: '10:00:00'
- *               end_time:
- *                 type: string
- *                 format: time
- *                 example: '16:00:00'
+ *                 format: date
+ *                 example: '2024-01-23'
  *               status:
  *                 type: string
  *                 enum: [confirmed, pending, cancelled, completed]

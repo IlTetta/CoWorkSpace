@@ -68,21 +68,21 @@ exports.createBooking = catchAsync(async (req, res) => {
         const bookingData = {
             user_id: req.body.user_id || req.user.user_id, // Default a utente corrente
             space_id: req.body.space_id,
-            start_datetime: req.body.start_datetime,
-            end_datetime: req.body.end_datetime,
+            start_date: req.body.start_date,
+            end_date: req.body.end_date,
             total_price: req.body.total_price,
             status: req.body.status,
             payment_status: req.body.payment_status,
             notes: req.body.notes
         };
 
-        // Supporto per formato legacy (converte automaticamente)
-        if (!bookingData.start_datetime && req.body.booking_date && req.body.start_time) {
-            bookingData.start_datetime = `${req.body.booking_date}T${req.body.start_time}`;
+        // Supporto per formato legacy (converte da booking_date a start_date/end_date)
+        if (!bookingData.start_date && req.body.booking_date) {
+            bookingData.start_date = req.body.booking_date;
         }
         
-        if (!bookingData.end_datetime && req.body.booking_date && req.body.end_time) {
-            bookingData.end_datetime = `${req.body.booking_date}T${req.body.end_time}`;
+        if (!bookingData.end_date && req.body.booking_date) {
+            bookingData.end_date = req.body.booking_date; // Per singolo giorno
         }
 
         const booking = await BookingService.createBooking(req.user, bookingData);
@@ -116,21 +116,15 @@ exports.updateBooking = catchAsync(async (req, res) => {
     // Campi aggiornabili
     const updateData = {};
     const allowedFields = [
-        'start_datetime', 'end_datetime', 'total_price', 
+        'start_date', 'end_date', 'total_price', 
         'status', 'payment_status', 'notes'
     ];
 
     // Supporto per formato legacy
     const legacyFields = {
         'booking_date': (value, data) => {
-            if (req.body.start_time) data.start_datetime = `${value}T${req.body.start_time}`;
-            if (req.body.end_time) data.end_datetime = `${value}T${req.body.end_time}`;
-        },
-        'start_time': (value, data) => {
-            if (req.body.booking_date) data.start_datetime = `${req.body.booking_date}T${value}`;
-        },
-        'end_time': (value, data) => {
-            if (req.body.booking_date) data.end_datetime = `${req.body.booking_date}T${value}`;
+            data.start_date = value;
+            data.end_date = value; // Per singolo giorno
         }
     };
 
@@ -179,26 +173,26 @@ exports.deleteBooking = catchAsync(async (req, res) => {
  * POST /api/bookings/check-availability - Verifica disponibilità spazio
  */
 exports.checkAvailability = catchAsync(async (req, res) => {
-    let { space_id, start_datetime, end_datetime } = req.body;
+    let { space_id, start_date, end_date } = req.body;
 
     // Supporto per formato legacy
-    if (!start_datetime && req.body.booking_date && req.body.start_time) {
-        start_datetime = `${req.body.booking_date}T${req.body.start_time}`;
+    if (!start_date && req.body.booking_date) {
+        start_date = req.body.booking_date;
     }
     
-    if (!end_datetime && req.body.booking_date && req.body.end_time) {
-        end_datetime = `${req.body.booking_date}T${req.body.end_time}`;
+    if (!end_date && req.body.booking_date) {
+        end_date = req.body.booking_date; // Per singolo giorno
     }
 
-    if (!space_id || !start_datetime || !end_datetime) {
-        throw AppError.badRequest('space_id, start_datetime e end_datetime sono obbligatori');
+    if (!space_id || !start_date || !end_date) {
+        throw AppError.badRequest('space_id, start_date e end_date sono obbligatori');
     }
 
     const Space = require('../models/Space');
-    const availability = await Space.checkAvailabilityWithSchedule(
+    const availability = await Space.checkDailyAvailability(
         parseInt(space_id),
-        start_datetime,
-        end_datetime
+        start_date,
+        end_date
     );
 
     return ApiResponse.success(res, 200, 'Disponibilità verificata con successo', availability);
@@ -208,25 +202,25 @@ exports.checkAvailability = catchAsync(async (req, res) => {
  * POST /api/bookings/calculate-price - Calcola prezzo prenotazione
  */
 exports.calculatePrice = catchAsync(async (req, res) => {
-        let { space_id, start_datetime, end_datetime } = req.body;
+        let { space_id, start_date, end_date } = req.body;
 
         // Supporto per formato legacy
-        if (!start_datetime && req.body.booking_date && req.body.start_time) {
-            start_datetime = `${req.body.booking_date}T${req.body.start_time}`;
+        if (!start_date && req.body.booking_date) {
+            start_date = req.body.booking_date;
         }
         
-        if (!end_datetime && req.body.booking_date && req.body.end_time) {
-            end_datetime = `${req.body.booking_date}T${req.body.end_time}`;
+        if (!end_date && req.body.booking_date) {
+            end_date = req.body.booking_date; // Per singolo giorno
         }
 
-        if (!space_id || !start_datetime || !end_datetime) {
-            throw AppError.badRequest('space_id, start_datetime e end_datetime sono obbligatori');
+        if (!space_id || !start_date || !end_date) {
+            throw AppError.badRequest('space_id, start_date e end_date sono obbligatori');
         }
 
-        const pricing = await BookingService.calculateBookingPrice(
+        const pricing = await BookingService.calculateDailyBookingPrice(
             parseInt(space_id),
-            start_datetime,
-            end_datetime
+            start_date,
+            end_date
         );
 
     return ApiResponse.success(res, 200, 'Prezzo calcolato con successo', { pricing });
@@ -492,11 +486,11 @@ exports.getSpaceSchedule = catchAsync(async (req, res) => {
         period: { from: startDate, to: endDate },
         bookings: bookings.map(booking => ({
             booking_id: booking.booking_id,
-            start_datetime: booking.start_datetime,
-            end_datetime: booking.end_datetime,
+            start_date: booking.start_date,
+            end_date: booking.end_date,
             status: booking.status,
             user_name: booking.user_name,
-            total_hours: booking.total_hours,
+            total_days: booking.total_days,
             notes: booking.notes
         }))
     });
@@ -506,22 +500,31 @@ exports.getSpaceSchedule = catchAsync(async (req, res) => {
  * POST /api/bookings/find-overlapping - Trova prenotazioni che si sovrappongono
  */
 exports.findOverlappingBookings = catchAsync(async (req, res) => {
-    const { space_id, start_datetime, end_datetime } = req.body;
+    let { space_id, start_date, end_date } = req.body;
 
-    if (!space_id || !start_datetime || !end_datetime) {
-        throw AppError.badRequest('space_id, start_datetime e end_datetime sono obbligatori');
+    // Supporto per formato legacy
+    if (!start_date && req.body.start_datetime) {
+        start_date = req.body.start_datetime.split('T')[0]; // Estrae solo la data
+    }
+    
+    if (!end_date && req.body.end_datetime) {
+        end_date = req.body.end_datetime.split('T')[0]; // Estrae solo la data
     }
 
-    const Booking = require('../models/Booking');
-    const overlapping = await Booking.findOverlappingBookings(
+    if (!space_id || !start_date || !end_date) {
+        throw AppError.badRequest('space_id, start_date e end_date sono obbligatori');
+    }
+
+    const Space = require('../models/Space');
+    const overlapping = await Space.checkDateRangeConflicts(
         parseInt(space_id),
-        start_datetime,
-        end_datetime
+        start_date,
+        end_date
     );
 
     return ApiResponse.success(res, 200, 'Prenotazioni sovrapposte trovate', {
         space_id: parseInt(space_id),
-        requested_period: { start_datetime, end_datetime },
+        requested_period: { start_date, end_date },
         overlapping_bookings: overlapping,
         conflicts_found: overlapping.length > 0
     });

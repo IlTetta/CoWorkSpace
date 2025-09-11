@@ -69,10 +69,6 @@ const options = {
         description: 'Gestione dei pagamenti'
       },
       {
-        name: 'AdditionalServices',
-        description: 'Gestione dei servizi aggiuntivi'
-      },
-      {
         name: 'Notifications',
         description: 'Gestione delle notifiche (email, push, SMS)'
       }
@@ -248,7 +244,7 @@ const options = {
         },
         Booking: {
           type: 'object',
-          required: ['user_id', 'space_id', 'booking_date', 'start_time', 'end_time', 'total_hours', 'total_price'],
+          required: ['user_id', 'space_id', 'start_date', 'end_date', 'total_days', 'total_price'],
           properties: {
             booking_id: {
               type: 'integer',
@@ -265,29 +261,22 @@ const options = {
               description: 'ID dello spazio prenotato',
               example: 1
             },
-            booking_date: {
+            start_date: {
               type: 'string',
               format: 'date',
-              description: 'Data della prenotazione',
+              description: 'Data di inizio della prenotazione',
               example: '2024-01-20'
             },
-            start_time: {
+            end_date: {
               type: 'string',
-              format: 'time',
-              description: 'Ora di inizio della prenotazione',
-              example: '09:00:00'
+              format: 'date',
+              description: 'Data di fine della prenotazione',
+              example: '2024-01-22'
             },
-            end_time: {
-              type: 'string',
-              format: 'time',
-              description: 'Ora di fine della prenotazione',
-              example: '17:00:00'
-            },
-            total_hours: {
-              type: 'number',
-              format: 'decimal',
-              description: 'Numero totale di ore prenotate',
-              example: 8.00
+            total_days: {
+              type: 'integer',
+              description: 'Numero totale di giorni prenotati',
+              example: 3
             },
             total_price: {
               type: 'number',
@@ -311,7 +300,7 @@ const options = {
         },
         Availability: {
           type: 'object',
-          required: ['space_id', 'availability_date', 'start_time', 'end_time'],
+          required: ['space_id', 'availability_date'],
           properties: {
             availability_id: {
               type: 'integer',
@@ -329,21 +318,9 @@ const options = {
               description: 'Data di disponibilità',
               example: '2024-01-20'
             },
-            start_time: {
-              type: 'string',
-              format: 'time',
-              description: 'Ora di inizio disponibilità',
-              example: '09:00:00'
-            },
-            end_time: {
-              type: 'string',
-              format: 'time',
-              description: 'Ora di fine disponibilità',
-              example: '18:00:00'
-            },
             is_available: {
               type: 'boolean',
-              description: 'Se lo spazio è disponibile in questo slot',
+              description: 'Se lo spazio è disponibile in questa data',
               example: true
             }
           }
@@ -392,39 +369,6 @@ const options = {
               description: 'ID della transazione del gateway di pagamento',
               example: 'txn_1234567890',
               nullable: true
-            }
-          }
-        },
-        AdditionalService: {
-          type: 'object',
-          required: ['service_name', 'price'],
-          properties: {
-            service_id: {
-              type: 'integer',
-              description: 'ID unico del servizio aggiuntivo (chiave primaria)',
-              example: 1
-            },
-            service_name: {
-              type: 'string',
-              maxLength: 100,
-              description: 'Nome del servizio aggiuntivo',
-              example: 'Catering colazione'
-            },
-            description: {
-              type: 'string',
-              description: 'Descrizione del servizio',
-              example: 'Colazione continentale con caffè e cornetti'
-            },
-            price: {
-              type: 'number',
-              format: 'decimal',
-              description: 'Prezzo del servizio',
-              example: 12.50
-            },
-            is_active: {
-              type: 'boolean',
-              description: 'Se il servizio è attualmente disponibile',
-              example: true
             }
           }
         },

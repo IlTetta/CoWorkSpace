@@ -2,20 +2,20 @@ const pool = require('../config/db');
 
 class Availability {
     /**
-     * Crea un nuovo blocco di disponibilità
+     * Crea un nuovo blocco di disponibilità giornaliera
      * @param {Object} availabilityData - Dati del blocco
      * @returns {Promise<Object>} Blocco creato
      */
     static async create(availabilityData) {
-        const { space_id, availability_date, start_time, end_time, is_available = true } = availabilityData;
+        const { space_id, availability_date, is_available = true } = availabilityData;
 
         const query = `
-            INSERT INTO availability (space_id, availability_date, start_time, end_time, is_available)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO availability (space_id, availability_date, is_available)
+            VALUES ($1, $2, $3)
             RETURNING *
         `;
 
-        const result = await pool.query(query, [space_id, availability_date, start_time, end_time, is_available]);
+        const result = await pool.query(query, [space_id, availability_date, is_available]);
         return result.rows[0];
     }
 

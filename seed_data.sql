@@ -3,8 +3,6 @@
 
 -- Pulizia dati esistenti (opzionale - decommentare se necessario)
 TRUNCATE TABLE notifications RESTART IDENTITY CASCADE;
-TRUNCATE TABLE space_services CASCADE;
-TRUNCATE TABLE additional_services RESTART IDENTITY CASCADE;
 TRUNCATE TABLE payments RESTART IDENTITY CASCADE;
 TRUNCATE TABLE bookings RESTART IDENTITY CASCADE;
 TRUNCATE TABLE availability RESTART IDENTITY CASCADE;
@@ -149,51 +147,6 @@ INSERT INTO payments (booking_id, amount, payment_method, status, transaction_id
 (13, 36.00, 'paypal', 'completed', 'TXN_013_PP_20250905'),
 (15, 80.00, 'credit_card', 'refunded', 'TXN_015_CC_20250905');
 
--- INSERIMENTO SERVIZI AGGIUNTIVI (12 servizi)
-INSERT INTO additional_services (service_name, description, price, is_active) VALUES
-('WiFi Premium', 'Connessione internet ad alta velocità dedicata', 5.00, true),
-('Caffè e Bevande', 'Accesso illimitato alla macchina del caffè e bevande', 3.00, true),
-('Stampante e Scanner', 'Utilizzo di stampante multifunzione professionale', 0.10, true),
-('Supporto Tecnico', 'Assistenza tecnica per meeting e presentazioni', 15.00, true),
-('Catering Leggero', 'Snack e bevande per riunioni', 8.00, true),
-('Parcheggio Riservato', 'Posto auto dedicato per la giornata', 10.00, true),
-('Accesso 24/7', 'Accesso al coworking anche fuori orario', 20.00, true),
-('Servizio Pulizie Extra', 'Pulizia approfondita dello spazio', 12.00, true),
-('Noleggio Monitor Extra', 'Monitor aggiuntivo per postazioni', 8.00, true),
-('Sala Relax Premium', 'Accesso alla sala relax con massaggi', 25.00, true),
-('Servizio Concierge', 'Assistenza per prenotazioni esterne e servizi', 30.00, false),
-('Kit Ufficio Completo', 'Cancelleria, block notes e materiali per ufficio', 5.00, true);
-
--- INSERIMENTO RELAZIONI SPAZI-SERVIZI (25 associazioni)
-INSERT INTO space_services (space_id, service_id) VALUES
--- Stanze private hanno molti servizi
-(1, 1), (1, 2), (1, 3), (1, 6), (1, 12),
-(5, 1), (5, 2), (5, 3), (5, 4), (5, 6), (5, 10),
-(10, 1), (10, 2), (10, 3), (10, 6), (10, 12),
-(15, 1), (15, 2), (15, 3), (15, 6),
--- Sale riunioni hanno servizi tech e catering
-(2, 1), (2, 3), (2, 4), (2, 5), (2, 9),
-(4, 1), (4, 3), (4, 4), (4, 5), (4, 8), (4, 9),
-(12, 1), (12, 3), (12, 4), (12, 5), (12, 8),
-(17, 1), (17, 3), (17, 4), (17, 5),
-(19, 1), (19, 3), (19, 4), (19, 5), (19, 8), (19, 9),
--- Postazioni flessibili hanno servizi base
-(3, 1), (3, 2), (3, 12),
-(6, 1), (6, 2), (6, 7), (6, 12),
-(7, 1), (7, 2), (7, 12),
-(11, 1), (11, 2), (11, 12),
-(13, 1), (13, 2), (13, 12),
-(16, 1), (16, 2), (16, 12),
-(20, 1), (20, 2), (20, 9), (20, 12),
--- Team spaces hanno servizi collaborativi
-(8, 1), (8, 2), (8, 3), (8, 4), (8, 5), (8, 12),
--- Studio creativo ha servizi specializzati
-(18, 1), (18, 2), (18, 3), (18, 4), (18, 9), (18, 12),
--- Phone booth ha servizi essenziali
-(9, 1), (9, 4),
--- Sala relax ha servizi comfort
-(14, 2), (14, 10);
-
 -- INSERIMENTO NOTIFICHE (15 notifiche)
 INSERT INTO notifications (user_id, type, channel, recipient, subject, content, status, booking_id, payment_id) VALUES
 (1, 'email', 'booking_confirmation', 'mario.rossi@email.com', 'Prenotazione Confermata', 'La tua prenotazione per la Stanza Milano 1 è stata confermata.', 'sent', 1, 1),
@@ -222,6 +175,4 @@ SELECT
     (SELECT COUNT(*) FROM availability) as disponibilita,
     (SELECT COUNT(*) FROM bookings) as prenotazioni,
     (SELECT COUNT(*) FROM payments) as pagamenti,
-    (SELECT COUNT(*) FROM additional_services) as servizi,
-    (SELECT COUNT(*) FROM space_services) as spazi_servizi,
     (SELECT COUNT(*) FROM notifications) as notifiche;

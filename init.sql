@@ -54,26 +54,22 @@ CREATE TABLE IF NOT EXISTS spaces (
   opening_time TIME DEFAULT '09:00:00',
   closing_time TIME DEFAULT '18:00:00',
   -- Giorni della settimana disponibili (1=Lunedì, 7=Domenica)
-  available_days INTEGER[] DEFAULT ARRAY[1,2,3,4,5], -- Lunedì-Venerdì di default
+  available_days INTEGER[] DEFAULT ARRAY[1,2,3,4,5,6,7], -- Lunedì-Domenica di default
   -- Configurazioni avanzate
-  min_booking_hours DECIMAL(3,1) DEFAULT 1.0,
-  max_booking_hours DECIMAL(4,1) DEFAULT 24.0,
   booking_advance_days INTEGER DEFAULT 30,
   status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'inactive')),
   FOREIGN KEY (location_id) REFERENCES locations(location_id) ON DELETE CASCADE,
   FOREIGN KEY (space_type_id) REFERENCES space_types(space_type_id) ON DELETE CASCADE
 );
 
--- Tabella Disponibilità
+-- Tabella Disponibilità (gestione giornaliera)
 CREATE TABLE IF NOT EXISTS availability (
   availability_id SERIAL PRIMARY KEY,
   space_id INT NOT NULL,
   availability_date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
   is_available BOOLEAN NOT NULL DEFAULT TRUE,
   FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
-  UNIQUE (space_id, availability_date, start_time, end_time) -- Per evitare duplicati
+  UNIQUE (space_id, availability_date) -- Un solo record per spazio per giorno
 );
 
 -- Tabella Prenotazioni
@@ -81,9 +77,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   booking_id SERIAL PRIMARY KEY,
   user_id INT NOT NULL, -- Riferimento all'utente che prenota
   space_id INT NOT NULL,
-  start_datetime TIMESTAMP NOT NULL,
-  end_datetime TIMESTAMP NOT NULL,
-  total_hours DECIMAL(5, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_datetime - start_datetime)) / 3600) STORED,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  total_days INTEGER GENERATED ALWAYS AS (end_date - start_date + 1) STORED,
   total_price DECIMAL(10, 2) NOT NULL,
   status booking_status_enum NOT NULL DEFAULT 'pending',
   payment_status payment_status_enum DEFAULT 'pending',
@@ -91,9 +87,9 @@ CREATE TABLE IF NOT EXISTS bookings (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
   FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
-  -- Constraint per validazione datetime
-  CONSTRAINT booking_datetime_order CHECK (start_datetime < end_datetime),
-  CONSTRAINT booking_future_date CHECK (start_datetime > CURRENT_TIMESTAMP - INTERVAL '1 day')
+  -- Constraint per validazione date
+  CONSTRAINT booking_date_order CHECK (start_date <= end_date),
+  CONSTRAINT booking_future_date CHECK (start_date >= CURRENT_DATE)
 );
 
 -- Tabella Pagamenti
@@ -106,24 +102,6 @@ CREATE TABLE IF NOT EXISTS payments (
   status payment_status_enum NOT NULL DEFAULT 'completed',
   transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gataway di pagamento (es. Stripe, PayPal, ecc.)
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE CASCADE
-);
-
--- Tabella Servizi Aggiuntivi
-CREATE TABLE IF NOT EXISTS additional_services (
-  service_id SERIAL PRIMARY KEY,
-  service_name VARCHAR(100) NOT NULL,
-  description TEXT,
-  price DECIMAL(10, 2) NOT NULL,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-
--- Tabella di join tra spazi e servizi aggiuntivi (n - m)
-CREATE TABLE IF NOT EXISTS space_services (
-  space_id INT NOT NULL,
-  service_id INT NOT NULL,
-  PRIMARY KEY (space_id, service_id),
-  FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
-  FOREIGN KEY (service_id) REFERENCES additional_services(service_id) ON DELETE CASCADE
 );
 
 -- Tabella Notifiche

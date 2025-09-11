@@ -284,10 +284,10 @@ router.get('/profile', authMiddleware.protect, userController.getProfile);
  *                               type: number
  *                               format: decimal
  *                               example: 450.00
- *                             total_hours_booked:
+ *                             total_days_booked:
  *                               type: number
  *                               format: decimal
- *                               example: 75.5
+ *                               example: 15.0
  *                             locations_visited:
  *                               type: integer
  *                               example: 3
@@ -312,8 +312,8 @@ router.get('/profile', authMiddleware.protect, userController.getProfile);
  *                                     format: time
  *                                   end_time:
  *                                     type: string
- *                                     format: time
- *                                   total_hours:
+ *                                     format: date
+ *                                   total_days:
  *                                     type: number
  *                                     format: decimal
  *                                   total_price:

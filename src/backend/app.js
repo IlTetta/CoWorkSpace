@@ -18,7 +18,6 @@ const spaceRoutes = require('./routes/spaceRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
-const additionalServiceRoutes = require('./routes/additionalServiceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const managerRoutes = require('./routes/managerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -289,9 +288,6 @@ app.get('/health', async (req, res) => {
  *                     payments:
  *                       type: string
  *                       example: '/api/payments'
- *                     additional-services:
- *                       type: string
- *                       example: '/api/additional-services'
  *                     notifications:
  *                       type: string
  *                       example: '/api/notifications'
@@ -318,7 +314,6 @@ app.get('/api', (req, res) => {
             availability: '/api/availability',
             bookings: '/api/bookings',
             payments: '/api/payments',
-            'additional-services': '/api/additional-services',
             notifications: '/api/notifications',
             manager: '/api/manager',
             admin: '/api/admin'
@@ -336,7 +331,6 @@ app.use('/api/spaces', spaceRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/additional-services', additionalServiceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/admin', adminRoutes);

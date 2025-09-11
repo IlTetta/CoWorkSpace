@@ -88,7 +88,6 @@ Il backend segue il pattern **MVC (Model-View-Controller)** con separazione dell
 | **Disponibilità** | `/api/availability` | Gestione calendario disponibilità |
 | **Prenotazioni** | `/api/bookings` | Gestione booking e prenotazioni |
 | **Pagamenti** | `/api/payments` | Gestione transazioni |
-| **Servizi Extra** | `/api/additional-services` | Servizi aggiuntivi (catering, etc.) |
 | **Notifiche** | `/api/notifications` | Sistema di notifiche |
 
 ---
@@ -436,8 +435,7 @@ const createBooking = async (bookingData) => {
       spaceId: bookingData.spaceId,
       startDateTime: bookingData.startDateTime,
       endDateTime: bookingData.endDateTime,
-      notes: bookingData.notes,
-      additionalServices: bookingData.additionalServices || []
+      notes: bookingData.notes
     })
   });
   

@@ -689,10 +689,9 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
         const query = `
             SELECT 
                 b.booking_id,
-                b.booking_date,
-                b.start_time,
-                b.end_time,
-                b.total_hours,
+                b.start_date,
+                b.end_date,
+                b.total_days,
                 b.total_price,
                 b.status,
                 b.created_at,
@@ -714,10 +713,9 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
         const result = await db.query(query, [locationId]);
         return result.rows.map(row => ({
             id: row.booking_id,
-            date: row.booking_date,
-            startTime: row.start_time,
-            endTime: row.end_time,
-            totalHours: parseFloat(row.total_hours),
+            startDate: row.start_date,
+            endDate: row.end_date,
+            totalDays: parseFloat(row.total_days),
             totalPrice: parseFloat(row.total_price),
             status: row.status,
             createdAt: row.created_at,
@@ -775,39 +773,6 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
                 min: parseInt(row.min_capacity),
                 max: parseInt(row.max_capacity)
             }
-        }));
-    }
-
-    /**
-     * Ottieni i servizi aggiuntivi disponibili per gli spazi di una location
-     * @param {number} locationId - ID della location
-     * @returns {Promise<Array>} - Array di servizi disponibili
-     */
-    static async getLocationAvailableServices(locationId) {
-        const query = `
-            SELECT DISTINCT
-                ads.service_id,
-                ads.service_name,
-                ads.description,
-                ads.price,
-                ads.is_active,
-                COUNT(ss.space_id) as spaces_with_service
-            FROM additional_services ads
-            JOIN space_services ss ON ads.service_id = ss.service_id
-            JOIN spaces s ON ss.space_id = s.space_id
-            WHERE s.location_id = $1 AND ads.is_active = true
-            GROUP BY ads.service_id, ads.service_name, ads.description, ads.price, ads.is_active
-            ORDER BY ads.service_name
-        `;
-
-        const result = await db.query(query, [locationId]);
-        return result.rows.map(row => ({
-            id: row.service_id,
-            name: row.service_name,
-            description: row.description,
-            price: parseFloat(row.price),
-            isActive: row.is_active,
-            spacesWithService: parseInt(row.spaces_with_service)
         }));
     }
 

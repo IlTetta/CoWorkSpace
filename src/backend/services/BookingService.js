@@ -46,28 +46,22 @@ class BookingService {
             throw AppError.notFound('Spazio non trovato');
         }
 
-        // Calcola automaticamente total_hours se non fornito
-        if (!bookingData.total_hours && bookingData.start_time && bookingData.end_time) {
-            bookingData.total_hours = this.calculateHours(bookingData.start_time, bookingData.end_time);
-        }
-
         // Calcola automaticamente total_price se non fornito
-        if (!bookingData.total_price && bookingData.total_hours) {
-            const pricing = await this.calculateBookingPrice(
+        if (!bookingData.total_price) {
+            const pricing = await this.calculateDailyBookingPrice(
                 bookingData.space_id,
-                bookingData.booking_date,
-                bookingData.start_time,
-                bookingData.end_time
+                bookingData.start_date,
+                bookingData.end_date
             );
             bookingData.total_price = pricing.finalPrice;
         }
 
-        // Verifica che la data di prenotazione sia futura
-        const bookingDate = new Date(bookingData.booking_date);
+        // Verifica che la data di prenotazione sia futura o odierna
+        const startDate = new Date(bookingData.start_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (bookingDate < today) {
+        if (startDate < today) {
             throw AppError.badRequest('Non puoi prenotare per date passate');
         }
 
@@ -107,18 +101,16 @@ class BookingService {
             }
         }
 
-        // Ricalcola hours e price se necessario
-        if (updateData.start_time || updateData.end_time) {
-            const startTime = updateData.start_time || booking.start_time;
-            const endTime = updateData.end_time || booking.end_time;
-            updateData.total_hours = this.calculateHours(startTime, endTime);
+        // Ricalcola il prezzo se necessario
+        if (updateData.start_date || updateData.end_date) {
+            const startDate = updateData.start_date || booking.start_date;
+            const endDate = updateData.end_date || booking.end_date;
             
             // Ricalcola il prezzo
-            const pricing = await this.calculateBookingPrice(
+            const pricing = await this.calculateDailyBookingPrice(
                 booking.space_id,
-                updateData.booking_date || booking.booking_date,
-                startTime,
-                endTime
+                startDate,
+                endDate
             );
             updateData.total_price = pricing.finalPrice;
         }
@@ -209,7 +201,42 @@ class BookingService {
     }
 
     /**
-     * Calcola il prezzo di una prenotazione
+     * Calcola il prezzo di una prenotazione giornaliera
+     * @param {number} spaceId - ID dello spazio
+     * @param {string} startDate - Data inizio (YYYY-MM-DD)
+     * @param {string} endDate - Data fine (YYYY-MM-DD)
+     * @returns {Promise<Object>} - Dettagli pricing
+     */
+    static async calculateDailyBookingPrice(spaceId, startDate, endDate) {
+        const space = await Space.findById(spaceId);
+        if (!space) {
+            throw AppError.notFound('Spazio non trovato');
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = end.getTime() - start.getTime();
+        const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 per includere il giorno di fine
+
+        const dailyPrice = totalDays * parseFloat(space.price_per_day);
+
+        return {
+            spaceId,
+            startDate,
+            endDate,
+            totalDays,
+            pricePerDay: parseFloat(space.price_per_day),
+            finalPrice: parseFloat(dailyPrice.toFixed(2)),
+            space: {
+                id: space.space_id,
+                name: space.space_name,
+                price_per_day: space.price_per_day
+            }
+        };
+    }
+
+    /**
+     * Calcola il prezzo di una prenotazione (metodo legacy per compatibilità)
      * @param {number} spaceId - ID dello spazio
      * @param {string} date - Data prenotazione
      * @param {string} startTime - Ora inizio
@@ -287,39 +314,23 @@ class BookingService {
     }
 
     /**
-     * Verifica disponibilità spazio per un determinato periodo
+     * Verifica disponibilità spazio per un determinato periodo (giornaliero)
      * @param {number} spaceId - ID dello spazio
-     * @param {string} date - Data prenotazione
-     * @param {string} startTime - Ora inizio
-     * @param {string} endTime - Ora fine
+     * @param {string} startDate - Data inizio prenotazione
+     * @param {string} endDate - Data fine prenotazione (opzionale)
      * @returns {Promise<Object>} - Risultato disponibilità
      */
-    static async checkAvailability(spaceId, date, startTime, endTime) {
-        // Verifica che lo spazio esista
-        const space = await Space.findById(spaceId);
-        if (!space) {
-            throw AppError.notFound('Spazio non trovato');
+    static async checkAvailability(spaceId, startDate, endDate = null) {
+        // Se non specificata, la data di fine è uguale a quella di inizio
+        if (!endDate) {
+            endDate = startDate;
         }
 
-        // Verifica disponibilità
-        const isAvailable = await Booking.checkSpaceAvailability(spaceId, date, startTime, endTime);
-        
-        // Calcola prezzo se disponibile
-        let pricing = null;
-        if (isAvailable) {
-            pricing = await this.calculateBookingPrice(spaceId, date, startTime, endTime);
-        }
+        // Usa la nuova logica di controllo giornaliero
+        const Space = require('../models/Space');
+        const availability = await Space.checkDailyAvailability(spaceId, startDate, endDate);
 
-        return {
-            available: isAvailable,
-            space: {
-                id: space.space_id,
-                name: space.name,
-                capacity: space.capacity,
-                status: space.status
-            },
-            pricing
-        };
+        return availability;
     }
 
     // ============================================================================
