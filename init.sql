@@ -104,24 +104,6 @@ CREATE TABLE IF NOT EXISTS payments (
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE CASCADE
 );
 
--- Tabella Servizi Aggiuntivi
-CREATE TABLE IF NOT EXISTS additional_services (
-  service_id SERIAL PRIMARY KEY,
-  service_name VARCHAR(100) NOT NULL,
-  description TEXT,
-  price DECIMAL(10, 2) NOT NULL,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-
--- Tabella di join tra spazi e servizi aggiuntivi (n - m)
-CREATE TABLE IF NOT EXISTS space_services (
-  space_id INT NOT NULL,
-  service_id INT NOT NULL,
-  PRIMARY KEY (space_id, service_id),
-  FOREIGN KEY (space_id) REFERENCES spaces(space_id) ON DELETE CASCADE,
-  FOREIGN KEY (service_id) REFERENCES additional_services(service_id) ON DELETE CASCADE
-);
-
 -- Tabella Notifiche
 CREATE TABLE IF NOT EXISTS notifications (
   notification_id BIGSERIAL PRIMARY KEY,

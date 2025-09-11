@@ -10,7 +10,6 @@ const Space = require('./Space');
 const Location = require('./Location');
 const Availability = require('./Availability');
 const Payment = require('./Payment');
-const AdditionalService = require('./AdditionalService');
 const Notification = require('./Notification');
 
 module.exports = {
@@ -21,6 +20,5 @@ module.exports = {
     Location,
     Availability,
     Payment,
-    AdditionalService,
     Notification
 };

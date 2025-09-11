@@ -59,7 +59,7 @@ const checkSpaceAvailability = catchAsync(async (req, res) => {
  * POST /api/spaces/pricing/calculate - Calcola il prezzo per una prenotazione (pubblico)
  */
 const calculateBookingPrice = catchAsync(async (req, res) => {
-  const { space_id, startDateTime, endDateTime, additionalServices = [] } = req.body;
+  const { space_id, startDateTime, endDateTime } = req.body;
   
   if (!space_id || !startDateTime || !endDateTime) {
     throw AppError.badRequest('ID spazio, data/ora di inizio e fine sono obbligatori');

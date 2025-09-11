@@ -279,12 +279,6 @@ router.post('/availability/check', spaceController.checkSpaceAvailability);
  *                 format: date-time
  *                 description: Data e ora di fine
  *                 example: '2024-01-20T17:00:00Z'
- *               additionalServices:
- *                 type: array
- *                 items:
- *                   type: integer
- *                 description: ID dei servizi aggiuntivi
- *                 example: [1, 2]
  *     responses:
  *       200:
  *         description: Calcolo prezzo completato
@@ -319,17 +313,6 @@ router.post('/availability/check', spaceController.checkSpaceAvailability);
  *                           properties:
  *                             hourlyRate:
  *                               type: number
- *                             additionalServices:
- *                               type: array
- *                               items:
- *                                 type: object
- *                                 properties:
- *                                   service_id:
- *                                     type: integer
- *                                   service_name:
- *                                     type: string
- *                                   price:
- *                                     type: number
  *       400:
  *         description: Dati non validi
  *         content:
@@ -381,10 +364,6 @@ router.post('/pricing/calculate', spaceController.calculateBookingPrice);
  *                                   $ref: '#/components/schemas/Location'
  *                                 spaceType:
  *                                   $ref: '#/components/schemas/SpaceType'
- *                                 additionalServices:
- *                                   type: array
- *                                   items:
- *                                     $ref: '#/components/schemas/AdditionalService'
  *       404:
  *         description: Spazio non trovato
  *         content:
@@ -594,16 +573,7 @@ router.get('/:id', spaceController.getSpaceById);
  *                 format: decimal
  *                 description: Prezzo giornaliero (calcolato automaticamente se non fornito)
  *                 example: 225.00
- *               amenities:
- *                 type: array
- *                 items:
- *                   type: string
- *                 description: Lista degli amenities
- *                 example: ['Wi-Fi', 'Proiettore', 'Aria condizionata']
- *               is_active:
- *                 type: boolean
- *                 description: Se lo spazio è attivo
- *                 example: true
+ *               
  *     responses:
  *       201:
  *         description: Spazio creato con successo

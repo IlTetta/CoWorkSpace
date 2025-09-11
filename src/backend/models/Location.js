@@ -777,39 +777,6 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
     }
 
     /**
-     * Ottieni i servizi aggiuntivi disponibili per gli spazi di una location
-     * @param {number} locationId - ID della location
-     * @returns {Promise<Array>} - Array di servizi disponibili
-     */
-    static async getLocationAvailableServices(locationId) {
-        const query = `
-            SELECT DISTINCT
-                ads.service_id,
-                ads.service_name,
-                ads.description,
-                ads.price,
-                ads.is_active,
-                COUNT(ss.space_id) as spaces_with_service
-            FROM additional_services ads
-            JOIN space_services ss ON ads.service_id = ss.service_id
-            JOIN spaces s ON ss.space_id = s.space_id
-            WHERE s.location_id = $1 AND ads.is_active = true
-            GROUP BY ads.service_id, ads.service_name, ads.description, ads.price, ads.is_active
-            ORDER BY ads.service_name
-        `;
-
-        const result = await db.query(query, [locationId]);
-        return result.rows.map(row => ({
-            id: row.service_id,
-            name: row.service_name,
-            description: row.description,
-            price: parseFloat(row.price),
-            isActive: row.is_active,
-            spacesWithService: parseInt(row.spaces_with_service)
-        }));
-    }
-
-    /**
      * Validazione dati location
      * @param {Object} data - Dati da validare
      * @param {boolean} isUpdate - Se è un aggiornamento (campi opzionali)

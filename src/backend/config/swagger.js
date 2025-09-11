@@ -69,10 +69,6 @@ const options = {
         description: 'Gestione dei pagamenti'
       },
       {
-        name: 'AdditionalServices',
-        description: 'Gestione dei servizi aggiuntivi'
-      },
-      {
         name: 'Notifications',
         description: 'Gestione delle notifiche (email, push, SMS)'
       }
@@ -373,39 +369,6 @@ const options = {
               description: 'ID della transazione del gateway di pagamento',
               example: 'txn_1234567890',
               nullable: true
-            }
-          }
-        },
-        AdditionalService: {
-          type: 'object',
-          required: ['service_name', 'price'],
-          properties: {
-            service_id: {
-              type: 'integer',
-              description: 'ID unico del servizio aggiuntivo (chiave primaria)',
-              example: 1
-            },
-            service_name: {
-              type: 'string',
-              maxLength: 100,
-              description: 'Nome del servizio aggiuntivo',
-              example: 'Catering colazione'
-            },
-            description: {
-              type: 'string',
-              description: 'Descrizione del servizio',
-              example: 'Colazione continentale con caffè e cornetti'
-            },
-            price: {
-              type: 'number',
-              format: 'decimal',
-              description: 'Prezzo del servizio',
-              example: 12.50
-            },
-            is_active: {
-              type: 'boolean',
-              description: 'Se il servizio è attualmente disponibile',
-              example: true
             }
           }
         },

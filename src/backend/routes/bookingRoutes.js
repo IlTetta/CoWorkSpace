@@ -201,12 +201,6 @@ router.use(authMiddleware.protect);
  *                 type: string
  *                 description: Note aggiuntive
  *                 example: 'Richiesta accesso anticipato'
- *               additionalServices:
- *                 type: array
- *                 items:
- *                   type: integer
- *                 description: ID dei servizi aggiuntivi
- *                 example: [1, 2]
  *     responses:
  *       201:
  *         description: Prenotazione creata con successo
