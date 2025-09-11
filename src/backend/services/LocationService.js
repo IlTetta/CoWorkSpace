@@ -107,6 +107,31 @@ class LocationService {
     }
 
     /**
+     
+Ottieni tutte le locations gestite da un manager specifico
+@param {number} managerId - ID del manager
+@returns {Promise<Location[]>} - Array di locations gestite dal manager*/
+static async getLocationsByManager(managerId) {
+    if (!managerId) {
+        throw AppError.badRequest('ID manager richiesto');}
+
+        // Verifica che l'utente esista e sia un manager
+        const manager = await User.findById(managerId);
+        if (!manager) {
+            throw AppError.notFound('Manager non trovato');
+        }
+
+        if (!['manager', 'admin'].includes(manager.role)) {
+            throw AppError.badRequest('L\'utente specificato non ha il ruolo di manager');
+        }
+
+        const locations = await Location.findByManager(managerId);
+
+        // Ritorna le locations con formato JSON
+        return locations.map(location => location.toJSON());
+    }
+
+    /**
      * Ottieni locations con tipi di spazio associati e supporto per ordinamento avanzato
      * @param {Object} filters - Filtri di ricerca
      * @param {Object} sorting - Opzioni di ordinamento (sortBy, sortOrder)

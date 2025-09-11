@@ -13,6 +13,8 @@ const router = express.Router();
 // Middleware: tutte le route richiedono autenticazione
 router.use(authMiddleware.protect);
 
+router.get('/locations', managerController.getMyLocations);
+
 /**
  * @swagger
  * /api/manager/dashboard:
