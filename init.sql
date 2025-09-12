@@ -140,6 +140,20 @@ CREATE TABLE IF NOT EXISTS notifications (
   FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE SET NULL
 );
 
+-- Inserimento tipi di spazio predefiniti
+INSERT INTO space_types (type_name, description) VALUES
+  ('Ufficio Privato', 'Ufficio privato per singola persona o piccoli team'),
+  ('Sala Riunioni', 'Sala attrezzata per meeting e riunioni di lavoro'),
+  ('Open Space', 'Spazio aperto condiviso per lavoro collaborativo'),
+  ('Coworking Desk', 'Singola postazione di lavoro in ambiente condiviso'),
+  ('Phone Booth', 'Cabina telefonica insonorizzata per chiamate private'),
+  ('Sala Conferenze', 'Ampia sala per conferenze e presentazioni'),
+  ('Focus Room', 'Stanza silenziosa per lavoro concentrato'),
+  ('Lounge Area', 'Area relax informale per incontri casual'),
+  ('Training Room', 'Aula per formazione e workshop'),
+  ('Event Space', 'Spazio per eventi e networking')
+ON CONFLICT (type_name) DO NOTHING;
+
 -- Inserimento utente admin di default
 -- Password: CoWorkSpace2025!
 -- Hash generato con bcrypt rounds=12
