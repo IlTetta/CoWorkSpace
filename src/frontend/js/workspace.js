@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Recupera l'ID della location da sessionStorage o query string
     const locationId = sessionStorage.getItem('selectedLocationId') || getLocationIdFromUrl();
-    console.log('Location ID retrieved:', locationId); // Debug log
-    console.log('SessionStorage value:', sessionStorage.getItem('selectedLocationId')); // Debug log
-    console.log('URL parameter:', getLocationIdFromUrl()); // Debug log
     
     if (!locationId) {
         document.getElementById('booking-message').textContent = 'Location non trovata.';
@@ -31,7 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Carica i dettagli della location
     try {
         const locationData = await window.apiService.getLocationById(locationId);
-        await renderLocationDetails(locationData);
         
         // Usa gli spazi dall'endpoint complete se disponibili, altrimenti carica separatamente
         let spaces = [];
@@ -46,6 +42,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
+        // Renderizza i dettagli della location CON gli spazi
+        await renderLocationDetails(locationData, spaces);
+        
+        // Renderizza le opzioni degli spazi nel select del form
         renderSpaceOptions(spaces);
         
     } catch (error) {
@@ -161,9 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Funzione per renderizzare i dettagli della location nella sezione sinistra
-async function renderLocationDetails(locationData) {
-    console.log('Location data received:', locationData); // Debug log
-    
+async function renderLocationDetails(locationData, spaces = []) {
     // L'endpoint base restituisce {location: {...}, statistics: {...}}
     const location = locationData.location || locationData;
     
@@ -194,7 +192,7 @@ async function renderLocationDetails(locationData) {
     // Aggiorna il manager
     const locationManagerEl = document.querySelector('.location-manager');
     if (locationManagerEl) {
-        let managerName = 'Non specificato';
+        let managerName = 'Nessun manager assegnato';
         
         if (location.manager) {
             if (typeof location.manager === 'string') {
@@ -203,26 +201,48 @@ async function renderLocationDetails(locationData) {
                 managerName = `${location.manager.name} ${location.manager.surname}`;
             } else if (location.manager.name) {
                 managerName = location.manager.name;
+            } else if (location.manager.id) {
+                managerName = `Manager ID: ${location.manager.id}`;
             }
+        } else if (location.managerId && location.managerId !== null) {
+            managerName = `Manager ID: ${location.managerId}`;
         }
         
         locationManagerEl.textContent = `Manager: ${managerName}`;
     }
 
-    // Carica e renderizza i tipi di spazio per questa location
-    try {
-        const spaceTypes = await window.apiService.getSpaceTypesByLocation(location.id);
-        renderSpaceTypesGrid(spaceTypes);
-    } catch (error) {
-        console.error('Errore nel caricamento dei tipi di spazio:', error);
-        const spaceTypesGrid = document.querySelector('.space-types-grid');
-        if (spaceTypesGrid) {
-            spaceTypesGrid.innerHTML = '<div class="error">Errore nel caricamento dei tipi di spazio</div>';
-        }
-    }
+    // Renderizza gli spazi effettivi invece dei tipi di spazio
+    renderSpacesGrid(spaces);
 }
 
-// Funzione per renderizzare la griglia dei tipi di spazio
+// Funzione per renderizzare la griglia degli spazi effettivi
+function renderSpacesGrid(spaces) {
+    const spaceTypesGrid = document.querySelector('.space-types-grid');
+    if (!spaceTypesGrid || !Array.isArray(spaces)) return;
+
+    if (spaces.length === 0) {
+        spaceTypesGrid.innerHTML = '<div class="no-space-types">Nessuno spazio disponibile</div>';
+        return;
+    }
+
+    const spacesHtml = spaces.map(space => {
+        const spaceTypeName = space.spaceType?.name || space.space_type?.name || 'Tipo sconosciuto';
+        const spaceTypeDescription = space.spaceType?.description || space.space_type?.description || '';
+        const price = space.pricePerHour || space.price_per_hour || space.spaceType?.price_per_hour || '0';
+        
+        return `
+            <div class="space-type-card">
+                <div class="space-type-name">${space.name || 'Spazio senza nome'}</div>
+                <div class="space-type-description">${spaceTypeName}${spaceTypeDescription ? ' - ' + spaceTypeDescription : ''}</div>
+                <div class="space-type-price">€${price}/ora</div>
+            </div>
+        `;
+    }).join('');
+
+    spaceTypesGrid.innerHTML = spacesHtml;
+}
+
+// Funzione per renderizzare la griglia dei tipi di spazio (mantenuta per compatibilità)
 function renderSpaceTypesGrid(spaceTypes) {
     const spaceTypesGrid = document.querySelector('.space-types-grid');
     if (!spaceTypesGrid || !Array.isArray(spaceTypes)) return;
@@ -270,7 +290,6 @@ function extractSpaceTypesFromSpaces(spaces) {
 function renderSpaceOptions(spaces) {
     const spaceSelect = document.getElementById('space-select');
     if (!spaceSelect || !Array.isArray(spaces)) {
-        console.error('Space select element not found or spaces not array:', spaceSelect, spaces);
         return;
     }
 
@@ -282,8 +301,6 @@ function renderSpaceOptions(spaces) {
         option.textContent = `${space.name || 'Spazio'} - ${space.spaceType?.name || space.space_type_name || 'Tipo sconosciuto'}`;
         spaceSelect.appendChild(option);
     });
-    
-    console.log(`Added ${spaces.length} spaces to select`); // Debug log
 }
 
 // Funzione per renderizzare i servizi aggiuntivi

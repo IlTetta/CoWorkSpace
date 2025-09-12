@@ -424,15 +424,16 @@ static async getLocationsByManager(managerId) {
             spaces,
             statistics,
             recentBookings,
-            spaceTypes,
-            availableServices
+            spaceTypes
         ] = await Promise.all([
             Location.getLocationSpaces(locationId),
             Location.getLocationStatistics(locationId),
             Location.getLocationRecentBookings(locationId),
-            Location.getLocationSpaceTypes(locationId),
-            Location.getLocationAvailableServices(locationId)
+            Location.getLocationSpaceTypes(locationId)
         ]);
+
+        // TODO: Implement getLocationAvailableServices when services functionality is added
+        const availableServices = [];
 
         return {
             location: location.toJSON(),

@@ -190,11 +190,19 @@
 
         async getLocationById(id) {
             try {
-                const data = await this.get(`/manager/locations/${id}`);
+                // Try complete endpoint first
+                const data = await this.get(`/locations/${id}/complete`);
                 return data.data;
             } catch (error) {
-                console.error('Error getting location by id:', error);
-                throw error;
+                console.warn('Complete endpoint failed, trying basic endpoint:', error.message);
+                try {
+                    // Fallback to basic endpoint
+                    const data = await this.get(`/locations/${id}`);
+                    return data.data;
+                } catch (fallbackError) {
+                    console.error('Error getting location by id (both endpoints failed):', fallbackError);
+                    throw fallbackError;
+                }
             }
         }
 
@@ -269,7 +277,8 @@
         }
 
         async getSpaceById(id) {
-            const data = await this.get(`/manager/spaces/${id}`);
+            // Use public endpoint for space details
+            const data = await this.get(`/spaces/${id}`);
             return data.data.space || data.data;
         }
 
@@ -386,16 +395,11 @@
         // Metodi per la gestione degli spazi
         async getSpacesByLocation(locationId) {
             try {
-                // Ottieni tutti gli spazi e filtra per location
-                const data = await this.get('/spaces');
+                // Use public endpoint with location filter
+                const data = await this.get('/spaces', { locationId: locationId });
                 const allSpaces = Array.isArray(data.data.items) ? data.data.items : [];
                 
-                // Filtra per location ID
-                const locationSpaces = allSpaces.filter(space => 
-                    space.locationId === parseInt(locationId) || space.location_id === parseInt(locationId)
-                );
-                
-                return locationSpaces;
+                return allSpaces;
             } catch (error) {
                 console.error('Error getting spaces by location:', error);
                 return [];
@@ -433,7 +437,8 @@
 
         async getSpaceById(spaceId) {
             try {
-                const data = await this.get(`/manager/spaces/${spaceId}`);
+                // Use public endpoint for space details
+                const data = await this.get(`/spaces/${spaceId}`);
                 return data.data;
             } catch (error) {
                 console.error('Error getting space by id:', error);
