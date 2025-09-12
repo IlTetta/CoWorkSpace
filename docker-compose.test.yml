@@ -1,0 +1,70 @@
+services:
+  # Database dedicato ai test
+  test-db:
+    image: postgres:15
+    container_name: coworking_test_db
+    environment:
+      POSTGRES_DB: coworkspace_test_db
+      POSTGRES_USER: coworkspace_test_user
+      POSTGRES_PASSWORD: test_password_secure
+    volumes:
+      # Monta gli script di inizializzazione
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      # NON montiamo seed_data.sql per i test - vogliamo un DB pulito
+    ports:
+      - "5433:5432"  # Porta diversa per evitare conflitti
+    restart: no  # Non restart automatico per i test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coworkspace_test_user -d coworkspace_test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    tmpfs:
+      # Usa tmpfs per performance migliori nei test (dati in memoria)
+      - /var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=512MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.7
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+
+  # Servizio per eseguire i test (opzionale)
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: coworking_test_runner
+    environment:
+      # Configurazione database test
+      TEST_DB_HOST: test-db
+      TEST_DB_PORT: 5432
+      TEST_DB_USER: coworkspace_test_user
+      TEST_DB_PASSWORD: test_password_secure
+      TEST_DB_NAME: coworkspace_test_db
+      
+      # Configurazione test
+      NODE_ENV: test
+      JWT_SECRET: test-jwt-secret-very-long-and-secure-key-for-testing-only
+      JWT_EXPIRES_IN: 24h
+      
+      # Disabilita email reali nei test
+      EMAIL_USER: ""
+      EMAIL_PASS: ""
+      FIREBASE_SERVICE_ACCOUNT_PATH: ""
+    volumes:
+      - ./src:/usr/src/app/src
+      - ./tests:/usr/src/app/tests
+      - ./jest.integration.config.json:/usr/src/app/jest.integration.config.json
+      - ./.env.test:/usr/src/app/.env.test
+    depends_on:
+      test-db:
+        condition: service_healthy
+    profiles:
+      - test  # Questo servizio si avvia solo con --profile test
+    command: npm run test:integration

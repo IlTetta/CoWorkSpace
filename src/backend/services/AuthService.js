@@ -98,6 +98,10 @@ class AuthService {
             if (error.name === 'TokenExpiredError') {
                 throw AppError.tokenExpired();
             }
+            if (error.name === 'SyntaxError') {
+                // Gestisce token con parti Base64 malformate (JSON non valido)
+                throw AppError.tokenInvalid();
+            }
             throw error;
         }
     }
