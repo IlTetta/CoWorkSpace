@@ -13,7 +13,7 @@ RUN npm install --only=production
 COPY src/backend/ . 
 
 # Espone la porta
-EXPOSE 5000
+EXPOSE 3000
 
 # Avvia il server
 CMD ["node", "server.js"]

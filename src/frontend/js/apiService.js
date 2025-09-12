@@ -10,18 +10,21 @@
 
     class ApiService {
         constructor() {
-            // Determina baseURL dinamicamente in base all'ambiente
-            if (window.location.port === '5500' || window.location.hostname === '127.0.0.1') {
-                // Live Server o sviluppo locale - usa sempre il server backend su porta 3000
-                this.baseURL = 'http://localhost:3000/api';
-            } else if (window.location.port === '3000') {
-                // Servito dal backend Express - usa path relativo
-                this.baseURL = '/api';
-            } else {
-                // Default: assumi server backend su localhost:3000
+            // 1. Se definito in config.js (window.API_URL), usalo
+            if (window.API_URL) {
+                this.baseURL = `${window.API_URL}/api`;
+            }
+            // 2. Se siamo in locale (Live Server o Node su localhost:3000)
+            else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 this.baseURL = 'http://localhost:3000/api';
             }
-            
+            // 3. Default: URL pubblico del backend su Render
+            else {
+                this.baseURL = 'https://my-frontend-1em1.onrender.com/api';
+            }
+
+            console.log('[API] Base URL configurato:', this.baseURL);
+
             this.defaultHeaders = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'

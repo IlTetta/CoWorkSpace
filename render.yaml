@@ -4,20 +4,21 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: src/backend/Dockerfile
-    dockerContext: .
+    dockerContext: src/backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: mydb
           property: connectionString
-      # PORT impostata da Render, backend legge process.env.PORT
+      - key: FRONTEND_URL
+        value: https://my-frontend-1em1.onrender.com
 
   - type: web
     name: my-frontend
     runtime: docker
     plan: free
     dockerfilePath: src/frontend/Dockerfile
-    dockerContext: .
+    dockerContext: src/frontend
 
 databases:
   - name: mydb
