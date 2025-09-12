@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: src/backend/Dockerfile
-    dockerContext: src/backend
+    dockerContext: .
     envVars:
       - key: DATABASE_URL
         fromDatabase:
