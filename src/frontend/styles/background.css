@@ -36,3 +36,19 @@ body::after {
         right: 0px;
     }
 }
+
+@media (max-width: 470px) {
+    body::before {
+        width: 120px;
+        height: 120px;
+        top: -30px;
+        left: -30px;
+    }
+
+    body::after {
+        width: 80px;
+        height: 80px;
+        bottom: 0px;
+        right: 0px;
+    }
+}

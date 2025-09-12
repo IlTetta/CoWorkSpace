@@ -457,14 +457,9 @@ static async findAllWithSpaceTypesFallback(filters, sortBy, sortOrder) {
      * @returns {Promise<boolean>} - true se eliminata
      */
     static async delete(id) {
-        // Verifica se ci sono spazi associati
-        const spacesQuery = 'SELECT COUNT(*) as count FROM spaces WHERE location_id = $1';
-        const spacesResult = await db.query(spacesQuery, [id]);
-
-        if (parseInt(spacesResult.rows[0].count) > 0) {
-            throw AppError.badRequest('Impossibile eliminare: ci sono spazi associati a questa location');
-        }
-
+        // Il database gestisce automaticamente l'eliminazione a cascata degli spazi associati
+        // grazie ai vincoli ON DELETE CASCADE definiti nello schema
+        
         const query = 'DELETE FROM locations WHERE location_id = $1 RETURNING location_id';
         const result = await db.query(query, [id]);
 

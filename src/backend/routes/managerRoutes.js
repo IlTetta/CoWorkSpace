@@ -13,6 +13,42 @@ const router = express.Router();
 // Middleware: tutte le route richiedono autenticazione
 router.use(authMiddleware.protect);
 
+// ============================================================================
+// GESTIONE LOCATION - CRUD completo per le location gestite dal manager
+// ============================================================================
+
+/**
+ * @swagger
+ * /api/manager/locations:
+ *   get:
+ *     summary: Ottieni tutte le location gestite dal manager
+ *     tags: [Manager]
+ *   post:
+ *     summary: Crea nuova location
+ *     tags: [Manager]
+ */
+router.route('/locations')
+  .get(managerController.getMyLocations)
+  .post(managerController.createLocation);
+
+/**
+ * @swagger
+ * /api/manager/locations/{locationId}:
+ *   get:
+ *     summary: Ottieni location gestita per ID
+ *     tags: [Manager]
+ *   put:
+ *     summary: Aggiorna location gestita
+ *     tags: [Manager]
+ *   delete:
+ *     summary: Elimina location (manager può eliminare le proprie)
+ *     tags: [Manager]
+ */
+router.route('/locations/:locationId')
+  .get(managerController.getLocationById)
+  .put(managerController.updateLocation)
+  .delete(managerController.deleteLocation);
+
 /**
  * @swagger
  * /api/manager/dashboard:
@@ -358,6 +394,9 @@ router.route('/spaces')
 /**
  * @swagger
  * /api/manager/spaces/{spaceId}:
+ *   get:
+ *     summary: Ottieni spazio per ID
+ *     tags: [Manager]
  *   put:
  *     summary: Aggiorna spazio
  *     tags: [Manager]
@@ -366,6 +405,7 @@ router.route('/spaces')
  *     tags: [Manager]
  */
 router.route('/spaces/:spaceId')
+  .get(managerController.getSpaceById)
   .put(managerController.updateSpace)
   .delete(managerController.deleteSpace);
 

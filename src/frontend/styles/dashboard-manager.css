@@ -1,0 +1,10 @@
+/* Dashboard Manager - Main Index File */
+/* Import all dashboard manager modules in the correct order */
+
+@import 'dashboard-manager-base.css';
+@import 'dashboard-manager-profile.css';
+@import 'dashboard-manager-locations.css';
+@import 'dashboard-manager-workspaces.css';
+@import 'dashboard-manager-modals.css';
+@import 'dashboard-manager-responsive.css';
+

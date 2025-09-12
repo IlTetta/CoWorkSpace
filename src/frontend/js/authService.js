@@ -101,7 +101,14 @@ class AuthService {
     // Controlla il ruolo dell'utente
     hasRole(role) {
         const user = this.getUser();
-        return user && user.role === role;
+        if (!user || !user.role) {
+            return false;
+        }
+        
+        // Normalizza per confronto case-insensitive e trim spazi
+        const userRole = user.role.toString().toLowerCase().trim();
+        const targetRole = role.toString().toLowerCase().trim();
+        return userRole === targetRole;
     }
 
     // Controlla se l'utente è admin
@@ -122,6 +129,9 @@ class AuthService {
 
 // Crea istanza globale
 const authService = new AuthService();
+
+// Esponi al global scope
+window.authService = authService;
 
 // Il login form è gestito da login.js
 
