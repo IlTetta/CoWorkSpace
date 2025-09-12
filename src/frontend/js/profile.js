@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
             manager_request_pending: false
         };
         localStorage.setItem('coworkspace_user', JSON.stringify(testUser));
+        // Popola automaticamente le informazioni utente nella pagina
+        populateUserInfoDisplay();
     }
     
     // Inizializza i gestori dei pulsanti
@@ -35,6 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeProfileImageUpload();
     // Carica l'immagine del profilo salvata (se presente)
     loadSavedProfileImage();
+    // Carica e popola le informazioni utente
+    loadAndPopulateUserInfo();
 });
 
 /**
@@ -384,5 +388,101 @@ function closeUserInfoForm() {
     const modal = document.getElementById('user-info-modal');
     if (modal) {
         modal.style.display = 'none';
+    }
+}
+
+/**
+ * Popola automaticamente le informazioni utente nelle card della pagina
+ */
+function populateUserInfoDisplay() {
+    const user = getUserData();
+    if (!user) {
+        console.log('Nessun dato utente trovato');
+        return;
+    }
+
+    // Popola i campi con i dati dell'utente usando textContent invece di value
+    const nameSpan = document.getElementById('display-name');
+    const surnameSpan = document.getElementById('display-surname');
+    const emailSpan = document.getElementById('display-email');
+    const roleSpan = document.getElementById('display-role');
+    const registrationSpan = document.getElementById('display-registration');
+
+    if (nameSpan) nameSpan.textContent = user.name || 'N/A';
+    if (surnameSpan) surnameSpan.textContent = user.surname || 'N/A';
+    if (emailSpan) emailSpan.textContent = user.email || 'N/A';
+    
+    // Determina il ruolo basato sui dati dell'utente
+    let role = 'Client'; // Default
+    if (user.role === 'manager') {
+        role = 'Manager';
+    } else if (user.role === 'admin') {
+        role = 'Admin';
+    } else if (user.manager_request_pending) {
+        role = 'Client (Richiesta Manager in sospeso)';
+    }
+    
+    if (roleSpan) roleSpan.textContent = role;
+    
+    // Formatta la data di registrazione
+    if (registrationSpan) {
+        if (user.created_at) {
+            const date = new Date(user.created_at);
+            const formattedDate = date.toLocaleDateString('it-IT', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            registrationSpan.textContent = formattedDate;
+        } else {
+            registrationSpan.textContent = 'N/A';
+        }
+    }
+}
+
+/**
+ * Carica le informazioni utente dal server e le popola nella pagina
+ */
+async function loadAndPopulateUserInfo() {
+    try {
+        // Prima controlla se abbiamo un token
+        const token = localStorage.getItem('coworkspace_token');
+        
+        if (!token) {
+            // Se non c'è token, usa i dati di test per lo sviluppo
+            const isDevelopment = window.location.protocol === 'file:' || 
+                                 window.location.hostname === '127.0.0.1' || 
+                                 window.location.hostname === 'localhost' ||
+                                 window.location.hostname.includes('localhost') ||
+                                 ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
+            
+            if (isDevelopment) {
+                populateUserInfoDisplay();
+                return;
+            }
+        }
+
+        // Se abbiamo un token, prova a recuperare i dati dal server
+        if (window.apiService && typeof window.apiService.getCurrentUser === 'function') {
+            const userResponse = await window.apiService.getCurrentUser();
+            
+            if (userResponse) {
+                // Salva i dati aggiornati nel localStorage
+                localStorage.setItem('coworkspace_user', JSON.stringify(userResponse));
+                // Popola la pagina con i dati del server
+                populateUserInfoDisplay();
+                return;
+            }
+        }
+
+        // Fallback: usa i dati dal localStorage se disponibili
+        populateUserInfoDisplay();
+        
+    } catch (error) {
+        console.error('Errore nel caricare le informazioni utente dal server:', error);
+        // In caso di errore, usa i dati dal localStorage
+        populateUserInfoDisplay();
     }
 }
