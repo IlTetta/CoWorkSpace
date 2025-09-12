@@ -62,7 +62,7 @@
             <h2>Richieste Manager</h2>
             <p>Accetta o rifiuta le richieste dei futuri manager</p>
             <div class="card-actions">
-                <button class="refresh-btn" onclick="loadManagerRequests()">
+                <button class="refresh-btn" id="refresh-manager-requests">
                     <span class="material-symbols-outlined">refresh</span>
                     Aggiorna
                 </button>
@@ -77,7 +77,7 @@
             <h2>Lista Utenti</h2>
             <p>Visualizza tutti gli utenti registrati</p>
             <div class="card-actions">
-                <button class="refresh-btn" onclick="loadUsersList()">
+                <button class="refresh-btn" id="refresh-users-list">
                     <span class="material-symbols-outlined">refresh</span>
                     Aggiorna
                 </button>
@@ -92,7 +92,7 @@
             <h2>Lista Manager</h2>
             <p>Visualizza tutti i manager attivi</p>
             <div class="card-actions">
-                <button class="refresh-btn" onclick="alert('Pulsante cliccato!'); loadManagersList();" style="position: relative; z-index: 100;">
+                <button class="refresh-btn" id="refresh-managers-list">
                     <span class="material-symbols-outlined">refresh</span>
                     Aggiorna
                 </button>
@@ -107,11 +107,11 @@
             <h2>Gestione Location</h2>
             <p>Crea, modifica ed elimina location</p>
             <div class="card-actions">
-                <button class="action-btn create-btn" onclick="openLocationModal()">
+                <button class="action-btn create-btn" id="create-location-btn">
                     <span class="material-symbols-outlined">add</span>
                     Aggiungi Location
                 </button>
-                <button class="refresh-btn" onclick="loadLocationsList()">
+                <button class="refresh-btn" id="refresh-locations-list">
                     <span class="material-symbols-outlined">refresh</span>
                     Aggiorna
                 </button>
@@ -126,11 +126,11 @@
             <h2>Gestione Spazi</h2>
             <p>Crea, modifica ed elimina spazi di lavoro</p>
             <div class="card-actions">
-                <button class="action-btn create-btn" onclick="openSpaceModal()">
+                <button class="action-btn create-btn" id="create-space-btn">
                     <span class="material-symbols-outlined">add</span>
                     Crea Spazio
                 </button>
-                <button class="refresh-btn" onclick="loadSpacesList()">
+                <button class="refresh-btn" id="refresh-spaces-list">
                     <span class="material-symbols-outlined">refresh</span>
                     Aggiorna
                 </button>
@@ -145,7 +145,7 @@
             <h2>Gestione Prenotazioni</h2>
             <p>Visualizza ed elimina prenotazioni</p>
             <div class="card-actions">
-                <button class="refresh-btn" onclick="loadBookingsList()">
+                <button class="refresh-btn" id="refresh-bookings-list">
                     <span class="material-symbols-outlined">refresh</span>
                     Aggiorna
                 </button>

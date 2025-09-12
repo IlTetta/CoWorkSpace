@@ -50,6 +50,48 @@ function setupEventListeners() {
             window.location.href = 'login.html';
         });
     }
+    
+    // Event listeners per i pulsanti di refresh e creazione
+    const refreshManagerRequestsBtn = document.getElementById('refresh-manager-requests');
+    const refreshUsersListBtn = document.getElementById('refresh-users-list');
+    const refreshManagersListBtn = document.getElementById('refresh-managers-list');
+    const refreshLocationsListBtn = document.getElementById('refresh-locations-list');
+    const refreshSpacesListBtn = document.getElementById('refresh-spaces-list');
+    const refreshBookingsListBtn = document.getElementById('refresh-bookings-list');
+    const createLocationBtn = document.getElementById('create-location-btn');
+    const createSpaceBtn = document.getElementById('create-space-btn');
+    
+    if (refreshManagerRequestsBtn) {
+        refreshManagerRequestsBtn.addEventListener('click', loadManagerRequests);
+    }
+    
+    if (refreshUsersListBtn) {
+        refreshUsersListBtn.addEventListener('click', loadUsersList);
+    }
+    
+    if (refreshManagersListBtn) {
+        refreshManagersListBtn.addEventListener('click', loadManagersList);
+    }
+    
+    if (refreshLocationsListBtn) {
+        refreshLocationsListBtn.addEventListener('click', loadLocationsList);
+    }
+    
+    if (refreshSpacesListBtn) {
+        refreshSpacesListBtn.addEventListener('click', loadSpacesList);
+    }
+    
+    if (refreshBookingsListBtn) {
+        refreshBookingsListBtn.addEventListener('click', loadBookingsList);
+    }
+    
+    if (createLocationBtn) {
+        createLocationBtn.addEventListener('click', () => openLocationModal());
+    }
+    
+    if (createSpaceBtn) {
+        createSpaceBtn.addEventListener('click', () => openSpaceModal());
+    }
 }
 
 // Carica profilo utente admin
@@ -203,7 +245,7 @@ function loadUsersList() {
                 const div = document.createElement('div');
                 div.className = 'user-item';
                 div.innerHTML = `
-                    <span>${user.name} ${user.surname} (${user.email}) - ${user.role}</span>
+                    <span>${user.name} ${user.surname} (${user.email})</span>
                 `;
                 container.appendChild(div);
             });
