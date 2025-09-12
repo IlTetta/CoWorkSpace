@@ -252,12 +252,10 @@ function loadUsersList() {
 
 // Carica lista manager
 function loadManagersList() {
-    console.log('🔄 loadManagersList chiamata!');
     
     // Mostra feedback di caricamento
     const container = document.getElementById('managers-list');
     if (!container) {
-        console.error('❌ Container managers-list non trovato!');
         return;
     }
     
@@ -359,10 +357,8 @@ function initializeLocationManagement() {
  * Carica le location dal server (ADMIN vede tutte le location)
  */
 async function loadLocationsList() {
-    console.log('loadLocationsList() chiamata');
     const locationsGrid = document.getElementById('locations-list');
     if (!locationsGrid) {
-        console.log('Elemento locations-list non trovato!');
         return;
     }
 
@@ -383,30 +379,21 @@ async function loadLocationsList() {
         }
 
         const data = await response.json();
-        console.log('Dati location ricevuti:', data);
-        console.log('Struttura data.data:', data.data);
 
         // Gestisci diversi formati di risposta API
         let locations = [];
         if (data.data && data.data.items) {
             locations = data.data.items;
-            console.log('Locations trovate in data.data.items:', locations.length);
         } else if (data.data && Array.isArray(data.data)) {
             locations = data.data;
-            console.log('Locations trovate in data.data:', locations.length);
         } else if (data.items) {
             locations = data.items;
-            console.log('Locations trovate in data.items:', locations.length);
         } else if (Array.isArray(data)) {
             locations = data;
-            console.log('Locations trovate in data diretto:', locations.length);
         } else if (data.data) {
             // Ispeziona tutte le proprietà di data.data
-            console.log('Proprietà di data.data:', Object.keys(data.data));
             for (const [key, value] of Object.entries(data.data)) {
-                console.log(`data.data.${key}:`, value);
                 if (Array.isArray(value)) {
-                    console.log(`Trovato array in data.data.${key} con ${value.length} elementi`);
                     locations = value;
                     break;
                 }
@@ -415,10 +402,7 @@ async function loadLocationsList() {
             console.log('Formato dati non riconosciuto:', data);
         }
 
-        console.log('Array locations finale:', locations);
-
         if (!locations || locations.length === 0) {
-            console.log('Nessuna location da visualizzare');
             locationsGrid.innerHTML = `
                 <div class="empty-state">
                     <div class="material-symbols-outlined">location_on</div>
@@ -430,14 +414,11 @@ async function loadLocationsList() {
         }
 
         // Renderizza le location
-        console.log('Iniziando rendering di', locations.length, 'location');
         locationsGrid.innerHTML = '';
-        locations.forEach((location, index) => {
-            console.log(`Creando card per location ${index + 1}:`, location);
+        locations.forEach(location => {
             const locationCard = createLocationCard(location);
             locationsGrid.appendChild(locationCard);
         });
-        console.log('Rendering location completato');
 
     } catch (error) {
         console.error('Errore nel caricamento delle location:', error);
@@ -523,19 +504,28 @@ function createLocationCard(location) {
     const div = document.createElement('div');
     div.className = 'location-item';
     
+    const locationId = location.location_id || location.id;
+    
     div.innerHTML = `
         <div class="item-info">
             <div class="item-title">${location.name || location.location_name || 'Nome non disponibile'}</div>
         </div>
         <div class="item-actions">
-            <button class="edit-btn square-btn" onclick="editLocation(${location.location_id || location.id})" title="Modifica">
+            <button class="edit-btn square-btn" data-location-id="${locationId}" title="Modifica">
                 <span class="material-symbols-outlined">edit</span>
             </button>
-            <button class="delete-btn square-btn" onclick="deleteLocation(${location.location_id || location.id})" title="Elimina">
+            <button class="delete-btn square-btn" data-location-id="${locationId}" title="Elimina">
                 <span class="material-symbols-outlined">delete</span>
             </button>
         </div>
     `;
+    
+    // Aggiungi event listeners ai pulsanti
+    const editBtn = div.querySelector('.edit-btn');
+    const deleteBtn = div.querySelector('.delete-btn');
+    
+    editBtn.addEventListener('click', () => editLocation(locationId));
+    deleteBtn.addEventListener('click', () => deleteLocation(locationId));
     
     return div;
 }
@@ -570,13 +560,24 @@ async function editLocation(locationId) {
                 'Content-Type': 'application/json'
             }
         });
-
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
-        const location = data.data || data;
+        
+        // Gestisci diversi formati di risposta API
+        let location = null;
+        if (data.data && data.data.location) {
+            location = data.data.location;
+        } else if (data.data) {
+            location = data.data;
+        } else if (data.location) {
+            location = data.location;
+        } else {
+            location = data;
+        }
         
         const modal = document.getElementById('location-modal');
         const modalTitle = document.getElementById('location-modal-title');
@@ -586,10 +587,15 @@ async function editLocation(locationId) {
             modalTitle.textContent = 'Modifica Location';
             
             // Popola il form con i dati esistenti
-            document.getElementById('location-name').value = location.name || location.location_name || '';
-            document.getElementById('location-description').value = location.description || '';
-            document.getElementById('location-address').value = location.address || '';
-            document.getElementById('location-city').value = location.city || '';
+            const nameField = document.getElementById('location-name');
+            const descField = document.getElementById('location-description');
+            const addressField = document.getElementById('location-address');
+            const cityField = document.getElementById('location-city');
+            
+            if (nameField) nameField.value = location.name || location.location_name || '';
+            if (descField) descField.value = location.description || '';
+            if (addressField) addressField.value = location.address || '';
+            if (cityField) cityField.value = location.city || '';
             
             form.dataset.mode = 'edit';
             form.dataset.locationId = locationId;
@@ -597,7 +603,7 @@ async function editLocation(locationId) {
         }
     } catch (error) {
         console.error('Errore nel caricamento della location:', error);
-        alert('Errore nel caricamento dei dati della location');
+        alert('Errore nel caricamento dei dati della location: ' + error.message);
     }
 }
 
@@ -856,7 +862,6 @@ async function loadSpaceTypes() {
         }
 
         const data = await response.json();
-        console.log('Dati space types ricevuti:', data);
         
         // Gestisci diversi formati di risposta API
         let spaceTypes = [];
@@ -905,10 +910,8 @@ async function loadSpaceTypes() {
  * Carica tutti gli spazi esistenti (ADMIN vede tutti gli spazi)
  */
 async function loadSpaces() {
-    console.log('loadSpaces() chiamata');
     const spacesGrid = document.getElementById('spaces-list');
     if (!spacesGrid) {
-        console.log('Elemento spaces-list non trovato!');
         return;
     }
 
@@ -929,42 +932,28 @@ async function loadSpaces() {
         }
 
         const data = await response.json();
-        console.log('Dati spazi ricevuti:', data);
-        console.log('Struttura data.data:', data.data);
 
         // Gestisci diversi formati di risposta API
         let spaces = [];
         if (data.data && data.data.items) {
             spaces = data.data.items;
-            console.log('Spazi trovati in data.data.items:', spaces.length);
         } else if (data.data && Array.isArray(data.data)) {
             spaces = data.data;
-            console.log('Spazi trovati in data.data:', spaces.length);
         } else if (data.items) {
             spaces = data.items;
-            console.log('Spazi trovati in data.items:', spaces.length);
         } else if (Array.isArray(data)) {
             spaces = data;
-            console.log('Spazi trovati in data diretto:', spaces.length);
         } else if (data.data) {
             // Ispeziona tutte le proprietà di data.data
-            console.log('Proprietà di data.data:', Object.keys(data.data));
             for (const [key, value] of Object.entries(data.data)) {
-                console.log(`data.data.${key}:`, value);
                 if (Array.isArray(value)) {
-                    console.log(`Trovato array in data.data.${key} con ${value.length} elementi`);
                     spaces = value;
                     break;
                 }
             }
-        } else {
-            console.log('Formato dati spazi non riconosciuto:', data);
         }
-
-        console.log('Array spaces finale:', spaces);
         
         if (!spaces || spaces.length === 0) {
-            console.log('Nessuno spazio da visualizzare');
             spacesGrid.innerHTML = `
                 <div class="empty-state">
                     <div class="material-symbols-outlined">work</div>
@@ -976,14 +965,11 @@ async function loadSpaces() {
         }
 
         // Renderizza gli spazi
-        console.log('Iniziando rendering di', spaces.length, 'spazi');
         spacesGrid.innerHTML = '';
-        spaces.forEach((space, index) => {
-            console.log(`Creando card per spazio ${index + 1}:`, space);
+        spaces.forEach(space => {
             const spaceCard = createSpaceCard(space);
             spacesGrid.appendChild(spaceCard);
         });
-        console.log('Rendering spazi completato');
 
     } catch (error) {
         console.error('Errore nel caricamento degli spazi:', error);
@@ -1069,20 +1055,29 @@ function createSpaceCard(space) {
     const div = document.createElement('div');
     div.className = 'space-item';
     
+    const spaceId = space.space_id || space.id;
+    
     div.innerHTML = `
         <div class="item-info">
             <div class="item-title">${space.name || space.space_name || 'Nome non disponibile'}</div>
             <div class="item-details">Location: ${space.location?.name || space.location_name || 'Location non specificata'}</div>
         </div>
         <div class="item-actions">
-            <button class="edit-btn square-btn" onclick="editSpace(${space.space_id || space.id})" title="Modifica">
+            <button class="edit-btn square-btn" data-space-id="${spaceId}" title="Modifica">
                 <span class="material-symbols-outlined">edit</span>
             </button>
-            <button class="delete-btn square-btn" onclick="deleteSpace(${space.space_id || space.id})" title="Elimina">
+            <button class="delete-btn square-btn" data-space-id="${spaceId}" title="Elimina">
                 <span class="material-symbols-outlined">delete</span>
             </button>
         </div>
     `;
+    
+    // Aggiungi event listeners ai pulsanti
+    const editBtn = div.querySelector('.edit-btn');
+    const deleteBtn = div.querySelector('.delete-btn');
+    
+    editBtn.addEventListener('click', () => editSpace(spaceId));
+    deleteBtn.addEventListener('click', () => deleteSpace(spaceId));
     
     return div;
 }
@@ -1137,37 +1132,54 @@ async function editSpace(spaceId) {
                 'Content-Type': 'application/json'
             }
         });
-
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
-        const space = data.data || data;
+        
+        // Gestisci diversi formati di risposta API
+        let space = null;
+        if (data.data && data.data.space) {
+            space = data.data.space;
+        } else if (data.data) {
+            space = data.data;
+        } else if (data.space) {
+            space = data.space;
+        } else {
+            space = data;
+        }
         
         const modal = document.getElementById('space-modal');
-        const modalTitle = document.getElementById('modal-title');
+        const modalTitle = document.getElementById('space-modal-title');
         const form = document.getElementById('space-form');
         
         if (modal && modalTitle && form && space) {
             modalTitle.textContent = 'Modifica Spazio';
             
-            // Popola il form con i dati esistenti
-            document.getElementById('space-name').value = space.name || space.space_name || '';
-            document.getElementById('space-description').value = space.description || '';
-            document.getElementById('space-location').value = space.location_id || space.locationId || '';
-            document.getElementById('space-type').value = space.space_type_id || space.spaceTypeId || '';
-            document.getElementById('space-capacity').value = space.capacity || '';
-            document.getElementById('space-hourly-rate').value = space.hourly_rate || space.pricePerHour || space.price_per_hour || '';
+            // Prima carica le opzioni per i select
+            await loadLocationsAndTypesForEdit(space);
             
-            // Popola gli orari di apertura/chiusura
-            document.getElementById('space-opening-time').value = space.opening_time || space.openingTime || '09:00';
-            document.getElementById('space-closing-time').value = space.closing_time || space.closingTime || '18:00';
+            // Popola il form con i dati esistenti
+            const nameField = document.getElementById('space-name');
+            const descField = document.getElementById('space-description');
+            const capacityField = document.getElementById('space-capacity');
+            const rateField = document.getElementById('space-hourly-rate');
+            const openingField = document.getElementById('space-opening-time');
+            const closingField = document.getElementById('space-closing-time');
+            
+            if (nameField) nameField.value = space.name || space.space_name || '';
+            if (descField) descField.value = space.description || '';
+            if (capacityField) capacityField.value = space.capacity || '';
+            if (rateField) rateField.value = space.hourly_rate || space.pricePerHour || space.price_per_hour || '';
+            if (openingField) openingField.value = space.opening_time || space.openingTime || '09:00';
+            if (closingField) closingField.value = space.closing_time || space.closingTime || '18:00';
             
             // Popola i giorni disponibili
             const dayCheckboxes = form.querySelectorAll('input[name="available_days"]');
             dayCheckboxes.forEach(checkbox => {
-                checkbox.checked = false; // Reset tutti
+                checkbox.checked = false;
                 const label = checkbox.closest('.day-checkbox');
                 if (label) {
                     label.classList.remove('checked');
@@ -1206,7 +1218,7 @@ async function editSpace(spaceId) {
         }
     } catch (error) {
         console.error('Errore nel caricamento dello spazio:', error);
-        alert('Errore nel caricamento dei dati dello spazio');
+        alert('Errore nel caricamento dei dati dello spazio: ' + error.message);
     }
 }
 
@@ -1431,6 +1443,102 @@ function deleteBooking(bookingId) {
 }
 
 // === FUNZIONI HELPER ===
+async function loadLocationsAndTypesForEdit(space) {
+    try {
+        // Carica le location
+        const locationsResponse = await fetch('/api/admin/locations', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
+            }
+        });
+        const locationsData = await locationsResponse.json();
+        
+        // Carica i tipi di spazio
+        const typesResponse = await fetch('/api/space-types', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
+            }
+        });
+        const typesData = await typesResponse.json();
+        
+        // Popola il select delle location
+        const locationSelect = document.getElementById('space-location');
+        if (locationSelect) {
+            locationSelect.innerHTML = '<option value="">Seleziona una location</option>';
+            
+            let locations = [];
+            if (locationsData.data && locationsData.data.locations) {
+                locations = locationsData.data.locations;
+            } else if (locationsData.data && Array.isArray(locationsData.data)) {
+                locations = locationsData.data;
+            } else if (locationsData.data) {
+                // Cerca array nelle proprietà di data.data
+                for (const [key, value] of Object.entries(locationsData.data)) {
+                    if (Array.isArray(value)) {
+                        locations = value;
+                        break;
+                    }
+                }
+            }
+            
+            locations.forEach(location => {
+                const locationId = location.location_id || location.id;
+                const locationName = location.name || location.location_name || 'Nome non disponibile';
+                locationSelect.innerHTML += `<option value="${locationId}">${locationName}</option>`;
+            });
+            
+            // Imposta il valore selezionato
+            const spaceLocationId = space.location_id || space.locationId;
+            if (spaceLocationId) {
+                locationSelect.value = spaceLocationId;
+                // Rendi la location non modificabile in modalità edit
+                locationSelect.disabled = true;
+                locationSelect.style.backgroundColor = '#f5f5f5';
+                locationSelect.style.cursor = 'not-allowed';
+            }
+        }
+        
+        // Popola il select dei tipi di spazio
+        const typeSelect = document.getElementById('space-type');
+        if (typeSelect) {
+            typeSelect.innerHTML = '<option value="">Seleziona un tipo</option>';
+            
+            let types = [];
+            if (typesData.data && typesData.data.spaceTypes) {
+                types = typesData.data.spaceTypes;
+            } else if (typesData.data && Array.isArray(typesData.data)) {
+                types = typesData.data;
+            } else if (typesData.data) {
+                // Cerca array nelle proprietà di data.data
+                for (const [key, value] of Object.entries(typesData.data)) {
+                    if (Array.isArray(value)) {
+                        types = value;
+                        break;
+                    }
+                }
+            } else if (Array.isArray(typesData)) {
+                types = typesData;
+            }
+            
+            types.forEach(type => {
+                const typeId = type.space_type_id || type.id;
+                // Prova diversi campi per il nome
+                const typeName = type.name || type.type_name || type.space_type_name || type.description || 'Nome non disponibile';
+                typeSelect.innerHTML += `<option value="${typeId}">${typeName}</option>`;
+            });
+            
+            // Imposta il valore selezionato
+            const spaceTypeId = space.space_type_id || space.spaceTypeId;
+            if (spaceTypeId) {
+                typeSelect.value = spaceTypeId;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Errore nel caricamento delle opzioni:', error);
+    }
+}
+
 function loadLocationsForSelect() {
     fetch('/api/admin/locations', {
         headers: {
