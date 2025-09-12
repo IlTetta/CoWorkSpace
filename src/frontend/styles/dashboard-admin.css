@@ -316,6 +316,21 @@ body {
     background: #b91c1c;
 }
 
+/* Stili per pulsanti quadrati con icone */
+.square-btn {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+}
+
+.square-btn .material-symbols-outlined {
+    font-size: 20px;
+}
+
 /* Stili per i modal */
 .modal {
     display: none;

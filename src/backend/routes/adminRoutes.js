@@ -219,6 +219,9 @@ router.get('/locations/without-manager', adminController.getLocationsWithoutMana
 /**
  * @swagger
  * /api/admin/locations/{locationId}:
+ *   get:
+ *     summary: Recupera singola location
+ *     tags: [Admin - Locations]
  *   put:
  *     summary: Aggiorna location
  *     tags: [Admin - Locations]
@@ -227,6 +230,7 @@ router.get('/locations/without-manager', adminController.getLocationsWithoutMana
  *     tags: [Admin - Locations]
  */
 router.route('/locations/:locationId')
+    .get(adminController.getLocationById)
     .put(adminController.updateLocation)
     .delete(adminController.deleteLocation);
 
@@ -256,6 +260,24 @@ router.post('/locations/:locationId/assign-manager', adminController.assignManag
 router.route('/spaces')
     .get(adminController.getAllSpaces)
     .post(adminController.createSpace);
+
+/**
+ * @swagger
+ * /api/admin/spaces/{spaceId}:
+ *   get:
+ *     summary: Recupera singolo spazio (override manager)
+ *     tags: [Admin - Override]
+ *   put:
+ *     summary: Aggiorna spazio (override manager)
+ *     tags: [Admin - Override]
+ *   delete:
+ *     summary: Elimina spazio (override manager)
+ *     tags: [Admin - Override]
+ */
+router.route('/spaces/:spaceId')
+    .get(adminController.getSpaceById)
+    .put(adminController.updateSpace)
+    .delete(adminController.deleteSpace);
 
 /**
  * @swagger

@@ -5,12 +5,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadManagerRequests();
     loadUsersList();
     loadManagersList();
-    loadLocationsList();
-    loadSpacesList();
-    loadBookingsList();
     loadUserProfile();
     setupEventListeners();
     setupModalEventListeners();
+    
+    // Inizializza le nuove gestioni
+    initializeLocationManagement();
+    initializeWorkspaceManagement();
+    
+    // Carica liste legacy per compatibilità
+    loadBookingsList();
 });
 
 // Funzione per mostrare messaggi
@@ -58,8 +62,6 @@ function setupEventListeners() {
     const refreshLocationsListBtn = document.getElementById('refresh-locations-list');
     const refreshSpacesListBtn = document.getElementById('refresh-spaces-list');
     const refreshBookingsListBtn = document.getElementById('refresh-bookings-list');
-    const createLocationBtn = document.getElementById('create-location-btn');
-    const createSpaceBtn = document.getElementById('create-space-btn');
     
     if (refreshManagerRequestsBtn) {
         refreshManagerRequestsBtn.addEventListener('click', loadManagerRequests);
@@ -78,19 +80,11 @@ function setupEventListeners() {
     }
     
     if (refreshSpacesListBtn) {
-        refreshSpacesListBtn.addEventListener('click', loadSpacesList);
+        refreshSpacesListBtn.addEventListener('click', loadSpaces);
     }
     
     if (refreshBookingsListBtn) {
         refreshBookingsListBtn.addEventListener('click', loadBookingsList);
-    }
-    
-    if (createLocationBtn) {
-        createLocationBtn.addEventListener('click', () => openLocationModal());
-    }
-    
-    if (createSpaceBtn) {
-        createSpaceBtn.addEventListener('click', () => openSpaceModal());
     }
 }
 
@@ -301,236 +295,1054 @@ function loadManagersList() {
 }
 
 // === GESTIONE LOCATION ===
-function loadLocationsList() {
-    const container = document.getElementById('locations-list');
-    container.innerHTML = '<p>🔄 Caricamento location...</p>';
+/**
+ * Inizializza la gestione delle location
+ */
+function initializeLocationManagement() {
+    // Event listeners per i pulsanti principali
+    const createLocationBtn = document.getElementById('create-location-btn');
+    const refreshLocationsBtn = document.getElementById('refresh-locations-btn');
+    const closeLocationModalBtn = document.getElementById('close-location-modal');
+    const cancelLocationFormBtn = document.getElementById('cancel-location-form');
+    const locationForm = document.getElementById('location-form');
     
-    fetch('/api/admin/locations', {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(res => res.json())
-        .then(data => {
-            container.innerHTML = '';
-            
-            if (!data.success || !data.data || data.data.length === 0) {
-                container.innerHTML = '<p>Nessuna location trovata.</p>';
-                return;
-            }
-            
-            data.data.forEach(location => {
-                const div = document.createElement('div');
-                div.className = 'location-item';
-                div.innerHTML = `
-                    <div class="item-info">
-                        <div class="item-title">${location.name}</div>
-                        <div class="item-details">${location.address}, ${location.city}</div>
-                        <div class="item-details">${location.description || 'Nessuna descrizione'}</div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="edit-btn" onclick="editLocation('${location.location_id}')">Modifica</button>
-                        <button class="delete-btn" onclick="deleteLocation('${location.location_id}')">Elimina</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        })
-        .catch(err => {
-            console.error('Errore nel caricamento location:', err);
-            container.innerHTML = '<p>Errore nel caricamento delle location.</p>';
-        });
-}
+    // Event listeners per la ricerca
+    const locationSearchInput = document.getElementById('locations-search-input');
+    const locationSearchBtn = document.getElementById('locations-search-btn');
 
-function openLocationModal(locationId = null) {
-    const modal = document.getElementById('location-modal');
-    const title = document.getElementById('location-modal-title');
-    const form = document.getElementById('location-form');
-    
-    if (locationId) {
-        title.textContent = 'Modifica Location';
-        // Carica dati location per modifica
-        fetch(`/api/admin/locations/${locationId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success && data.data) {
-                const location = data.data;
-                document.getElementById('location-name').value = location.name || '';
-                document.getElementById('location-description').value = location.description || '';
-                document.getElementById('location-address').value = location.address || '';
-                document.getElementById('location-city').value = location.city || '';
-                form.dataset.locationId = locationId;
-            }
-        })
-        .catch(err => console.error('Errore caricamento location:', err));
-    } else {
-        title.textContent = 'Aggiungi Nuova Location';
-        form.reset();
-        delete form.dataset.locationId;
+    if (refreshLocationsBtn) {
+        refreshLocationsBtn.addEventListener('click', loadLocationsList);
+    }
+
+    if (closeLocationModalBtn) {
+        closeLocationModalBtn.addEventListener('click', closeLocationModal);
+    }
+
+    if (cancelLocationFormBtn) {
+        cancelLocationFormBtn.addEventListener('click', closeLocationModal);
+    }
+
+    if (locationForm) {
+        locationForm.addEventListener('submit', handleLocationFormSubmit);
     }
     
-    modal.style.display = 'block';
-}
-
-function editLocation(locationId) {
-    openLocationModal(locationId);
-}
-
-function deleteLocation(locationId) {
-    if (!confirm('Sei sicuro di voler eliminare questa location?')) return;
-    
-    fetch(`/api/admin/locations/${locationId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                showMessage('Location eliminata con successo!', 'success');
-                loadLocationsList();
-            } else {
-                showMessage('Errore nell\'eliminazione della location', 'error');
+    // Gestori per la ricerca location
+    if (locationSearchInput) {
+        locationSearchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterLocations(this.value);
             }
-        })
-        .catch(err => {
-            console.error('Errore nell\'eliminazione:', err);
-            showMessage('Errore nell\'eliminazione della location', 'error');
         });
+    }
+    
+    if (locationSearchBtn) {
+        locationSearchBtn.addEventListener('click', function() {
+            const searchTerm = locationSearchInput?.value || '';
+            filterLocations(searchTerm);
+        });
+    }
+
+    // Chiude il modal cliccando fuori
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('location-modal');
+        if (event.target === modal) {
+            closeLocationModal();
+        }
+    });
+
+    // Carica i dati iniziali
+    loadLocationsList();
+}
+
+/**
+ * Carica le location dal server (ADMIN vede tutte le location)
+ */
+async function loadLocationsList() {
+    console.log('loadLocationsList() chiamata');
+    const locationsGrid = document.getElementById('locations-list');
+    if (!locationsGrid) {
+        console.log('Elemento locations-list non trovato!');
+        return;
+    }
+
+    // Mostra stato di caricamento
+    locationsGrid.innerHTML = '<div class="loading">Caricamento location...</div>';
+
+    try {
+        const response = await fetch('/api/admin/locations', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Dati location ricevuti:', data);
+        console.log('Struttura data.data:', data.data);
+
+        // Gestisci diversi formati di risposta API
+        let locations = [];
+        if (data.data && data.data.items) {
+            locations = data.data.items;
+            console.log('Locations trovate in data.data.items:', locations.length);
+        } else if (data.data && Array.isArray(data.data)) {
+            locations = data.data;
+            console.log('Locations trovate in data.data:', locations.length);
+        } else if (data.items) {
+            locations = data.items;
+            console.log('Locations trovate in data.items:', locations.length);
+        } else if (Array.isArray(data)) {
+            locations = data;
+            console.log('Locations trovate in data diretto:', locations.length);
+        } else if (data.data) {
+            // Ispeziona tutte le proprietà di data.data
+            console.log('Proprietà di data.data:', Object.keys(data.data));
+            for (const [key, value] of Object.entries(data.data)) {
+                console.log(`data.data.${key}:`, value);
+                if (Array.isArray(value)) {
+                    console.log(`Trovato array in data.data.${key} con ${value.length} elementi`);
+                    locations = value;
+                    break;
+                }
+            }
+        } else {
+            console.log('Formato dati non riconosciuto:', data);
+        }
+
+        console.log('Array locations finale:', locations);
+
+        if (!locations || locations.length === 0) {
+            console.log('Nessuna location da visualizzare');
+            locationsGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="material-symbols-outlined">location_on</div>
+                    <p>Nessuna location trovata</p>
+                    <p>Le location verranno create dai manager</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Renderizza le location
+        console.log('Iniziando rendering di', locations.length, 'location');
+        locationsGrid.innerHTML = '';
+        locations.forEach((location, index) => {
+            console.log(`Creando card per location ${index + 1}:`, location);
+            const locationCard = createLocationCard(location);
+            locationsGrid.appendChild(locationCard);
+        });
+        console.log('Rendering location completato');
+
+    } catch (error) {
+        console.error('Errore nel caricamento delle location:', error);
+        locationsGrid.innerHTML = `
+            <div class="empty-state">
+                <p>Errore nel caricamento delle location</p>
+                <button class="refresh-btn" onclick="loadLocationsList()">Riprova</button>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Filtra le location in base al termine di ricerca
+ */
+function filterLocations(searchTerm) {
+    const locationsGrid = document.getElementById('locations-list');
+    if (!locationsGrid) return;
+    
+    const locationItems = locationsGrid.querySelectorAll('.location-item');
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+    
+    // Rimuovi messaggio precedente se presente
+    const existingMessage = locationsGrid.querySelector('.search-results-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    if (!normalizedSearch) {
+        // Se la ricerca è vuota, mostra tutte le location
+        locationItems.forEach(item => {
+            item.style.display = 'block';
+        });
+        return;
+    }
+    
+    let visibleCount = 0;
+    locationItems.forEach(item => {
+        const itemText = item.textContent.toLowerCase();
+        
+        if (itemText.includes(normalizedSearch)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Mostra messaggio se nessun risultato
+    if (visibleCount === 0) {
+        showNoLocationResultsMessage(searchTerm);
+    }
+}
+
+/**
+ * Mostra messaggio quando non ci sono risultati per le location
+ */
+function showNoLocationResultsMessage(searchTerm) {
+    const locationsGrid = document.getElementById('locations-list');
+    if (!locationsGrid) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'search-results-message';
+    messageDiv.style.textAlign = 'center';
+    messageDiv.style.padding = '20px';
+    messageDiv.style.color = '#666';
+    messageDiv.style.fontSize = '16px';
+    
+    messageDiv.innerHTML = `
+        <div style="color: #ff5722;">
+            <strong>Nessuna location trovata</strong><br>
+            <span style="font-size: 14px; color: #999;">Prova con una ricerca diversa per "${searchTerm}"</span>
+        </div>
+    `;
+    
+    locationsGrid.appendChild(messageDiv);
+}
+
+/**
+ * Crea un elemento lista per visualizzare una location (formato admin)
+ */
+function createLocationCard(location) {
+    const div = document.createElement('div');
+    div.className = 'location-item';
+    
+    div.innerHTML = `
+        <div class="item-info">
+            <div class="item-title">${location.name || location.location_name || 'Nome non disponibile'}</div>
+        </div>
+        <div class="item-actions">
+            <button class="edit-btn square-btn" onclick="editLocation(${location.location_id || location.id})" title="Modifica">
+                <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="delete-btn square-btn" onclick="deleteLocation(${location.location_id || location.id})" title="Elimina">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+/**
+ * Apre il modal per creare una nuova location
+ */
+function openCreateLocationModal() {
+    const modal = document.getElementById('location-modal');
+    const modalTitle = document.getElementById('location-modal-title');
+    const form = document.getElementById('location-form');
+    
+    if (modal && modalTitle && form) {
+        modalTitle.textContent = 'Aggiungi Nuova Location';
+        form.reset();
+        
+        form.dataset.mode = 'create';
+        delete form.dataset.locationId;
+        modal.style.display = 'block';
+    }
+}
+
+/**
+ * Apre il modal per modificare una location esistente
+ */
+async function editLocation(locationId) {
+    try {
+        const response = await fetch(`/api/admin/locations/${locationId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const location = data.data || data;
+        
+        const modal = document.getElementById('location-modal');
+        const modalTitle = document.getElementById('location-modal-title');
+        const form = document.getElementById('location-form');
+        
+        if (modal && modalTitle && form && location) {
+            modalTitle.textContent = 'Modifica Location';
+            
+            // Popola il form con i dati esistenti
+            document.getElementById('location-name').value = location.name || location.location_name || '';
+            document.getElementById('location-description').value = location.description || '';
+            document.getElementById('location-address').value = location.address || '';
+            document.getElementById('location-city').value = location.city || '';
+            
+            form.dataset.mode = 'edit';
+            form.dataset.locationId = locationId;
+            modal.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Errore nel caricamento della location:', error);
+        alert('Errore nel caricamento dei dati della location');
+    }
+}
+
+/**
+ * Elimina una location
+ */
+async function deleteLocation(locationId) {
+    if (!confirm('Sei sicuro di voler eliminare questa location? Questa azione eliminerà anche tutti gli spazi associati e non può essere annullata.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/locations/${locationId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        alert('Location eliminata con successo');
+        loadLocationsList(); // Ricarica la lista
+        loadLocations(); // Ricarica anche la lista nel form degli spazi
+    } catch (error) {
+        console.error('Errore nell\'eliminazione della location:', error);
+        alert('Errore nell\'eliminazione della location');
+    }
+}
+
+/**
+ * Chiude il modal delle location
+ */
+function closeLocationModal() {
+    const modal = document.getElementById('location-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * Gestisce l'invio del form per creare/modificare location
+ */
+async function handleLocationFormSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const locationData = Object.fromEntries(formData);
+    
+    // Converti i valori necessari per l'admin
+    locationData.location_name = locationData.name; // Mappa il nome
+    
+    // Rimuovi campi non necessari
+    delete locationData.name;
+
+    try {
+        let response;
+        
+        if (form.dataset.mode === 'edit') {
+            // Modifica location esistente
+            const locationId = parseInt(form.dataset.locationId);
+            response = await fetch(`/api/admin/locations/${locationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(locationData)
+            });
+        } else {
+            // Crea nuova location (solo admin può creare location)
+            response = await fetch('/api/admin/locations', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(locationData)
+            });
+        }
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Location salvata:', result);
+
+        if (form.dataset.mode === 'edit') {
+            alert('Location modificata con successo');
+        } else {
+            alert('Location creata con successo');
+        }
+
+        closeLocationModal();
+        loadLocationsList(); // Ricarica la lista delle location
+        loadLocations(); // Ricarica anche la lista nel form degli spazi
+    } catch (error) {
+        console.error('Errore nel salvataggio della location:', error);
+        alert('Errore nel salvataggio della location: ' + (error.message || 'Errore sconosciuto'));
+    }
 }
 
 // === GESTIONE SPAZI ===
-function loadSpacesList() {
-    const container = document.getElementById('spaces-list');
-    container.innerHTML = '<p>🔄 Caricamento spazi...</p>';
-    
-    fetch('/api/admin/spaces', {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(res => res.json())
-        .then(data => {
-            container.innerHTML = '';
-            
-            if (!data.success || !data.data || data.data.length === 0) {
-                container.innerHTML = '<p>Nessuno spazio trovato.</p>';
-                return;
-            }
-            
-            data.data.forEach(space => {
-                const div = document.createElement('div');
-                div.className = 'space-item';
-                div.innerHTML = `
-                    <div class="item-info">
-                        <div class="item-title">${space.name}</div>
-                        <div class="item-details">Capacità: ${space.capacity} persone - €${space.hourly_rate}/ora</div>
-                        <div class="item-details">${space.description || 'Nessuna descrizione'}</div>
-                        <div class="item-details">Location: ${space.location_name || 'N/A'}</div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="edit-btn" onclick="editSpace('${space.space_id}')">Modifica</button>
-                        <button class="delete-btn" onclick="deleteSpace('${space.space_id}')">Elimina</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        })
-        .catch(err => {
-            console.error('Errore nel caricamento spazi:', err);
-            container.innerHTML = '<p>Errore nel caricamento degli spazi.</p>';
-        });
-}
 
-function openSpaceModal(spaceId = null) {
-    const modal = document.getElementById('space-modal');
-    const title = document.getElementById('space-modal-title');
-    const form = document.getElementById('space-form');
+/**
+ * Inizializza la gestione degli spazi di lavoro
+ */
+function initializeWorkspaceManagement() {
+    // Event listeners per i pulsanti principali
+    const createSpaceBtn = document.getElementById('create-space-btn');
+    const refreshSpacesBtn = document.getElementById('refresh-spaces-btn');
+    const closeModalBtn = document.getElementById('close-space-modal');
+    const cancelFormBtn = document.getElementById('cancel-space-form');
+    const spaceForm = document.getElementById('space-form');
     
-    if (spaceId) {
-        title.textContent = 'Modifica Spazio';
-        // Carica dati spazio per modifica
-        fetch(`/api/admin/spaces/${spaceId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success && data.data) {
-                const space = data.data;
-                document.getElementById('space-name').value = space.name || '';
-                document.getElementById('space-description').value = space.description || '';
-                document.getElementById('space-location').value = space.location_id || '';
-                document.getElementById('space-type').value = space.space_type_id || '';
-                document.getElementById('space-capacity').value = space.capacity || '';
-                document.getElementById('space-hourly-rate').value = space.hourly_rate || '';
-                document.getElementById('space-opening-time').value = space.opening_time || '';
-                document.getElementById('space-closing-time').value = space.closing_time || '';
-                
-                // Set available days checkboxes
-                if (space.available_days) {
-                    const availableDays = typeof space.available_days === 'string' 
-                        ? space.available_days.split(',') 
-                        : space.available_days;
-                    
-                    document.querySelectorAll('input[name="available_days"]').forEach(checkbox => {
-                        checkbox.checked = availableDays.includes(checkbox.value);
-                    });
-                }
-                
-                form.dataset.spaceId = spaceId;
-            }
-        })
-        .catch(err => console.error('Errore caricamento spazio:', err));
-    } else {
-        title.textContent = 'Crea Nuovo Spazio';
-        form.reset();
-        delete form.dataset.spaceId;
+    // Event listeners per la ricerca
+    const searchInput = document.getElementById('spaces-search-input');
+    const searchBtn = document.getElementById('spaces-search-btn');
+
+    if (refreshSpacesBtn) {
+        refreshSpacesBtn.addEventListener('click', loadSpaces);
+    }
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeSpaceModal);
+    }
+
+    if (cancelFormBtn) {
+        cancelFormBtn.addEventListener('click', closeSpaceModal);
+    }
+
+    if (spaceForm) {
+        spaceForm.addEventListener('submit', handleSpaceFormSubmit);
     }
     
-    modal.style.display = 'block';
-    loadLocationsForSelect();
-    loadSpaceTypesForSelect();
-}
-
-function editSpace(spaceId) {
-    openSpaceModal(spaceId);
-}
-
-function deleteSpace(spaceId) {
-    if (!confirm('Sei sicuro di voler eliminare questo spazio?')) return;
-    
-    fetch(`/api/admin/spaces/${spaceId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                showMessage('Spazio eliminato con successo!', 'success');
-                loadSpacesList();
-            } else {
-                showMessage('Errore nell\'eliminazione dello spazio', 'error');
+    // Gestori per la ricerca (come nella home)
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterSpaces(this.value);
             }
-        })
-        .catch(err => {
-            console.error('Errore nell\'eliminazione:', err);
-            showMessage('Errore nell\'eliminazione dello spazio', 'error');
         });
+    }
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            const searchTerm = searchInput?.value || '';
+            filterSpaces(searchTerm);
+        });
+    }
+
+    // Chiude il modal cliccando fuori
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('space-modal');
+        if (event.target === modal) {
+            closeSpaceModal();
+        }
+    });
+
+    // Carica i dati iniziali
+    loadLocations();
+    loadSpaceTypes();
+    loadSpaces();
+    
+    // Inizializza gestori per i checkbox dei giorni
+    initializeDayCheckboxes();
+}
+
+/**
+ * Inizializza i gestori per i checkbox dei giorni
+ */
+function initializeDayCheckboxes() {
+    // Aggiungi gestori di eventi per tutti i checkbox dei giorni
+    document.addEventListener('change', function(e) {
+        if (e.target.name === 'available_days' && e.target.type === 'checkbox') {
+            const label = e.target.closest('.day-checkbox');
+            if (label) {
+                if (e.target.checked) {
+                    label.classList.add('checked');
+                } else {
+                    label.classList.remove('checked');
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Carica tutte le location disponibili (ADMIN vede tutte)
+ */
+async function loadLocations() {
+    try {
+        const response = await fetch('/api/admin/locations', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Gestisci diversi formati di risposta API
+        let locations = [];
+        if (data.data && data.data.items) {
+            locations = data.data.items;
+        } else if (data.data && Array.isArray(data.data)) {
+            locations = data.data;
+        } else if (data.items) {
+            locations = data.items;
+        } else if (Array.isArray(data)) {
+            locations = data;
+        }
+        
+        const locationSelect = document.getElementById('space-location');
+        
+        if (locationSelect && locations) {
+            locationSelect.innerHTML = '<option value="">Seleziona una location</option>';
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location.location_id || location.id;
+                option.textContent = `${location.name} - ${location.city}`;
+                locationSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Errore nel caricamento delle location:', error);
+    }
+}
+
+/**
+ * Carica tutti i tipi di spazio disponibili
+ */
+async function loadSpaceTypes() {
+    try {
+        const response = await fetch('/api/space-types', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Dati space types ricevuti:', data);
+        
+        // Gestisci diversi formati di risposta API
+        let spaceTypes = [];
+        if (data.data && data.data.items) {
+            spaceTypes = data.data.items;
+        } else if (data.data && Array.isArray(data.data)) {
+            spaceTypes = data.data;
+        } else if (data.items) {
+            spaceTypes = data.items;
+        } else if (Array.isArray(data)) {
+            spaceTypes = data;
+        } else if (data.space_types) {
+            spaceTypes = data.space_types;
+        }
+        
+        const spaceTypeSelect = document.getElementById('space-type');
+        
+        if (spaceTypeSelect) {
+            spaceTypeSelect.innerHTML = '<option value="">Seleziona un tipo</option>';
+            
+            // Verifica che spaceTypes sia un array
+            if (Array.isArray(spaceTypes) && spaceTypes.length > 0) {
+                spaceTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type.space_type_id || type.id;
+                    option.textContent = type.type_name || type.name;
+                    spaceTypeSelect.appendChild(option);
+                });
+            } else {
+                console.warn('spaceTypes non è un array o è vuoto:', spaceTypes);
+                spaceTypeSelect.innerHTML = '<option value="">Nessun tipo disponibile</option>';
+            }
+        }
+    } catch (error) {
+        console.error('Errore nel caricamento dei tipi di spazio:', error);
+        
+        // Fallback in caso di errore
+        const spaceTypeSelect = document.getElementById('space-type');
+        if (spaceTypeSelect) {
+            spaceTypeSelect.innerHTML = '<option value="">Errore nel caricamento tipi</option>';
+        }
+    }
+}
+
+/**
+ * Carica tutti gli spazi esistenti (ADMIN vede tutti gli spazi)
+ */
+async function loadSpaces() {
+    console.log('loadSpaces() chiamata');
+    const spacesGrid = document.getElementById('spaces-list');
+    if (!spacesGrid) {
+        console.log('Elemento spaces-list non trovato!');
+        return;
+    }
+
+    // Mostra stato di caricamento
+    spacesGrid.innerHTML = '<div class="loading">Caricamento spazi...</div>';
+
+    try {
+        const response = await fetch('/api/admin/spaces', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Dati spazi ricevuti:', data);
+        console.log('Struttura data.data:', data.data);
+
+        // Gestisci diversi formati di risposta API
+        let spaces = [];
+        if (data.data && data.data.items) {
+            spaces = data.data.items;
+            console.log('Spazi trovati in data.data.items:', spaces.length);
+        } else if (data.data && Array.isArray(data.data)) {
+            spaces = data.data;
+            console.log('Spazi trovati in data.data:', spaces.length);
+        } else if (data.items) {
+            spaces = data.items;
+            console.log('Spazi trovati in data.items:', spaces.length);
+        } else if (Array.isArray(data)) {
+            spaces = data;
+            console.log('Spazi trovati in data diretto:', spaces.length);
+        } else if (data.data) {
+            // Ispeziona tutte le proprietà di data.data
+            console.log('Proprietà di data.data:', Object.keys(data.data));
+            for (const [key, value] of Object.entries(data.data)) {
+                console.log(`data.data.${key}:`, value);
+                if (Array.isArray(value)) {
+                    console.log(`Trovato array in data.data.${key} con ${value.length} elementi`);
+                    spaces = value;
+                    break;
+                }
+            }
+        } else {
+            console.log('Formato dati spazi non riconosciuto:', data);
+        }
+
+        console.log('Array spaces finale:', spaces);
+        
+        if (!spaces || spaces.length === 0) {
+            console.log('Nessuno spazio da visualizzare');
+            spacesGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="material-symbols-outlined">work</div>
+                    <p>Nessuno spazio configurato</p>
+                    <p>Gli spazi vengono creati dai manager</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Renderizza gli spazi
+        console.log('Iniziando rendering di', spaces.length, 'spazi');
+        spacesGrid.innerHTML = '';
+        spaces.forEach((space, index) => {
+            console.log(`Creando card per spazio ${index + 1}:`, space);
+            const spaceCard = createSpaceCard(space);
+            spacesGrid.appendChild(spaceCard);
+        });
+        console.log('Rendering spazi completato');
+
+    } catch (error) {
+        console.error('Errore nel caricamento degli spazi:', error);
+        spacesGrid.innerHTML = `
+            <div class="empty-state">
+                <p>Errore nel caricamento degli spazi</p>
+                <button class="refresh-btn" onclick="loadSpaces()">Riprova</button>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Filtra gli spazi in base al termine di ricerca
+ */
+function filterSpaces(searchTerm) {
+    const spacesGrid = document.getElementById('spaces-list');
+    if (!spacesGrid) return;
+    
+    const spaceItems = spacesGrid.querySelectorAll('.space-item');
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+    
+    // Rimuovi messaggio precedente se presente
+    const existingMessage = spacesGrid.querySelector('.search-results-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    if (!normalizedSearch) {
+        // Se la ricerca è vuota, mostra tutti gli spazi
+        spaceItems.forEach(item => {
+            item.style.display = 'block';
+        });
+        return;
+    }
+    
+    let visibleCount = 0;
+    spaceItems.forEach(item => {
+        const itemText = item.textContent.toLowerCase();
+        
+        if (itemText.includes(normalizedSearch)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Mostra messaggio se nessun risultato
+    if (visibleCount === 0) {
+        showNoSpaceResultsMessage(searchTerm);
+    }
+}
+
+/**
+ * Mostra messaggio quando non ci sono risultati
+ */
+function showNoSpaceResultsMessage(searchTerm) {
+    const spacesGrid = document.getElementById('spaces-list');
+    if (!spacesGrid) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'search-results-message';
+    messageDiv.style.textAlign = 'center';
+    messageDiv.style.padding = '20px';
+    messageDiv.style.color = '#666';
+    messageDiv.style.fontSize = '16px';
+    
+    messageDiv.innerHTML = `
+        <div style="color: #ff5722;">
+            <strong>Nessun spazio trovato</strong><br>
+            <span style="font-size: 14px; color: #999;">Prova con una ricerca diversa per "${searchTerm}"</span>
+        </div>
+    `;
+    
+    spacesGrid.appendChild(messageDiv);
+}
+
+/**
+ * Crea un elemento lista per visualizzare uno spazio (formato admin)
+ */
+function createSpaceCard(space) {
+    const div = document.createElement('div');
+    div.className = 'space-item';
+    
+    div.innerHTML = `
+        <div class="item-info">
+            <div class="item-title">${space.name || space.space_name || 'Nome non disponibile'}</div>
+            <div class="item-details">Location: ${space.location?.name || space.location_name || 'Location non specificata'}</div>
+        </div>
+        <div class="item-actions">
+            <button class="edit-btn square-btn" onclick="editSpace(${space.space_id || space.id})" title="Modifica">
+                <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="delete-btn square-btn" onclick="deleteSpace(${space.space_id || space.id})" title="Elimina">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+/**
+ * Apre il modal per creare un nuovo spazio
+ */
+function openCreateSpaceModal() {
+    const modal = document.getElementById('space-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const form = document.getElementById('space-form');
+    
+    if (modal && modalTitle && form) {
+        modalTitle.textContent = 'Crea Nuovo Spazio';
+        form.reset();
+        
+        // Imposta valori default per i nuovi campi
+        document.getElementById('space-opening-time').value = '09:00';
+        document.getElementById('space-closing-time').value = '18:00';
+        
+        // Seleziona Lunedì-Venerdì per default e aggiorna le classi CSS
+        const dayCheckboxes = form.querySelectorAll('input[name="available_days"]');
+        dayCheckboxes.forEach(checkbox => {
+            const isDefaultSelected = ['1', '2', '3', '4', '5'].includes(checkbox.value);
+            checkbox.checked = isDefaultSelected;
+            
+            const label = checkbox.closest('.day-checkbox');
+            if (label) {
+                if (isDefaultSelected) {
+                    label.classList.add('checked');
+                } else {
+                    label.classList.remove('checked');
+                }
+            }
+        });
+        
+        form.dataset.mode = 'create';
+        delete form.dataset.spaceId;
+        modal.style.display = 'block';
+    }
+}
+
+/**
+ * Apre il modal per modificare uno spazio esistente
+ */
+async function editSpace(spaceId) {
+    try {
+        const response = await fetch(`/api/admin/spaces/${spaceId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const space = data.data || data;
+        
+        const modal = document.getElementById('space-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const form = document.getElementById('space-form');
+        
+        if (modal && modalTitle && form && space) {
+            modalTitle.textContent = 'Modifica Spazio';
+            
+            // Popola il form con i dati esistenti
+            document.getElementById('space-name').value = space.name || space.space_name || '';
+            document.getElementById('space-description').value = space.description || '';
+            document.getElementById('space-location').value = space.location_id || space.locationId || '';
+            document.getElementById('space-type').value = space.space_type_id || space.spaceTypeId || '';
+            document.getElementById('space-capacity').value = space.capacity || '';
+            document.getElementById('space-hourly-rate').value = space.hourly_rate || space.pricePerHour || space.price_per_hour || '';
+            
+            // Popola gli orari di apertura/chiusura
+            document.getElementById('space-opening-time').value = space.opening_time || space.openingTime || '09:00';
+            document.getElementById('space-closing-time').value = space.closing_time || space.closingTime || '18:00';
+            
+            // Popola i giorni disponibili
+            const dayCheckboxes = form.querySelectorAll('input[name="available_days"]');
+            dayCheckboxes.forEach(checkbox => {
+                checkbox.checked = false; // Reset tutti
+                const label = checkbox.closest('.day-checkbox');
+                if (label) {
+                    label.classList.remove('checked');
+                }
+            });
+            
+            const availableDays = space.available_days || space.availableDays || [1, 2, 3, 4, 5];
+            if (Array.isArray(availableDays)) {
+                availableDays.forEach(day => {
+                    const checkbox = form.querySelector(`input[name="available_days"][value="${day}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        const label = checkbox.closest('.day-checkbox');
+                        if (label) {
+                            label.classList.add('checked');
+                        }
+                    }
+                });
+            } else {
+                // Default: Lunedì-Venerdì se non specificato
+                [1, 2, 3, 4, 5].forEach(day => {
+                    const checkbox = form.querySelector(`input[name="available_days"][value="${day}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        const label = checkbox.closest('.day-checkbox');
+                        if (label) {
+                            label.classList.add('checked');
+                        }
+                    }
+                });
+            }
+            
+            form.dataset.mode = 'edit';
+            form.dataset.spaceId = spaceId;
+            modal.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Errore nel caricamento dello spazio:', error);
+        alert('Errore nel caricamento dei dati dello spazio');
+    }
+}
+
+/**
+ * Elimina uno spazio
+ */
+async function deleteSpace(spaceId) {
+    if (!confirm('Sei sicuro di voler eliminare questo spazio? Questa azione non può essere annullata.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/spaces/${spaceId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        alert('Spazio eliminato con successo');
+        loadSpaces(); // Ricarica la lista
+    } catch (error) {
+        console.error('Errore nell\'eliminazione dello spazio:', error);
+        alert('Errore nell\'eliminazione dello spazio');
+    }
+}
+
+/**
+ * Chiude il modal
+ */
+function closeSpaceModal() {
+    const modal = document.getElementById('space-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * Gestisce l'invio del form per creare/modificare spazi
+ */
+async function handleSpaceFormSubmit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const spaceData = Object.fromEntries(formData);
+    
+    // Converti i valori numerici
+    spaceData.capacity = parseInt(spaceData.capacity);
+    spaceData.price_per_hour = parseFloat(spaceData.hourly_rate);
+    spaceData.price_per_day = parseFloat(spaceData.hourly_rate) * 8; // Calcola prezzo giornaliero
+    spaceData.location_id = parseInt(spaceData.location_id);
+    spaceData.space_type_id = parseInt(spaceData.space_type_id);
+    spaceData.space_name = spaceData.name; // Mappa il nome
+    
+    // Rimuovi campi non necessari
+    delete spaceData.hourly_rate;
+    delete spaceData.name;
+    
+    // Gestisci i giorni disponibili
+    const availableDaysCheckboxes = form.querySelectorAll('input[name="available_days"]:checked');
+    spaceData.available_days = Array.from(availableDaysCheckboxes).map(cb => parseInt(cb.value));
+    
+    // Valida che almeno un giorno sia selezionato
+    if (spaceData.available_days.length === 0) {
+        alert('Seleziona almeno un giorno della settimana');
+        return;
+    }
+    
+    // Converti gli orari nel formato corretto (HH:MM:SS)
+    if (spaceData.opening_time && !spaceData.opening_time.includes(':00', 5)) {
+        spaceData.opening_time += ':00';
+    }
+    if (spaceData.closing_time && !spaceData.closing_time.includes(':00', 5)) {
+        spaceData.closing_time += ':00';
+    }
+    
+    // Valida gli orari
+    const openingTime = spaceData.opening_time;
+    const closingTime = spaceData.closing_time;
+    
+    if (openingTime >= closingTime) {
+        alert('L\'orario di apertura deve essere precedente a quello di chiusura');
+        return;
+    }
+
+    try {
+        let response;
+        
+        if (form.dataset.mode === 'edit') {
+            // Modifica spazio esistente
+            const spaceId = parseInt(form.dataset.spaceId);
+            response = await fetch(`/api/admin/spaces/${spaceId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(spaceData)
+            });
+        } else {
+            // Crea nuovo spazio (solo admin può creare spazi)
+            response = await fetch('/api/admin/spaces', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(spaceData)
+            });
+        }
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Spazio salvato:', result);
+
+        if (form.dataset.mode === 'edit') {
+            alert('Spazio modificato con successo');
+        } else {
+            alert('Spazio creato con successo');
+        }
+
+        closeSpaceModal();
+        loadSpaces(); // Ricarica la lista
+    } catch (error) {
+        console.error('Errore nel salvataggio dello spazio:', error);
+        alert('Errore nel salvataggio dello spazio: ' + (error.message || 'Errore sconosciuto'));
+    }
 }
 
 // === GESTIONE PRENOTAZIONI ===
@@ -549,12 +1361,24 @@ function loadBookingsList() {
         .then(data => {
             container.innerHTML = '';
             
-            if (!data.success || !data.data || data.data.length === 0) {
+            // Gestisci diversi formati di risposta API
+            let bookings = [];
+            if (data.data && data.data.items) {
+                bookings = data.data.items;
+            } else if (data.data && Array.isArray(data.data)) {
+                bookings = data.data;
+            } else if (data.items) {
+                bookings = data.items;
+            } else if (Array.isArray(data)) {
+                bookings = data;
+            }
+            
+            if (!bookings || bookings.length === 0) {
                 container.innerHTML = '<p>Nessuna prenotazione trovata.</p>';
                 return;
             }
             
-            data.data.forEach(booking => {
+            bookings.forEach(booking => {
                 const div = document.createElement('div');
                 div.className = 'booking-item';
                 const startDate = new Date(booking.start_datetime).toLocaleString('it-IT');
@@ -766,7 +1590,7 @@ function handleSpaceSubmit(e) {
                 const action = spaceId ? 'modificato' : 'creato';
                 showMessage(`Spazio ${action} con successo!`, 'success');
                 document.getElementById('space-modal').style.display = 'none';
-                loadSpacesList();
+                loadSpaces();
             } else {
                 const action = spaceId ? 'modifica' : 'creazione';
                 showMessage(`Errore nella ${action} dello spazio`, 'error');
@@ -778,3 +1602,11 @@ function handleSpaceSubmit(e) {
             showMessage(`Errore nella ${action} dello spazio`, 'error');
         });
 }
+
+// Funzioni globali per i pulsanti nelle card
+window.editSpace = editSpace;
+window.deleteSpace = deleteSpace;
+window.editLocation = editLocation;
+window.deleteLocation = deleteLocation;
+window.loadLocationsList = loadLocationsList;
+window.loadSpaces = loadSpaces;
