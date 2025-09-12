@@ -1,186 +1,302 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - CoWorkSpace</title>
-    <link rel="stylesheet" href="styles/home-header.css">
-    <link rel="stylesheet" href="styles/background.css">
-    <link rel="stylesheet" href="styles/messages.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-</head>
-<body>
-    <!-- Header -->
-    <header class="main-header">
-        <div class="header-content">
-            <div class="logo-container">
-                <img src="https://via.placeholder.com/40x40/4f46e5/ffffff?text=CW" alt="CoWorkSpace Logo" class="logo">
-                <h1 class="site-title">CoWorkSpace</h1>
-            </div>
-            
-            <!-- Navigation -->
-            <nav class="main-nav">
-                <a href="home.html" class="nav-link">Home</a>
-                <a href="profile.html" class="nav-link">Profilo</a>
-            </nav>
-            
-            <!-- User Section -->
-            <div class="user-section">
-                <div class="user-info">
-                    <span class="user-name" id="user-name">Admin</span>
-                    <span class="user-role" id="user-role">Administrator</span>
-                </div>
-                
-                <div class="user-menu">
-                    <button class="user-menu-button" id="user-menu-button">
-                        <span class="material-symbols-outlined">account_circle</span>
-                        <span class="material-symbols-outlined dropdown-arrow">keyboard_arrow_down</span>
-                    </button>
-                    
-                    <div class="user-dropdown" id="user-dropdown">
-                        <button class="dropdown-item" id="profile-button">
-                            <span class="material-symbols-outlined">person</span>
-                            Profilo
-                        </button>
-                        <button class="dropdown-item" id="logout-button">
-                            <span class="material-symbols-outlined">logout</span>
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
+<html>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="dashboard-container">
-            <div class="dashboard-header">
-                <h1>Dashboard Amministratore</h1>
-                <p>Benvenuto nel pannello di controllo amministrativo</p>
-            </div>
-            
-            <div class="admin-sections">
-                <div class="admin-card">
-                    <h2>Gestione Utenti</h2>
-                    <p>Visualizza e gestisci tutti gli utenti del sistema</p>
-                    <button class="admin-button" disabled>In sviluppo</button>
-                </div>
-                
-                <div class="admin-card">
-                    <h2>Gestione Location</h2>
-                    <p>Crea, modifica e gestisci tutte le location</p>
-                    <button class="admin-button" disabled>In sviluppo</button>
-                </div>
-                
-                <div class="admin-card">
-                    <h2>Analytics</h2>
-                    <p>Visualizza statistiche e report del sistema</p>
-                    <button class="admin-button" disabled>In sviluppo</button>
-                </div>
-                
-                <div class="admin-card">
-                    <h2>Configurazioni</h2>
-                    <p>Gestisci le impostazioni globali del sistema</p>
-                    <button class="admin-button" disabled>In sviluppo</button>
-                </div>
+<head>
+    <title>CoWorkSpace - Dashboard Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/dashboard-admin.css">
+    <link rel="stylesheet" href="styles/dashboard-admin-header.css">
+    <link rel="stylesheet" href="styles/background.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=account_circle" />
+</head>
+
+<body>
+    <div class="header">
+        <div class="left-section">
+        </div>
+        <div class="middle-section">
+            <div class="logo">CoWorkSpace</div>
+        </div>
+        <div class="right-section">
+            <button class="home-button" id="home-btn">Home</button>
+            <button class="logout-button" id="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div class="profile-container">
+        <div class="profile-left-section">
+            <div class="people-icon" id="profile-icon-container">
+                <span class="material-symbols-outlined account-icon" id="default-icon">account_circle</span>
+                <img id="profile-image" src="" alt="Profile Image" style="display: none;">
             </div>
         </div>
-    </main>
+        
+        <div class="user-info-display">
+            <div class="info-item">
+                <label>Nome:</label>
+                <span id="display-name"></span>
+            </div>
+            <div class="info-item">
+                <label>Cognome:</label>
+                <span id="display-surname"></span>
+            </div>
+            <div class="info-item">
+                <label>Email:</label>
+                <span id="display-email"></span>
+            </div>
+            <div class="info-item">
+                <label>Ruolo:</label>
+                <span id="display-role">Administrator</span>
+            </div>
+            <div class="info-item">
+                <label>Data Registrazione:</label>
+                <span id="display-registration"></span>
+            </div>
+        </div>
+    </div>
+    <!-- Sezioni Admin -->
+    <div class="admin-sections">
+        <!-- Sezione richieste manager -->
+        <div class="admin-card">
+            <h2>Richieste Manager</h2>
+            <p>Accetta o rifiuta le richieste dei futuri manager</p>
+            <div class="card-actions">
+                <button class="refresh-btn" onclick="loadManagerRequests()">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="manager-requests-list">
+                <!-- Le richieste verranno caricate dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione lista utenti -->
+        <div class="admin-card">
+            <h2>Lista Utenti</h2>
+            <p>Visualizza tutti gli utenti registrati</p>
+            <div class="card-actions">
+                <button class="refresh-btn" onclick="loadUsersList()">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="users-list">
+                <!-- Gli utenti verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione lista manager -->
+        <div class="admin-card">
+            <h2>Lista Manager</h2>
+            <p>Visualizza tutti i manager attivi</p>
+            <div class="card-actions">
+                <button class="refresh-btn" onclick="alert('Pulsante cliccato!'); loadManagersList();" style="position: relative; z-index: 100;">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="managers-list">
+                <!-- I manager verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione gestione location -->
+        <div class="admin-card">
+            <h2>Gestione Location</h2>
+            <p>Crea, modifica ed elimina location</p>
+            <div class="card-actions">
+                <button class="action-btn create-btn" onclick="openLocationModal()">
+                    <span class="material-symbols-outlined">add</span>
+                    Aggiungi Location
+                </button>
+                <button class="refresh-btn" onclick="loadLocationsList()">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="locations-list">
+                <!-- Le location verranno caricate dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione gestione spazi -->
+        <div class="admin-card">
+            <h2>Gestione Spazi</h2>
+            <p>Crea, modifica ed elimina spazi di lavoro</p>
+            <div class="card-actions">
+                <button class="action-btn create-btn" onclick="openSpaceModal()">
+                    <span class="material-symbols-outlined">add</span>
+                    Crea Spazio
+                </button>
+                <button class="refresh-btn" onclick="loadSpacesList()">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="spaces-list">
+                <!-- Gli spazi verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione gestione prenotazioni -->
+        <div class="admin-card">
+            <h2>Gestione Prenotazioni</h2>
+            <p>Visualizza ed elimina prenotazioni</p>
+            <div class="card-actions">
+                <button class="refresh-btn" onclick="loadBookingsList()">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="bookings-list">
+                <!-- Le prenotazioni verranno caricate dinamicamente -->
+            </div>
+        </div>
+    </div>
 
     <!-- Message container -->
     <div id="message-container"></div>
 
+    <!-- Modal per creare/modificare spazio -->
+    <div id="space-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="space-modal-title">Crea Nuovo Spazio</h3>
+                <span class="close-button" id="close-space-modal">&times;</span>
+            </div>
+            <form id="space-form">
+                <div class="form-group">
+                    <label for="space-name">Nome Spazio:</label>
+                    <input type="text" id="space-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-description">Descrizione:</label>
+                    <textarea id="space-description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-location">Location:</label>
+                    <select id="space-location" name="location_id" required>
+                        <option value="">Seleziona una location</option>
+                        <!-- Le location verranno caricate dinamicamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-type">Tipo Spazio:</label>
+                    <select id="space-type" name="space_type_id" required>
+                        <option value="">Seleziona un tipo</option>
+                        <!-- I tipi verranno caricati dinamicamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-capacity">Capacità:</label>
+                    <input type="number" id="space-capacity" name="capacity" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="space-hourly-rate">Tariffa Oraria (€):</label>
+                    <input type="number" id="space-hourly-rate" name="hourly_rate" step="0.01" min="0" required>
+                </div>
+                
+                <!-- Sezione giorni disponibili -->
+                <div class="form-group">
+                    <label>Giorni della Settimana Disponibili:</label>
+                    <div class="days-selection">
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="1" checked>
+                            <span>Lunedì</span>
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="2" checked>
+                            <span>Martedì</span>
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="3" checked>
+                            <span>Mercoledì</span>
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="4" checked>
+                            <span>Giovedì</span>
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="5" checked>
+                            <span>Venerdì</span>
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="6">
+                            <span>Sabato</span>
+                        </label>
+                        <label class="day-checkbox">
+                            <input type="checkbox" name="available_days" value="7">
+                            <span>Domenica</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Sezione orari di apertura -->
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="space-opening-time">Orario Apertura:</label>
+                        <input type="time" id="space-opening-time" name="opening_time" value="09:00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="space-closing-time">Orario Chiusura:</label>
+                        <input type="time" id="space-closing-time" name="closing_time" value="18:00" required>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancel-space-form">Annulla</button>
+                    <button type="submit" class="save-btn" id="save-space-btn">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal per creare/modificare location -->
+    <div id="location-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="location-modal-title">Aggiungi Nuova Location</h3>
+                <span class="close-button" id="close-location-modal">&times;</span>
+            </div>
+            <form id="location-form">
+                <div class="form-group">
+                    <label for="location-name">Nome Location:</label>
+                    <input type="text" id="location-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-description">Descrizione:</label>
+                    <textarea id="location-description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-address">Indirizzo:</label>
+                    <input type="text" id="location-address" name="address" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-city">Città:</label>
+                    <input type="text" id="location-city" name="city" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancel-location-form">Annulla</button>
+                    <button type="submit" class="save-btn" id="save-location-btn">Salva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/authService.js"></script>
     <script src="js/apiService.js"></script>
-    <script src="js/header.js"></script>
-    
-    <style>
-        .main-content {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .dashboard-container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .dashboard-header h1 {
-            color: #1f2937;
-            font-size: 2.5rem;
-            margin: 0 0 10px 0;
-        }
-        
-        .dashboard-header p {
-            color: #6b7280;
-            font-size: 1.2rem;
-            margin: 0;
-        }
-        
-        .admin-sections {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        
-        .admin-card {
-            background: #f8fafc;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .admin-card:hover {
-            border-color: rgb(79, 70, 229);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
-        }
-        
-        .admin-card h2 {
-            color: #1f2937;
-            font-size: 1.5rem;
-            margin: 0 0 10px 0;
-        }
-        
-        .admin-card p {
-            color: #6b7280;
-            margin: 0 0 20px 0;
-            line-height: 1.5;
-        }
-        
-        .admin-button {
-            background: rgb(79, 70, 229);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .admin-button:hover:not(:disabled) {
-            background: rgb(67, 56, 202);
-            transform: translateY(-1px);
-        }
-        
-        .admin-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-    </style>
+    <script src="js/dashboard-admin.js"></script>
 </body>
 </html>
