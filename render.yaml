@@ -17,7 +17,7 @@ services:
     name: my-frontend
     runtime: docker
     plan: free
-    dockerfilePath: src/frontend/Dockerfile
+    dockerfilePath: Dockerfile
     dockerContext: src/frontend
 
 databases:
