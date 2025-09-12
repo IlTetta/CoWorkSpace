@@ -1,9 +1,14 @@
+# Usa Nginx leggero
 FROM nginx:alpine
 
 # Copia i file statici del frontend
-COPY . /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY src/frontend/ /usr/share/nginx/html
 
-# Render assegna la porta con la variabile PORT
-ENV PORT=10000
-CMD ["/bin/sh", "-c", "sed -i 's/80/$PORT/' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+# Copia il config Nginx custom
+COPY src/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Espone porta 80 (Render fa il mapping verso $PORT)
+EXPOSE 80
+
+# Avvia Nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]
