@@ -45,8 +45,8 @@ function setupEventListeners() {
     
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            localStorage.removeItem('coworkspace_token');
+            localStorage.removeItem('coworkspace_user');
             window.location.href = 'login.html';
         });
     }
@@ -54,7 +54,7 @@ function setupEventListeners() {
 
 // Carica profilo utente admin
 function loadUserProfile() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(localStorage.getItem('coworkspace_user') || '{}');
     
     document.getElementById('display-name').textContent = user.name || 'Admin';
     document.getElementById('display-surname').textContent = user.surname || '';
@@ -76,7 +76,7 @@ function loadManagerRequests() {
     fetch('/api/admin/users/manager-requests/pending', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -84,22 +84,38 @@ function loadManagerRequests() {
         .then(data => {
             container.innerHTML = '';
             
-            if (!data.success || !data.data || data.data.length === 0) {
+            if (!data.success || !data.data || !data.data.items || data.data.items.length === 0) {
                 container.innerHTML = '<p>Nessuna richiesta pendente.</p>';
                 return;
             }
             
-            data.data.forEach(request => {
+            data.data.items.forEach(request => {
                 const div = document.createElement('div');
                 div.className = 'request-item';
                 div.innerHTML = `
                     <span>${request.name} ${request.surname} (${request.email})</span>
-                    <div>
-                        <button onclick="acceptManager('${request.user_id}')">Accetta</button>
-                        <button onclick="rejectManager('${request.user_id}')">Rifiuta</button>
+                    <div class="request-actions">
+                        <button class="accept-btn" data-user-id="${request.user_id}" title="Accetta richiesta">✓</button>
+                        <button class="reject-btn" data-user-id="${request.user_id}" title="Rifiuta richiesta">✗</button>
                     </div>
                 `;
                 container.appendChild(div);
+                
+                // Aggiungi event listeners per i pulsanti
+                const acceptBtn = div.querySelector('.accept-btn');
+                const rejectBtn = div.querySelector('.reject-btn');
+                
+                acceptBtn.addEventListener('click', function() {
+                    if (confirm('Sei sicuro di voler approvare questo utente come manager?')) {
+                        acceptManager(request.user_id);
+                    }
+                });
+                
+                rejectBtn.addEventListener('click', function() {
+                    if (confirm('Sei sicuro di voler rifiutare questa richiesta?')) {
+                        rejectManager(request.user_id);
+                    }
+                });
             });
         })
         .catch(err => {
@@ -112,7 +128,7 @@ function acceptManager(userId) {
     fetch(`/api/admin/users/${userId}/approve-manager`, { 
         method: 'PATCH',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -136,7 +152,7 @@ function rejectManager(userId) {
     fetch(`/api/admin/users/${userId}/reject-manager`, { 
         method: 'PATCH',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -164,7 +180,7 @@ function loadUsersList() {
     fetch('/api/admin/users', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -208,7 +224,7 @@ function loadManagersList() {
     fetch('/api/admin/managers', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -216,12 +232,12 @@ function loadManagersList() {
         .then(data => {
             container.innerHTML = '';
             
-            if (!data.success || !data.data || data.data.length === 0) {
+            if (!data.success || !data.data || !data.data.managers || data.data.managers.length === 0) {
                 container.innerHTML = '<p>Nessun manager trovato.</p>';
                 return;
             }
             
-            data.data.forEach(manager => {
+            data.data.managers.forEach(manager => {
                 const div = document.createElement('div');
                 div.className = 'manager-item';
                 div.innerHTML = `
@@ -244,7 +260,7 @@ function loadLocationsList() {
     fetch('/api/admin/locations', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -290,7 +306,7 @@ function openLocationModal(locationId = null) {
         // Carica dati location per modifica
         fetch(`/api/admin/locations/${locationId}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
             }
         })
         .then(res => res.json())
@@ -324,7 +340,7 @@ function deleteLocation(locationId) {
     fetch(`/api/admin/locations/${locationId}`, {
         method: 'DELETE',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -351,7 +367,7 @@ function loadSpacesList() {
     fetch('/api/admin/spaces', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -398,7 +414,7 @@ function openSpaceModal(spaceId = null) {
         // Carica dati spazio per modifica
         fetch(`/api/admin/spaces/${spaceId}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
             }
         })
         .then(res => res.json())
@@ -450,7 +466,7 @@ function deleteSpace(spaceId) {
     fetch(`/api/admin/spaces/${spaceId}`, {
         method: 'DELETE',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -477,7 +493,7 @@ function loadBookingsList() {
     fetch('/api/admin/bookings', {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -523,7 +539,7 @@ function deleteBooking(bookingId) {
     fetch(`/api/admin/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         }
     })
@@ -546,7 +562,7 @@ function deleteBooking(bookingId) {
 function loadLocationsForSelect() {
     fetch('/api/admin/locations', {
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
         }
     })
         .then(res => res.json())
@@ -566,7 +582,7 @@ function loadLocationsForSelect() {
 function loadSpaceTypesForSelect() {
     fetch('/api/admin/space-types', {
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
         }
     })
         .then(res => res.json())
@@ -641,7 +657,7 @@ function handleLocationSubmit(e) {
     fetch(url, {
         method: method,
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(locationData)
@@ -691,7 +707,7 @@ function handleSpaceSubmit(e) {
     fetch(url, {
         method: method,
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(spaceData)

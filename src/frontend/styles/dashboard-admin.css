@@ -495,8 +495,6 @@ form {
 }
 
 .request-item button {
-    margin-left: 10px;
-    margin-bottom: 8px;
     background: rgb(79, 70, 229);
     color: white;
     border: none;
@@ -654,4 +652,76 @@ form {
     .form-group select {
         font-size: 16px; /* Previene zoom su iOS */
     }
+}
+
+/* === STILI PER RICHIESTE MANAGER === */
+.request-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 15px !important;
+    margin-bottom: 10px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    min-height: 60px !important;
+}
+
+.request-item:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.request-item span {
+    font-weight: 500 !important;
+    color: #333 !important;
+    flex: 1 !important;
+    margin-right: 15px !important;
+}
+
+.request-actions {
+    display: flex !important;
+    /* align-items: center !important; */
+    /* justify-content: flex-end !important; */
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+.accept-btn, .reject-btn {
+    width: 35px !important;
+    height: 35px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.accept-btn {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.accept-btn:hover {
+    background-color: #218838 !important;
+    transform: translateY(-1px) scale(1.05) !important;
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
+}
+
+.reject-btn {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.reject-btn:hover {
+    background-color: #c82333 !important;
+    transform: translateY(-1px) scale(1.05) !important;
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
 }

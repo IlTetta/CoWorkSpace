@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const pool = require('../config/db');
 const AppError = require('../utils/AppError');
 
 class AuthService {
@@ -419,15 +420,8 @@ class AuthService {
                 paramIndex++;
             }
 
-            // Filtro per location (per manager)
-            if (filters.location_id) {
-                whereConditions.push(`location_id = $${paramIndex}`);
-                params.push(filters.location_id);
-                paramIndex++;
-            }
-
             let query = `
-                SELECT user_id, name, surname, email, role, location_id, created_at, updated_at,
+                SELECT user_id, name, surname, email, role, created_at, updated_at,
                        manager_request_pending, manager_request_date
                 FROM users
             `;
@@ -476,7 +470,8 @@ class AuthService {
                 query += ` LIMIT ${parseInt(filters.limit)}`;
             }
 
-            return await User.query(query, params);
+            const result = await pool.query(query, params);
+            return result.rows;
         } catch (error) {
             throw AppError.database('Errore nel recupero utenti');
         }
