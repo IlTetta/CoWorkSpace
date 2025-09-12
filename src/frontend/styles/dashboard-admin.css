@@ -155,6 +155,11 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     min-height: 300px;
+    max-height: 500px; /* Altezza massima per le card */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden; /* Previene overflow che potrebbe interferire con la scrollbar */
 }
 
 .admin-card:hover {
@@ -467,6 +472,69 @@ body {
 
 form {
     padding: 30px;
+}
+
+/* Liste con scroll */
+#users-list, #managers-list, #manager-requests-list, #locations-list, #spaces-list, #bookings-list {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    margin-top: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Stile per la scrollbar */
+#users-list::-webkit-scrollbar, 
+#managers-list::-webkit-scrollbar, 
+#manager-requests-list::-webkit-scrollbar,
+#locations-list::-webkit-scrollbar, 
+#spaces-list::-webkit-scrollbar, 
+#bookings-list::-webkit-scrollbar {
+    width: 12px;
+    background: transparent;
+}
+
+#users-list::-webkit-scrollbar-track, 
+#managers-list::-webkit-scrollbar-track, 
+#manager-requests-list::-webkit-scrollbar-track,
+#locations-list::-webkit-scrollbar-track, 
+#spaces-list::-webkit-scrollbar-track, 
+#bookings-list::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin: 2px;
+}
+
+#users-list::-webkit-scrollbar-thumb, 
+#managers-list::-webkit-scrollbar-thumb, 
+#manager-requests-list::-webkit-scrollbar-thumb,
+#locations-list::-webkit-scrollbar-thumb, 
+#spaces-list::-webkit-scrollbar-thumb, 
+#bookings-list::-webkit-scrollbar-thumb {
+    background: rgba(79, 70, 229, 0.5);
+    border-radius: 6px;
+    border: 2px solid #f8f9fa;
+    min-height: 20px;
+}
+
+#users-list::-webkit-scrollbar-thumb:hover, 
+#managers-list::-webkit-scrollbar-thumb:hover, 
+#manager-requests-list::-webkit-scrollbar-thumb:hover,
+#locations-list::-webkit-scrollbar-thumb:hover, 
+#spaces-list::-webkit-scrollbar-thumb:hover, 
+#bookings-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(79, 70, 229, 0.8);
+}
+
+#users-list::-webkit-scrollbar-thumb:active, 
+#managers-list::-webkit-scrollbar-thumb:active, 
+#manager-requests-list::-webkit-scrollbar-thumb:active,
+#locations-list::-webkit-scrollbar-thumb:active, 
+#spaces-list::-webkit-scrollbar-thumb:active, 
+#bookings-list::-webkit-scrollbar-thumb:active {
+    background: rgb(79, 70, 229);
 }
 
 /* Liste */

@@ -90,13 +90,19 @@ function loadManagerRequests() {
             }
             
             data.data.items.forEach(request => {
+                const userId = request.user_id || request.id; // Fallback per id
+                if (!userId) {
+                    console.error('user_id mancante per:', request);
+                    return;
+                }
+                
                 const div = document.createElement('div');
                 div.className = 'request-item';
                 div.innerHTML = `
                     <span>${request.name} ${request.surname} (${request.email})</span>
                     <div class="request-actions">
-                        <button class="accept-btn" data-user-id="${request.user_id}" title="Accetta richiesta">✓</button>
-                        <button class="reject-btn" data-user-id="${request.user_id}" title="Rifiuta richiesta">✗</button>
+                        <button class="accept-btn" data-user-id="${userId}" title="Accetta richiesta">✓</button>
+                        <button class="reject-btn" data-user-id="${userId}" title="Rifiuta richiesta">✗</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -107,13 +113,13 @@ function loadManagerRequests() {
                 
                 acceptBtn.addEventListener('click', function() {
                     if (confirm('Sei sicuro di voler approvare questo utente come manager?')) {
-                        acceptManager(request.user_id);
+                        acceptManager(userId);
                     }
                 });
                 
                 rejectBtn.addEventListener('click', function() {
                     if (confirm('Sei sicuro di voler rifiutare questa richiesta?')) {
-                        rejectManager(request.user_id);
+                        rejectManager(userId);
                     }
                 });
             });
@@ -177,7 +183,7 @@ function loadUsersList() {
     const container = document.getElementById('users-list');
     container.innerHTML = '<p>🔄 Caricamento utenti...</p>';
     
-    fetch('/api/admin/users', {
+    fetch('/api/admin/users?role=user', {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -188,12 +194,12 @@ function loadUsersList() {
         .then(data => {
             container.innerHTML = '';
             
-            if (!data.success || !data.data || data.data.length === 0) {
+            if (!data.success || !data.data || !data.data.users || data.data.users.length === 0) {
                 container.innerHTML = '<p>Nessun utente trovato.</p>';
                 return;
             }
             
-            data.data.forEach(user => {
+            data.data.users.forEach(user => {
                 const div = document.createElement('div');
                 div.className = 'user-item';
                 div.innerHTML = `

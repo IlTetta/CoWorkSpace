@@ -166,7 +166,7 @@ class User {
             }
 
             let query = `
-                SELECT user_id, name, surname, email, role, created_at, updated_at,
+                SELECT user_id, name, surname, email, role, created_at,
                        manager_request_pending, manager_request_date
                 FROM users
             `;
@@ -593,7 +593,7 @@ class User {
                  ORDER BY manager_request_date ASC`
             );
 
-            return result.rows.map(row => new User(row));
+            return result.rows; // Restituire direttamente i row invece di creare istanze User
         } catch (error) {
             throw AppError.internal('Errore durante il recupero delle richieste manager pending', error);
         }
