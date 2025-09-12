@@ -1068,13 +1068,21 @@ class User {
         if (!email) {
             errors.push('Email è obbligatoria');
         } else {
-            this.validateEmail(email);
+            try {
+                User.validateEmail(email);
+            } catch (error) {
+                errors.push(error.message || 'Formato email non valido');
+            }
         }
 
         if (!password) {
             errors.push('Password è obbligatoria');
         } else {
-            this.validatePassword(password);
+            try {
+                User.validatePassword(password);
+            } catch (error) {
+                errors.push(error.message || 'Password non valida');
+            }
         }
 
         if (errors.length > 0) {

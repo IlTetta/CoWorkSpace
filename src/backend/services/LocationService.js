@@ -109,13 +109,9 @@ class LocationService {
             throw AppError.notFound('Location non trovata');
         }
 
-        // Admin può eliminare tutte le locations, manager solo le proprie
-        if (currentUser.role === 'admin') {
-            // Admin può eliminare qualsiasi location
-        } else if (currentUser.role === 'manager' && location.manager_id === currentUser.user_id) {
-            // Manager può eliminare solo le proprie location
-        } else {
-            throw AppError.forbidden('Non hai i permessi per eliminare questa location');
+        // Solo gli admin possono eliminare locations
+        if (currentUser.role !== 'admin') {
+            throw AppError.forbidden('Solo gli amministratori possono eliminare locations');
         }
 
         return await Location.delete(locationId);

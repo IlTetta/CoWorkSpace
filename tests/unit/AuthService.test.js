@@ -724,92 +724,74 @@ describe('AuthService', () => {
         { user_id: 1, email: 'user1@example.com', role: 'user' },
         { user_id: 2, email: 'user2@example.com', role: 'manager' }
       ];
-      User.query.mockResolvedValue(mockUsers);
+      User.getAllUsers.mockResolvedValue(mockUsers);
 
       // Act
       const result = await AuthService.getAllUsers();
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT user_id, name, surname, email, role'),
-        []
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({});
       expect(result).toEqual(mockUsers);
     });
 
     it('dovrebbe filtrare per ruolo', async () => {
       // Arrange
-      User.query.mockResolvedValue([]);
+      User.getAllUsers.mockResolvedValue([]);
 
       // Act
       await AuthService.getAllUsers({ role: 'manager' });
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE role = $1'),
-        ['manager']
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({ role: 'manager' });
     });
 
     it('dovrebbe filtrare per email', async () => {
       // Arrange
-      User.query.mockResolvedValue([]);
+      User.getAllUsers.mockResolvedValue([]);
 
       // Act
       await AuthService.getAllUsers({ email: 'test' });
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('LOWER(email) LIKE LOWER($1)'),
-        ['%test%']
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({ email: 'test' });
     });
 
     it('dovrebbe filtrare per nome', async () => {
       // Arrange
-      User.query.mockResolvedValue([]);
+      User.getAllUsers.mockResolvedValue([]);
 
       // Act
       await AuthService.getAllUsers({ name: 'John' });
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('(LOWER(name) LIKE LOWER($1) OR LOWER(surname) LIKE LOWER($1))'),
-        ['%John%']
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({ name: 'John' });
     });
 
     it('dovrebbe ordinare per nome crescente', async () => {
       // Arrange
-      User.query.mockResolvedValue([]);
+      User.getAllUsers.mockResolvedValue([]);
 
       // Act
       await AuthService.getAllUsers({ sort_by: 'name_asc' });
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('ORDER BY name ASC, surname ASC'),
-        []
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({ sort_by: 'name_asc' });
     });
 
     it('dovrebbe limitare i risultati', async () => {
       // Arrange
-      User.query.mockResolvedValue([]);
+      User.getAllUsers.mockResolvedValue([]);
 
       // Act
       await AuthService.getAllUsers({ limit: 10 });
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT 10'),
-        []
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({ limit: 10 });
     });
 
     it('dovrebbe combinare più filtri', async () => {
       // Arrange
-      User.query.mockResolvedValue([]);
+      User.getAllUsers.mockResolvedValue([]);
 
       // Act
       await AuthService.getAllUsers({
@@ -820,36 +802,32 @@ describe('AuthService', () => {
       });
 
       // Assert
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE role = $1 AND LOWER(email) LIKE LOWER($2)'),
-        ['user', '%test%']
-      );
+      expect(User.getAllUsers).toHaveBeenCalledWith({
+        role: 'user',
+        email: 'test',
+        sort_by: 'email_desc',
+        limit: 5
+      });
     });
   });
 
   describe('updateUserRole', () => {
     beforeEach(() => {
-      User.query = jest.fn();
+      User.updateUserRole = jest.fn();
     });
 
     it('dovrebbe aggiornare ruolo utente se admin', async () => {
       // Arrange
       const adminUser = { role: 'admin' };
-      const mockUser = { user_id: 1, email: 'test@example.com' };
       const updatedUser = { user_id: 1, email: 'test@example.com', role: 'manager' };
 
-      User.findById.mockResolvedValue(mockUser);
-      User.query.mockResolvedValue([updatedUser]);
+      User.updateUserRole.mockResolvedValue(updatedUser);
 
       // Act
       const result = await AuthService.updateUserRole(1, 'manager', adminUser);
 
       // Assert
-      expect(User.findById).toHaveBeenCalledWith(1);
-      expect(User.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE users'),
-        ['manager', 1]
-      );
+      expect(User.updateUserRole).toHaveBeenCalledWith(1, 'manager');
       expect(result).toEqual(updatedUser);
     });
 
@@ -865,6 +843,7 @@ describe('AuthService', () => {
     it('dovrebbe lanciare errore se ruolo non valido', async () => {
       // Arrange
       const adminUser = { role: 'admin' };
+      User.updateUserRole.mockRejectedValue(new AppError('Ruolo non valido', 400));
 
       // Act & Assert
       await expect(AuthService.updateUserRole(1, 'invalid', adminUser))
@@ -874,7 +853,7 @@ describe('AuthService', () => {
     it('dovrebbe lanciare errore se utente non trovato', async () => {
       // Arrange
       const adminUser = { role: 'admin' };
-      User.findById.mockResolvedValue(null);
+      User.updateUserRole.mockRejectedValue(new AppError('Utente non trovato', 404));
 
       // Act & Assert
       await expect(AuthService.updateUserRole(999, 'manager', adminUser))
