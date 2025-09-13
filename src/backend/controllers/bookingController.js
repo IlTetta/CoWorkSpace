@@ -65,6 +65,11 @@ exports.getBookingById = catchAsync(async (req, res) => {
  * POST /api/bookings - Crea nuova prenotazione
  */
 exports.createBooking = catchAsync(async (req, res) => {
+        // Controllo ruolo: solo gli utenti possono creare prenotazioni
+        if (req.user.role !== 'user') {
+            throw AppError.forbidden('Solo gli utenti con ruolo "user" possono effettuare prenotazioni');
+        }
+
         const bookingData = {
             user_id: req.body.user_id || req.user.user_id, // Default a utente corrente
             space_id: req.body.space_id,

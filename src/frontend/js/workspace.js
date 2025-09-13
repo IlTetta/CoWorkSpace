@@ -11,10 +11,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         authRetries++;
     }
     
+    // Verifica se authService è disponibile
+    if (!window.authService) {
+        alert('Servizio di autenticazione non disponibile');
+        window.location.href = 'login.html';
+        return;
+    }
+    
     // Verifica se l'utente è autenticato
-    if (window.authService && !window.authService.isAuthenticated()) {
+    if (!window.authService.isAuthenticated()) {
         alert('Devi essere autenticato per accedere a questa pagina');
         window.location.href = 'login.html';
+        return;
+    }
+
+    // Verifica se l'utente ha il ruolo "user" (solo gli utenti possono effettuare prenotazioni)
+    if (!window.authService.isUser()) {
+        alert('Solo gli utenti con ruolo "User" possono effettuare prenotazioni');
+        window.location.href = 'home.html';
         return;
     }
     
