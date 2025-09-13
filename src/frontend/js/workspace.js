@@ -1,6 +1,23 @@
 // Gestione della pagina di prenotazione workspace: caricamento dettagli, servizi, form, pagamento
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Aspetta che authService sia disponibile
+    let authRetries = 0;
+    const maxAuthRetries = 50;
+    
+    while (!window.authService && authRetries < maxAuthRetries) {
+        console.log('Waiting for authService...', authRetries);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        authRetries++;
+    }
+    
+    // Verifica se l'utente è autenticato
+    if (window.authService && !window.authService.isAuthenticated()) {
+        alert('Devi essere autenticato per accedere a questa pagina');
+        window.location.href = 'login.html';
+        return;
+    }
+    
     // Aspetta che apiService sia disponibile
     let retries = 0;
     const maxRetries = 50;
@@ -218,12 +235,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('payment-section').style.display = 'block';
     });
 
-    // Gestione pagamento
+    // Gestione pagamento - apertura modal
     document.getElementById('pay-button').addEventListener('click', async () => {
-        // Simula chiamata API pagamento
-        const result = await window.apiService.payForBooking();
-        document.getElementById('booking-message').textContent = result.success ? 'Prenotazione e pagamento riusciti!' : 'Errore nel pagamento.';
+        // Copia il prezzo totale nel modal
+        const totalPrice = document.getElementById('total-price').textContent;
+        document.getElementById('modal-total-price').textContent = totalPrice;
+        
+        // Mostra il modal di pagamento
+        document.getElementById('payment-modal').style.display = 'block';
     });
+    
+    // Gestione modal di pagamento
+    setupPaymentModal();
 
     // Gestisce il click sul logo per reindirizzare a home.html
     const logo = document.querySelector('.logo');
@@ -419,9 +442,16 @@ function getWorkspaceIdFromUrl() {
 
 // Funzione per popolare il riepilogo della prenotazione
 function populateBookingSummary(selectedSpace, dateStart, dateEnd, totalDays, totalHours, totalPrice) {
-    // Dati utente (presi dal localStorage o AuthService)
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    document.getElementById('summary-user-name').textContent = userData.name || 'Utente';
+    // Dati utente (presi da authService)
+    let userData = {};
+    if (window.authService) {
+        userData = window.authService.getUser() || {};
+    } else {
+        // Fallback al localStorage
+        userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    }
+    
+    document.getElementById('summary-user-name').textContent = userData.name || userData.firstName + ' ' + userData.lastName || 'Utente';
     document.getElementById('summary-user-email').textContent = userData.email || 'Non disponibile';
     
     // Dati location (presi dalla pagina)
@@ -444,4 +474,261 @@ function populateBookingSummary(selectedSpace, dateStart, dateEnd, totalDays, to
     document.getElementById('summary-date-end').textContent = dateEnd;
     document.getElementById('summary-total-days').textContent = totalDays;
     document.getElementById('summary-total-hours').textContent = totalHours;
+}
+
+// Funzione per gestire il modal di pagamento
+function setupPaymentModal() {
+    const modal = document.getElementById('payment-modal');
+    const closeBtn = document.querySelector('.payment-modal-close');
+    const paymentForm = document.getElementById('payment-form');
+    
+    // Chiusura modal con X
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+        clearPaymentForm();
+    });
+    
+    // Chiusura modal cliccando fuori
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            clearPaymentForm();
+        }
+    });
+    
+    // Gestione submit del form di pagamento
+    paymentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await processPayment();
+    });
+    
+    // Formattazione automatica per il numero di carta
+    const cardNumberInput = document.getElementById('card-number');
+    cardNumberInput.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || '';
+        e.target.value = formattedValue;
+    });
+    
+    // Formattazione automatica per la data di scadenza
+    const expiryInput = document.getElementById('expiry-date');
+    expiryInput.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        }
+        e.target.value = value;
+    });
+    
+    // Solo numeri per CVV
+    const cvvInput = document.getElementById('security-code');
+    cvvInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+}
+
+// Funzione per pulire il form di pagamento
+function clearPaymentForm() {
+    document.getElementById('payment-form').reset();
+}
+
+// Funzione per processare il pagamento
+async function processPayment() {
+    const confirmButton = document.querySelector('.confirm-payment-button');
+    const originalText = confirmButton.textContent;
+    
+    try {
+        // Mostra loading
+        confirmButton.textContent = 'Elaborazione...';
+        confirmButton.disabled = true;
+        
+        // Raccogli tutti i dati della prenotazione
+        const bookingData = {
+            spaceId: document.getElementById('space-select').value,
+            dateStart: document.getElementById('date-start').value,
+            dateEnd: document.getElementById('date-end').value,
+            totalPrice: document.getElementById('total-price').textContent,
+            paymentData: {
+                cardNumber: document.getElementById('card-number').value,
+                expiryDate: document.getElementById('expiry-date').value,
+                securityCode: document.getElementById('security-code').value
+            }
+        };
+        
+        // Chiama il backend per creare la prenotazione
+        const result = await createBooking(bookingData);
+        
+        if (result.success) {
+            // Successo - chiudi modal e mostra notifica
+            document.getElementById('payment-modal').style.display = 'none';
+            clearPaymentForm();
+            
+            // Mostra notifica di successo
+            showSuccessNotification(result.bookingId);
+            
+            // Mostra anche il messaggio nel contenuto principale
+            document.getElementById('booking-message').innerHTML = `
+                <div style="color: green; text-align: center; padding: 20px; background: #f0f9f0; border-radius: 10px; margin: 20px; border-left: 5px solid #10b981;">
+                    <h3>✅ Prenotazione Completata!</h3>
+                    <p>La tua prenotazione è stata confermata e il pagamento è stato elaborato con successo.</p>
+                    <p><strong>ID Prenotazione:</strong> ${result.bookingId || 'N/A'}</p>
+                    <p style="margin-top: 15px;"><em>Riceverai una email di conferma a breve.</em></p>
+                </div>
+            `;
+            
+            // Nascondi il form di prenotazione
+            document.querySelector('.workspace-card').style.opacity = '0.7';
+            document.querySelector('.workspace-card').style.pointerEvents = 'none';
+            
+            // Scroll verso il messaggio di successo
+            document.getElementById('booking-message').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+        } else {
+            throw new Error(result.message || 'Errore durante la prenotazione');
+        }
+        
+    } catch (error) {
+        console.error('Errore nel pagamento:', error);
+        alert('Errore durante il pagamento: ' + error.message);
+    } finally {
+        // Ripristina il pulsante
+        confirmButton.textContent = originalText;
+        confirmButton.disabled = false;
+    }
+}
+
+// Funzione per creare la prenotazione tramite API
+async function createBooking(bookingData) {
+    try {
+        // Verifica se l'utente è autenticato
+        if (!window.authService || !window.authService.isAuthenticated()) {
+            throw new Error('Devi essere autenticato per effettuare una prenotazione');
+        }
+        
+        const token = window.authService.getToken();
+        if (!token) {
+            throw new Error('Token di autenticazione non trovato');
+        }
+        
+        // Prepara i dati per il backend
+        const payload = {
+            space_id: parseInt(bookingData.spaceId),
+            start_date: convertDateFormat(bookingData.dateStart),
+            end_date: convertDateFormat(bookingData.dateEnd),
+            total_price: parseFloat(bookingData.totalPrice),
+            status: 'confirmed'
+        };
+        
+        console.log('Sending booking data:', payload);
+        console.log('Using token:', token ? 'Token presente' : 'Token mancante');
+        
+        // Effettua la chiamata al backend
+        const response = await fetch('/api/bookings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            return { success: true, bookingId: result.id, message: result.message };
+        } else {
+            // Gestisci errori specifici
+            if (response.status === 401) {
+                throw new Error('Token di accesso non valido');
+            }
+            return { success: false, message: result.message || 'Errore sconosciuto' };
+        }
+        
+    } catch (error) {
+        console.error('Errore nella chiamata API:', error);
+        return { success: false, message: error.message || 'Errore di connessione al server' };
+    }
+}
+
+// Funzione helper per convertire il formato data
+function convertDateFormat(dateStr) {
+    // Converte da dd/mm/yyyy a yyyy-mm-dd
+    const parts = dateStr.split('/');
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+}
+
+// Funzione per mostrare notifica di successo
+function showSuccessNotification(bookingId) {
+    // Rimuovi eventuali notifiche esistenti
+    const existingNotification = document.querySelector('.success-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Crea la notifica
+    const notification = document.createElement('div');
+    notification.className = 'success-notification';
+    notification.innerHTML = `
+        <div class="notification-header">
+            <span class="notification-icon">🎉</span>
+            <h4 class="notification-title">Pagamento Completato!</h4>
+        </div>
+        <p class="notification-message">La tua prenotazione è stata confermata con successo.</p>
+        ${bookingId ? `<div class="notification-id">ID: ${bookingId}</div>` : ''}
+    `;
+    
+    // Aggiungi al body
+    document.body.appendChild(notification);
+    
+    // Mostra con animazione
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // Rimuovi automaticamente dopo 5 secondi
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 500);
+    }, 5000);
+    
+    // Aggiungi evento click per chiudere manualmente
+    notification.addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 500);
+    });
+    
+    // Riproduci suono di successo (se il browser lo permette)
+    try {
+        // Crea un suono di successo usando Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+        oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+        oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+        // Ignora errori audio (alcuni browser potrebbero bloccare l'audio automatico)
+        console.log('Audio notification not available');
+    }
 }

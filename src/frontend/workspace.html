@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prenota Workspace - CoWorkSpace</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="styles/workspace.css">
     <link rel="stylesheet" href="styles/workspace-header.css">
     <link rel="stylesheet" href="styles/calendar.css">
@@ -158,6 +159,44 @@
                 
                 <div id="booking-message"></div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Modal per il pagamento -->
+    <div id="payment-modal" class="payment-modal">
+        <div class="payment-modal-content">
+            <div class="payment-modal-header">
+                <h3>Inserisci i Dati di Pagamento</h3>
+                <span class="payment-modal-close">&times;</span>
+            </div>
+            
+            <form id="payment-form" class="payment-form">
+                <div class="form-group">
+                    <label for="card-number">Numero Carta di Credito:</label>
+                    <input type="text" id="card-number" name="cardNumber" class="payment-input" 
+                           placeholder="1234 5678 9012 3456" maxlength="19" required>
+                </div>
+                
+                <div class="payment-row">
+                    <div class="form-group">
+                        <label for="expiry-date">Data Scadenza (MM/YY):</label>
+                        <input type="text" id="expiry-date" name="expiryDate" class="payment-input" 
+                               placeholder="12/25" maxlength="5" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="security-code">Codice Sicurezza (CVV):</label>
+                        <input type="text" id="security-code" name="securityCode" class="payment-input" 
+                               placeholder="123" maxlength="4" required>
+                    </div>
+                </div>
+                
+                <div class="payment-total-modal">
+                    <p><strong>Totale da Pagare: €<span id="modal-total-price">0</span></strong></p>
+                </div>
+                
+                <button type="submit" class="confirm-payment-button">Conferma e Paga</button>
+            </form>
         </div>
     </div>
     
