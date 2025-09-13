@@ -20,4 +20,4 @@ COPY src/backend/ .
 EXPOSE 3000
 
 # Run both SQL scripts and then start the server
-CMD ["sh", "-c", "psql $DATABASE_URL -f init.sql && psql $DATABASE_URL -f seed.sql && node server.js"]
+CMD ["sh", "-c", "psql $DATABASE_URL -f init.sql && psql $DATABASE_URL -f seed_data.sql && node server.js"]
