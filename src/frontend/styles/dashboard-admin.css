@@ -877,3 +877,130 @@ form {
     transform: translateY(-1px) scale(1.05) !important;
     box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
 }
+
+/* Stili specifici per la lista prenotazioni migliorata */
+.bookings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.booking-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+}
+
+.booking-list-item:hover {
+    background: #f8fafc;
+    border-color: rgb(79, 70, 229);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.1);
+}
+
+.booking-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.booking-info > div {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.booking-user {
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.booking-location-space {
+    color: #4b5563;
+}
+
+.booking-dates {
+    color: #6b7280;
+}
+
+.booking-status {
+    color: #374151;
+    font-size: 13px;
+}
+
+.booking-actions {
+    display: flex;
+    align-items: center;
+    margin-left: 20px;
+}
+
+.delete-booking-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.delete-booking-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.delete-booking-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+.delete-booking-btn .material-symbols-outlined {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+/* Responsive per la lista prenotazioni */
+@media (max-width: 768px) {
+    .booking-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 16px;
+    }
+    
+    .booking-actions {
+        margin-left: 0;
+        align-self: flex-end;
+    }
+    
+    .booking-info > div {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .booking-list-item {
+        padding: 12px;
+    }
+    
+    .delete-booking-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .delete-booking-btn .material-symbols-outlined {
+        font-size: 18px;
+    }
+}

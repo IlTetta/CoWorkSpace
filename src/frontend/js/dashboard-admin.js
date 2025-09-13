@@ -1365,88 +1365,319 @@ async function handleSpaceFormSubmit(event) {
 }
 
 // === GESTIONE PRENOTAZIONI ===
+
+// Funzione per visualizzare le prenotazioni
+function displayBookings(bookings, container) {
+    // Crea una lista delle prenotazioni
+    const bookingsList = document.createElement('div');
+    bookingsList.className = 'bookings-list';
+    
+    bookings.forEach((booking, index) => {
+        const bookingItem = document.createElement('div');
+        bookingItem.className = 'booking-list-item';
+        bookingItem.setAttribute('data-booking-id', booking.booking_id || booking.id);
+        
+        // Formatta le date
+        const startDate = new Date(booking.start_datetime || booking.start_date);
+        const endDate = new Date(booking.end_datetime || booking.end_date);
+        const startDateStr = startDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
+        });
+        const endDateStr = endDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        
+        // Ottieni il nome utente (da diversi campi possibili)
+        const userName = booking.user_name || 
+                       `${booking.user_first_name || ''} ${booking.user_last_name || ''}`.trim() ||
+                       booking.customer_name ||
+                       booking.user_email ||
+                       'Utente non specificato';
+        
+        // Ottieni location e spazio
+        const locationName = booking.location_name || booking.location || 'Location non specificata';
+        const spaceName = booking.space_name || booking.space || 'Spazio non specificato';
+        
+        bookingItem.innerHTML = `
+            <div class="booking-info">
+                <div class="booking-user">
+                    <strong>Utente:</strong> ${userName}
+                </div>
+                <div class="booking-location-space">
+                    <strong>Location:</strong> ${locationName} - <strong>Spazio:</strong> ${spaceName}
+                </div>
+                <div class="booking-dates">
+                    <strong>Dal:</strong> ${startDateStr} <strong>al:</strong> ${endDateStr}
+                </div>
+                <div class="booking-status">
+                    <strong>Stato:</strong> ${booking.status || 'N/A'} | <strong>Importo:</strong> €${booking.total_amount || booking.total_price || '0.00'}
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="delete-booking-btn square-btn" data-booking-id="${booking.booking_id || booking.id}" title="Elimina prenotazione">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        `;
+        
+        // Aggiungi event listener al pulsante elimina
+        const deleteBtn = bookingItem.querySelector('.delete-booking-btn');
+        deleteBtn.addEventListener('click', function() {
+            const bookingId = this.getAttribute('data-booking-id');
+            deleteBooking(bookingId);
+        });
+        
+        bookingsList.appendChild(bookingItem);
+    });
+    
+    container.appendChild(bookingsList);
+}
+
 function loadBookingsList() {
     const container = document.getElementById('bookings-list');
+    
+    if (!container) {
+        return;
+    }
+    
     container.innerHTML = '<p>🔄 Caricamento prenotazioni...</p>';
     
-    fetch('/api/admin/bookings', {
+    // Verifica token
+    const token = localStorage.getItem('coworkspace_token');
+    if (!token) {
+        container.innerHTML = '<p style="color: red;">❌ Non sei autenticato. Effettua il login.</p>';
+        return;
+    }
+    
+    // Determina l'URL base
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:3000' 
+                    : '';
+    const apiUrl = `${baseUrl}/api/admin/bookings`;
+    
+    fetch(apiUrl, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         }
     })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                if (res.status === 404) {
+                    throw new Error(`API endpoint non trovato (404): ${apiUrl}`);
+                } else if (res.status === 401) {
+                    throw new Error(`Non autorizzato (401): Token non valido o scaduto`);
+                } else if (res.status === 403) {
+                    throw new Error(`Accesso negato (403): Permessi insufficienti`);
+                } else if (res.status >= 500) {
+                    throw new Error(`Errore server (${res.status}): Problema interno del server`);
+                } else {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+            }
+            return res.json();
+        })
         .then(data => {
             container.innerHTML = '';
             
             // Gestisci diversi formati di risposta API
             let bookings = [];
-            if (data.data && data.data.items) {
-                bookings = data.data.items;
-            } else if (data.data && Array.isArray(data.data)) {
-                bookings = data.data;
-            } else if (data.items) {
-                bookings = data.items;
-            } else if (Array.isArray(data)) {
-                bookings = data;
+            if (data.success === false) {
+                throw new Error(data.message || data.error || 'API ha restituito un errore');
             }
             
-            if (!bookings || bookings.length === 0) {
+            // Gestione specifica per il formato ricevuto
+            if (data.success === true && data.data) {
+                // Prova tutti i possibili formati all'interno di data.data
+                if (data.data.bookings && Array.isArray(data.data.bookings)) {
+                    bookings = data.data.bookings;
+                } else if (data.data.items && Array.isArray(data.data.items)) {
+                    bookings = data.data.items;
+                } else if (Array.isArray(data.data)) {
+                    bookings = data.data;
+                } else {
+                    // Cerca il primo array nelle proprietà di data.data
+                    for (const [key, value] of Object.entries(data.data)) {
+                        if (Array.isArray(value)) {
+                            bookings = value;
+                            break;
+                        }
+                    }
+                }
+            } else if (Array.isArray(data)) {
+                bookings = data;
+            } else if (data.bookings && Array.isArray(data.bookings)) {
+                bookings = data.bookings;
+            }
+            
+            if (bookings.length === 0) {
                 container.innerHTML = '<p>Nessuna prenotazione trovata.</p>';
                 return;
             }
             
-            bookings.forEach(booking => {
-                const div = document.createElement('div');
-                div.className = 'booking-item';
-                const startDate = new Date(booking.start_datetime).toLocaleString('it-IT');
-                const endDate = new Date(booking.end_datetime).toLocaleString('it-IT');
-                
-                div.innerHTML = `
-                    <div class="item-info">
-                        <div class="item-title">Prenotazione #${booking.booking_id}</div>
-                        <div class="item-details">Utente: ${booking.user_name || 'N/A'}</div>
-                        <div class="item-details">Spazio: ${booking.space_name || 'N/A'}</div>
-                        <div class="item-details">Dal: ${startDate} al: ${endDate}</div>
-                        <div class="item-details">Stato: ${booking.status} - €${booking.total_amount}</div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="delete-btn" onclick="deleteBooking('${booking.booking_id}')">Elimina</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+            displayBookings(bookings, container);
+            
         })
-        .catch(err => {
-            console.error('Errore nel caricamento prenotazioni:', err);
-            container.innerHTML = '<p>Errore nel caricamento delle prenotazioni.</p>';
+        .catch(error => {
+            container.innerHTML = `<p style="color: red;">❌ Errore nel caricamento: ${error.message}</p>`;
         });
 }
 
-function deleteBooking(bookingId) {
-    if (!confirm('Sei sicuro di voler eliminare questa prenotazione?')) return;
+// Funzione per caricare dati di test quando l'API non funziona
+function loadTestBookingsData() {
+    const container = document.getElementById('bookings-list');
     
-    fetch(`/api/admin/bookings/${bookingId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
-            'Content-Type': 'application/json'
+    if (!container) {
+        console.error('❌ Container bookings-list non trovato per i test!');
+        return;
+    }
+    
+    // Dati di test
+    const testBookings = [
+        {
+            booking_id: 1,
+            user_name: 'Mario Rossi',
+            user_email: 'mario.rossi@example.com',
+            location_name: 'CoWork Milano Centro',
+            space_name: 'Sala Riunioni A',
+            start_date: '2024-12-20',
+            end_date: '2024-12-20',
+            status: 'confirmed',
+            total_amount: '75.00'
+        },
+        {
+            booking_id: 2,
+            user_name: 'Giulia Bianchi',
+            user_email: 'giulia.bianchi@example.com',
+            location_name: 'CoWork Roma EUR',
+            space_name: 'Postazione Desk 12',
+            start_date: '2024-12-15',
+            end_date: '2024-12-17',
+            status: 'confirmed',
+            total_amount: '150.00'
+        },
+        {
+            booking_id: 3,
+            user_name: 'Luca Verdi',
+            user_email: 'luca.verdi@example.com',
+            location_name: 'CoWork Torino',
+            space_name: 'Ufficio Privato 3',
+            start_date: '2024-12-10',
+            end_date: '2024-12-12',
+            status: 'completed',
+            total_amount: '200.00'
         }
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                showMessage('Prenotazione eliminata con successo!', 'success');
-                loadBookingsList();
-            } else {
-                showMessage('Errore nell\'eliminazione della prenotazione', 'error');
-            }
-        })
-        .catch(err => {
-            console.error('Errore nell\'eliminazione:', err);
-            showMessage('Errore nell\'eliminazione della prenotazione', 'error');
+    ];
+    
+    container.innerHTML = '';
+    
+    // Crea una lista delle prenotazioni di test
+    const bookingsList = document.createElement('div');
+    bookingsList.className = 'bookings-list';
+    
+    testBookings.forEach((booking, index) => {
+        const bookingItem = document.createElement('div');
+        bookingItem.className = 'booking-list-item';
+        
+        // Formatta le date
+        const startDate = new Date(booking.start_date);
+        const endDate = new Date(booking.end_date);
+        const startDateStr = startDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
         });
+        const endDateStr = endDate.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        
+        bookingItem.innerHTML = `
+            <div class="booking-info">
+                <div class="booking-user">
+                    <strong>Utente:</strong> ${booking.user_name}
+                </div>
+                <div class="booking-location-space">
+                    <strong>Location:</strong> ${booking.location_name} - <strong>Spazio:</strong> ${booking.space_name}
+                </div>
+                <div class="booking-dates">
+                    <strong>Dal:</strong> ${startDateStr} <strong>al:</strong> ${endDateStr}
+                </div>
+                <div class="booking-status">
+                    <strong>Stato:</strong> ${booking.status} | <strong>Importo:</strong> €${booking.total_amount}
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="delete-booking-btn square-btn" data-booking-id="${booking.booking_id}" title="Elimina prenotazione">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        `;
+        
+        // Aggiungi event listener al pulsante elimina
+        const deleteBtn = bookingItem.querySelector('.delete-booking-btn');
+        deleteBtn.addEventListener('click', function() {
+            const bookingId = this.getAttribute('data-booking-id');
+            if (confirm('Sei sicuro di voler eliminare questa prenotazione di test? (Solo per demo)')) {
+                // Per i dati di test, rimuovi semplicemente l'elemento
+                bookingItem.remove();
+                showMessage('Prenotazione di test eliminata!', 'success');
+            }
+        });
+        
+        bookingsList.appendChild(bookingItem);
+    });
+    
+    container.appendChild(bookingsList);
+}
+
+function deleteBooking(bookingId) {
+    if (!confirm('Sei sicuro di voler eliminare questa prenotazione?')) {
+        return;
+    }
+    
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? 'http://localhost:3000' 
+                    : '';
+    
+    async function performDelete() {
+        try {
+            const response = await fetch(`${baseUrl}/api/bookings/${bookingId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                // Rimuovi la riga dalla tabella
+                const bookingRow = document.querySelector(`[data-booking-id="${bookingId}"]`);
+                if (bookingRow) {
+                    bookingRow.style.transition = 'opacity 0.3s ease';
+                    bookingRow.style.opacity = '0';
+                    setTimeout(() => {
+                        bookingRow.remove();
+                    }, 300);
+                }
+                
+                showMessage('Prenotazione eliminata con successo', 'success');
+            } else {
+                throw new Error(`Errore ${response.status}: ${response.statusText}`);
+            }
+            
+        } catch (error) {
+            showMessage(`Errore nell'eliminazione: ${error.message}`, 'error');
+        }
+    }
+    
+    performDelete();
 }
 
 // === FUNZIONI HELPER ===
@@ -1733,3 +1964,5 @@ window.editLocation = editLocation;
 window.deleteLocation = deleteLocation;
 window.loadLocationsList = loadLocationsList;
 window.loadSpaces = loadSpaces;
+window.loadBookingsList = loadBookingsList;
+window.loadTestBookingsData = loadTestBookingsData;

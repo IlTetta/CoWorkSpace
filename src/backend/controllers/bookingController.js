@@ -154,7 +154,7 @@ exports.updateBooking = catchAsync(async (req, res) => {
  * DELETE /api/bookings/:id - Elimina prenotazione
  */
 exports.deleteBooking = catchAsync(async (req, res) => {
-        const booking_id = parseInt(req.params.booking_id);
+        const booking_id = parseInt(req.params.id);
         
         if (isNaN(booking_id)) {
             throw AppError.badRequest('ID prenotazione non valido');
