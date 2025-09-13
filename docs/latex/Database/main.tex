@@ -1,0 +1,102 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{float}
+
+% Configurazione geometria della pagina
+\geometry{margin=2.5cm}
+
+% Configurazione hyperref
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=green,
+    pdfpagemode=FullScreen,
+    pdftitle={CoWorkSpace - Documentazione Database},
+    pdfauthor={Team CoWorkSpace},
+    pdfsubject={Database Documentation},
+    pdfkeywords={database, PostgreSQL, coworking, documentation}
+}
+
+% Configurazione del codice SQL
+\lstdefinestyle{sqlstyle}{
+    language=SQL,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    commentstyle=\color{green}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=8pt,
+    frame=single,
+    frameround=tttt,
+    rulecolor=\color{black},
+    backgroundcolor=\color{gray!10},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=2,
+    showspaces=false,
+    showstringspaces=false,
+    captionpos=b
+}
+
+\lstset{style=sqlstyle}
+
+% Configurazione header e footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{CoWorkSpace - Documentazione Database}
+\lhead{\leftmark}
+\cfoot{\thepage}
+
+% Configurazione titoli sezioni
+\titleformat{\section}[block]{\Large\bfseries\filcenter}{}{1em}{}
+\titleformat{\subsection}[hang]{\large\bfseries}{}{1em}{}
+
+\title{
+    \vspace{-2cm}
+    {\Huge \textbf{Documentazione Database}}\\
+    \vspace{0.5cm}
+    {\large Sistema di Gestione Spazi di Coworking}
+}
+
+\author{Tettamanti Andrea \\
+        Mascetti Luca \\
+        Musetti Gregorio \\
+        Vernavà Lorenzo}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+
+\begin{abstract}
+Questa documentazione descrive in dettaglio la struttura del database del sistema CoWorkSpace, una piattaforma per la gestione di spazi di coworking. Il documento include lo schema delle tabelle, le relazioni tra entità, gli esempi di operazioni CRUD e i pattern di utilizzo implementati nel sistema.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\input{sections/schema}
+\input{sections/crud_operations}
+\input{sections/examples}
+
+\end{document}

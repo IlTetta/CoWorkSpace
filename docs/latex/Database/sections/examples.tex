@@ -1,0 +1,332 @@
+\newpage
+
+\section{Esempi Specifici dal Progetto}
+
+Questa sezione presenta esempi concreti di implementazione tratti direttamente dal codice del progetto CoWorkSpace, mostrando come le operazioni del database vengono utilizzate nelle funzionalità reali del sistema.
+
+\subsection{Caso d'Uso: Sistema di Autenticazione}
+
+Il sistema implementa un meccanismo completo di autenticazione con gestione ruoli.
+
+\begin{lstlisting}[caption=Registrazione Utente con Validazioni (AuthService.js)]
+// Logica di business per registrazione utente
+const existingUser = await User.findByEmail(email);
+if (existingUser) {
+    throw AppError.badRequest('Email già registrata');
+}
+
+// Hash della password
+const saltRounds = 12;
+const password_hash = await bcrypt.hash(password, saltRounds);
+
+// Creazione utente con ruolo di default
+const userData = {
+    name, surname, email, password_hash,
+    role: 'user',  // Ruolo di default
+    manager_request_pending: false
+};
+
+const user = await User.create(userData);
+return user;
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Query SQL di Registrazione Utente]
+-- Query effettiva dal modello User.js
+INSERT INTO users (name, surname, email, password_hash, role, manager_request_pending, manager_request_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING user_id, name, surname, email, role, created_at;
+\end{lstlisting}
+
+\newpage
+
+\subsection{Caso d'Uso: Creazione Spazio con Validazioni Business}
+
+Il seguente esempio mostra la logica completa di creazione di uno spazio implementata nel sistema.
+
+\begin{lstlisting}[caption=Creazione Spazio con Autorizzazioni (SpaceService.js)]
+// Validazione autorizzazioni dal SpaceService
+if (!['admin', 'manager'].includes(currentUser.role)) {
+    throw AppError.forbidden('Non hai i permessi per creare uno spazio');
+}
+
+// Verifica esistenza location
+const location = await Location.findById(spaceData.location_id);
+if (!location) {
+    throw AppError.badRequest('Location non trovata');
+}
+
+// I manager possono creare spazi solo nelle loro location
+if (currentUser.role === 'manager' && 
+    location.manager_id !== currentUser.user_id) {
+    throw AppError.forbidden('Puoi creare spazi solo nelle tue location');
+}
+
+// Calcolo automatico prezzo giornaliero se non fornito
+if (!spaceData.price_per_day && spaceData.price_per_hour) {
+    spaceData.price_per_day = Space.calculateDailyPrice(
+        spaceData.price_per_hour, 
+        spaceData.opening_time, 
+        spaceData.closing_time
+    );
+}
+
+return await Space.create(spaceData);
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Query SQL di Creazione Spazio]
+-- Query effettiva dal modello Space.js
+INSERT INTO spaces (
+    location_id, space_type_id, space_name, description, 
+    capacity, price_per_hour, price_per_day, opening_time, closing_time
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING *;
+\end{lstlisting}
+
+\newpage
+
+\subsection{Caso d'Uso: Processo di Prenotazione}
+
+Il sistema implementa un processo di prenotazione che include validazioni e controllo disponibilità.
+
+\begin{lstlisting}[caption=Creazione Prenotazione con Validazioni (BookingService.js)]
+// Validazione disponibilità spazio
+const space = await Space.findById(spaceData.space_id);
+if (!space) {
+    throw AppError.badRequest('Spazio non trovato');
+}
+
+// Controllo conflitti prenotazioni esistenti
+const conflicts = await this.checkBookingConflicts(
+    spaceData.space_id, 
+    spaceData.start_date, 
+    spaceData.end_date
+);
+
+if (conflicts > 0) {
+    throw AppError.conflict('Spazio già prenotato nelle date selezionate');
+}
+
+// Calcolo prezzo totale
+const totalPrice = await this.calculateBookingPrice(
+    space,
+    spaceData.start_date,
+    spaceData.end_date
+);
+
+// Creazione prenotazione
+const bookingData = {
+    user_id: currentUser.user_id,
+    space_id: spaceData.space_id,
+    start_date: spaceData.start_date,
+    end_date: spaceData.end_date,
+    total_price: totalPrice,
+    status: 'pending',
+    payment_status: 'pending',
+    notes: spaceData.notes
+};
+
+const booking = await Booking.create(bookingData);
+return booking;
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Query Controllo Conflitti Prenotazioni]
+-- Query dal BookingService per verificare sovrapposizioni
+SELECT COUNT(*) as conflicts
+FROM bookings
+WHERE space_id = $1
+    AND status IN ('confirmed', 'pending')
+    AND (
+        (start_date <= $2 AND end_date >= $2) OR
+        (start_date <= $3 AND end_date >= $3) OR
+        (start_date >= $2 AND end_date <= $3)
+    );
+\end{lstlisting}
+
+\subsection{Caso d'Uso: Sistema di Autorizzazioni}
+
+Il sistema implementa controlli di autorizzazione granulari per ogni operazione.
+
+\begin{lstlisting}[caption=Middleware di Autorizzazione (authMiddleware.js)]
+// Controllo ruoli da authMiddleware.js
+const requireRole = (roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return next(AppError.unauthorized('Token richiesto'));
+        }
+
+        if (!roles.includes(req.user.role)) {
+            return next(AppError.forbidden(
+                `Accesso negato. Ruoli richiesti: ${roles.join(', ')}`
+            ));
+        }
+
+        next();
+    };
+};
+
+// Utilizzo nei controller
+exports.createSpace = [
+    requireRole(['admin', 'manager']),
+    catchAsync(async (req, res) => {
+        // Logica creazione spazio
+    })
+];
+\end{lstlisting}
+
+\subsection{Caso d'Uso: Gestione Manager per Location}
+
+Il sistema permette ai manager di gestire solo le proprie location.
+
+\begin{lstlisting}[caption=Validazione Ownership Manager (LocationService.js)]
+// Controllo ownership location per manager
+static async canManageLocation(location, currentUser) {
+    if (currentUser.role === 'admin') {
+        return true; // Admin può tutto
+    }
+    if (currentUser.role === 'manager') {
+        return location.manager_id === currentUser.user_id;
+    }
+    return false; // User non può gestire location
+}
+// Utilizzo nel controller
+const location = await Location.findById(locationId);
+if (!location) {
+    throw AppError.notFound('Location non trovata');
+}
+
+const canManage = await LocationService.canManageLocation(location, req.user);
+if (!canManage) {
+    throw AppError.forbidden('Non puoi gestire questa location');
+}
+\end{lstlisting}
+
+\subsection{Caso d'Uso: Dashboard Analytics Semplici}
+
+Il sistema fornisce statistiche base per manager e admin.
+
+\begin{lstlisting}[caption=Statistiche Dashboard Manager (BookingService.js)]
+// Query per dashboard manager
+static async getBookingsDashboard(currentUser, filters = {}) {
+    let baseQuery = `
+        SELECT 
+            COUNT(*) as total_bookings,
+            SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed_bookings,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_bookings,
+            SUM(total_price) as total_revenue
+        FROM bookings b
+        INNER JOIN spaces s ON b.space_id = s.space_id
+        INNER JOIN locations l ON s.location_id = l.location_id
+    `;
+
+    const conditions = ['1=1'];
+    const queryParams = [];
+
+    // Filtro per manager: solo le sue location
+    if (currentUser.role === 'manager') {
+        conditions.push('l.manager_id = $' + (queryParams.length + 1));
+        queryParams.push(currentUser.user_id);
+    }
+
+    const finalQuery = baseQuery + ' WHERE ' + conditions.join(' AND ');
+    const result = await pool.query(finalQuery, queryParams);
+    
+    return result.rows[0];
+}
+\end{lstlisting}
+
+\subsection{Caso d'Uso: Sistema di Notifiche Base}
+
+Il sistema implementa notifiche semplici per eventi importanti.
+
+\begin{lstlisting}[caption=Creazione Notifica Email (NotificationService.js)]
+// Creazione notifica booking confermato
+static async createBookingConfirmationNotification(booking) {
+    const notificationData = {
+        user_id: booking.user_id,
+        type: 'email',
+        channel: 'booking_confirmation',
+        recipient: booking.user_email,
+        subject: `Prenotazione Confermata - ${booking.space_name}`,
+        content: `La tua prenotazione per ${booking.space_name} dal ${booking.start_date} al ${booking.end_date} è stata confermata.`,
+        booking_id: booking.booking_id,
+        status: 'pending'
+    };
+    return await Notification.create(notificationData);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Query Inserimento Notifica]
+-- Query dal modello Notification.js
+INSERT INTO notifications (
+    user_id, type, channel, recipient, subject, content,
+    template_name, template_data, booking_id, payment_id, status
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING *;
+\end{lstlisting}
+
+\subsection{Caso d'Uso: Gestione Errori e Validazioni}
+
+Il sistema implementa validazioni robuste e gestione errori centralizata.
+
+\begin{lstlisting}[caption=Gestione Errori Database (Booking.js)]
+// Gestione errori specifici PostgreSQL
+try {
+    const result = await pool.query(query, values);
+    return new Booking(result.rows[0]);
+} catch (error) {
+    // Foreign key violation
+    if (error.code === '23503') {
+        if (error.constraint?.includes('user_id')) {
+            throw AppError.badRequest('Utente non valido');
+        }
+        if (error.constraint?.includes('space_id')) {
+            throw AppError.badRequest('Spazio non valido');
+        }
+    }
+    
+    // Check constraint violation
+    if (error.code === '23514') {
+        if (error.constraint?.includes('booking_date_order')) {
+            throw AppError.badRequest('La data di inizio deve essere precedente a quella di fine');
+        }
+        if (error.constraint?.includes('booking_future_date')) {
+            throw AppError.badRequest('La prenotazione deve essere per una data futura');
+        }
+    }
+    
+    throw AppError.internal('Errore durante la creazione della prenotazione', error);
+}
+\end{lstlisting}
+
+\newpage
+
+\subsection{Caso d'Uso: Aggiornamento Dinamico dei Campi}
+
+Il sistema implementa aggiornamenti dinamici per evitare query ridondanti.
+
+\begin{lstlisting}[caption=Update Dinamico Utente (User.js)]
+// Costruzione dinamica query di aggiornamento
+async updateProfile(updateData) {
+    const allowedFields = ['name', 'surname', 'fcm_token'];
+    const updateFields = [];
+    const queryParams = [this.user_id];
+    let queryIndex = 2;
+
+    for (const [key, value] of Object.entries(updateData)) {
+        if (allowedFields.includes(key) && value !== undefined && value !== '') {
+            updateFields.push(`${key} = $${queryIndex++}`);
+            queryParams.push(value);
+        }
+    }
+
+    if (updateFields.length === 0) {
+        throw AppError.badRequest('Nessun campo valido fornito per l\'aggiornamento');
+    }
+
+    const query = `UPDATE users SET ${updateFields.join(', ')} WHERE user_id = $1 RETURNING *`;
+    const result = await pool.query(query, queryParams);
+    
+    return result.rows[0];
+}
+\end{lstlisting}
