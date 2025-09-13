@@ -102,18 +102,35 @@
 }
 
 
+@media (max-width: 1200px) {
+    .header {
+        padding: 0 30px;
+    }
+    
+    .logo {
+        font-size: 36px;
+    }
+    
+    .home-button,
+    .logout-button {
+        width: 80px;
+        font-size: 14px;
+    }
+}
+
 @media (max-width: 1000px) {
     .header {
-        height: 100px;
+        height: 80px;
         justify-content: center;
-        
+        padding: 0 20px;
+        position: fixed;
+        top: 0;
     }
 
     .middle-section {
-        height: 100px;
-        width: auto;
-        flex-shrink: 0;
-        min-width: max-content;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     
     .left-section {
@@ -121,13 +138,177 @@
     }
     
     .right-section {
-        width: auto;
-        flex-shrink: 0;
-        min-width: max-content;
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        gap: 0;
     }
 
     .logo {
-        transform: scale(0.8);
-        text-align: center;
+        font-size: 32px;
+    }
+    
+    .home-button,
+    .logout-button {
+        width: 75px;
+        height: 35px;
+        font-size: 13px;
+    }
+    
+    .logout-button {
+        margin-right: 0;
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        height: 70px;
+        padding: 0 15px;
+    }
+    
+    .right-section {
+        right: 15px;
+    }
+    
+    .logo {
+        font-size: 28px;
+    }
+    
+    .home-button,
+    .logout-button {
+        width: 70px;
+        height: 32px;
+        font-size: 12px;
+    }
+    
+    .home-button {
+        margin-right: 0;
+    }
+    
+    .logout-button {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .header {
+        height: 65px;
+        padding: 0 10px;
+        justify-content: space-between;
+    }
+    
+    .middle-section {
+        position: static;
+        transform: none;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .right-section {
+        position: static;
+        transform: none;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        flex-shrink: 0;
+    }
+    
+    .logo {
+        font-size: 26px;
+    }
+    
+    .home-button,
+    .logout-button {
+        width: 65px;
+        height: 32px;
+        font-size: 12px;
+        border-radius: 16px;
+    }
+    
+    .home-button {
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .logout-button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-top-right-radius: 16px;
+        border-bottom-right-radius: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        height: 60px;
+        padding: 0 8px;
+    }
+    
+    .logo {
+        font-size: 22px;
+    }
+    
+    .home-button,
+    .logout-button {
+        width: 55px;
+        height: 30px;
+        font-size: 11px;
+        border-radius: 15px;
+    }
+    
+    .home-button {
+        border-top-left-radius: 15px;
+        border-bottom-left-radius: 15px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .logout-button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-top-right-radius: 15px;
+        border-bottom-right-radius: 15px;
+    }
+}
+
+@media (max-width: 360px) {
+    .header {
+        height: 65px;
+        padding: 0 5px;
+    }
+    
+    .logo {
+        font-size: 24px;
+    }
+    
+    .home-button,
+    .logout-button {
+        width: 60px;
+        height: 32px;
+        font-size: 12px;
+        border-radius: 16px;
+    }
+    
+    .home-button {
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .logout-button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-top-right-radius: 16px;
+        border-bottom-right-radius: 16px;
     }
 }

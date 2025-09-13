@@ -49,6 +49,16 @@ document.addEventListener('DOMContentLoaded', function() {
  * Inizializza i gestori degli eventi per i pulsanti
  */
 function initializeButtons() {
+    // Gestore per il logo (reindirizza alla home)
+    const logo = document.getElementById('logo');
+    if (logo) {
+        logo.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Reindirizza alla pagina home
+            window.location.href = 'home.html';
+        });
+    }
+
     // Gestore per il pulsante Home
     const homeBtn = document.getElementById('home-btn');
     if (homeBtn) {
