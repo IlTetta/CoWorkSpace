@@ -4,16 +4,17 @@ FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
-# Copia package.json e package-lock.json dalla root
-COPY package*.json ./ 
-# Installa le dipendenze di produzione
+# Copy package.json and package-lock.json from the root
+COPY package*.json ./
+
+# Install production dependencies
 RUN npm install --only=production
 
-# Copia tutto il backend
-COPY src/backend/ . 
+# Copy all backend files
+COPY src/backend/ .
 
-# Espone la porta
+# Expose the port
 EXPOSE 3000
 
-# Avvia il server
-CMD ["node", "server.js"]
+# Run both SQL scripts and then start the server
+CMD ["sh", "-c", "psql $DATABASE_URL -f init.sql && psql $DATABASE_URL -f seed.sql && node server.js"]

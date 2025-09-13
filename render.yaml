@@ -12,8 +12,6 @@ services:
           property: connectionString
       - key: FRONTEND_URL
         value: https://my-frontend-1em1.onrender.com
-    # Questo comando esegue entrambi gli script e poi avvia il server
-    startCommand: "psql $DATABASE_URL -f init.sql && psql $DATABASE_URL -f seed.sql && node server.js"
 
   - type: web
     name: my-frontend
