@@ -350,8 +350,9 @@ body {
     border-radius: 12px;
     width: 90%;
     max-width: 600px;
-    max-height: 70vh;
-    overflow-y: auto;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -364,12 +365,48 @@ body {
     background: rgb(79, 70, 229);
     color: white;
     border-radius: 12px 12px 0 0;
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
     margin: 0;
     font-size: 1.4rem;
     font-weight: 600;
+}
+
+.modal-form-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 30px;
+    padding-right: 26px; /* Spazio per la scrollbar */
+}
+
+/* Scrollbar per i form dei modal - stesso stile delle liste */
+.modal-form-container::-webkit-scrollbar {
+    width: 12px;
+    background: transparent;
+}
+
+.modal-form-container::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin: 2px;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb {
+    background: rgba(79, 70, 229, 0.5);
+    border-radius: 6px;
+    border: 2px solid #f8f9fa;
+    min-height: 20px;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(79, 70, 229, 0.8);
+}
+
+.modal-form-container::-webkit-scrollbar-thumb:active {
+    background: rgb(79, 70, 229);
 }
 
 .close-button {
@@ -451,6 +488,7 @@ body {
     border-top: 1px solid #e5e7eb;
     background: #f9fafb;
     border-radius: 0 0 12px 12px;
+    flex-shrink: 0;
 }
 
 .cancel-btn {
@@ -486,7 +524,8 @@ body {
 }
 
 form {
-    padding: 30px;
+    margin: 0;
+    padding: 0;
 }
 
 /* Liste con scroll */
@@ -633,7 +672,12 @@ form {
     .modal-content {
         margin: 15% auto;
         width: 95%;
-        max-height: 60vh;
+        max-height: 75vh;
+    }
+    
+    .modal-form-container {
+        padding: 20px;
+        padding-right: 16px;
     }
 }
 
@@ -726,7 +770,7 @@ form {
     .modal-content {
         margin: 20% auto;
         width: 98%;
-        max-height: 50vh;
+        max-height: 70vh;
         padding: 0;
     }
     
@@ -736,6 +780,11 @@ form {
     
     .modal-header h3 {
         font-size: 1.2rem;
+    }
+    
+    .modal-form-container {
+        padding: 15px 20px;
+        padding-right: 16px;
     }
     
     .form-group {
@@ -750,6 +799,10 @@ form {
     .form-group textarea,
     .form-group select {
         font-size: 16px; /* Previene zoom su iOS */
+    }
+    
+    .form-actions {
+        padding: 15px 20px;
     }
 }
 

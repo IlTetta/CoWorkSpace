@@ -40,6 +40,7 @@ function showMessage(message, type = 'success') {
 function setupEventListeners() {
     const homeBtn = document.getElementById('home-btn');
     const logoutBtn = document.getElementById('logout-btn');
+    const logo = document.querySelector('.logo');
     
     if (homeBtn) {
         homeBtn.addEventListener('click', () => {
@@ -52,6 +53,12 @@ function setupEventListeners() {
             localStorage.removeItem('coworkspace_token');
             localStorage.removeItem('coworkspace_user');
             window.location.href = 'login.html';
+        });
+    }
+    
+    if (logo) {
+        logo.addEventListener('click', () => {
+            window.location.href = 'home.html';
         });
     }
     
@@ -1603,7 +1610,15 @@ function setupModalEventListeners() {
         }
     });
     
-    // Submit forms
+    // Submit forms - ora gestiti dai pulsanti esterni
+    document.getElementById('save-location-btn').addEventListener('click', () => {
+        document.getElementById('location-form').dispatchEvent(new Event('submit'));
+    });
+    
+    document.getElementById('save-space-btn').addEventListener('click', () => {
+        document.getElementById('space-form').dispatchEvent(new Event('submit'));
+    });
+    
     document.getElementById('location-form').addEventListener('submit', handleLocationSubmit);
     document.getElementById('space-form').addEventListener('submit', handleSpaceSubmit);
     

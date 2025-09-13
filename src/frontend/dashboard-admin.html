@@ -155,98 +155,99 @@
     <div id="space-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="space-modal-title">Crea Nuovo Spazio</h3>
+                <h3 id="space-modal-title">Modifica Spazio</h3>
                 <span class="close-button" id="close-space-modal">&times;</span>
             </div>
-            <form id="space-form">
-                <div class="form-group">
-                    <label for="space-name">Nome Spazio:</label>
-                    <input type="text" id="space-name" name="name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="space-description">Descrizione:</label>
-                    <textarea id="space-description" name="description" rows="3"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="space-location">Location:</label>
-                    <select id="space-location" name="location_id" required>
-                        <option value="">Seleziona una location</option>
-                        <!-- Le location verranno caricate dinamicamente -->
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="space-type">Tipo Spazio:</label>
-                    <select id="space-type" name="space_type_id" required>
-                        <option value="">Seleziona un tipo</option>
-                        <!-- I tipi verranno caricati dinamicamente -->
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="space-capacity">Capacità:</label>
-                    <input type="number" id="space-capacity" name="capacity" min="1" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="space-hourly-rate">Tariffa Oraria (€):</label>
-                    <input type="number" id="space-hourly-rate" name="hourly_rate" step="0.01" min="0" required>
-                </div>
-                
-                <!-- Sezione giorni disponibili -->
-                <div class="form-group">
-                    <label>Giorni della Settimana Disponibili:</label>
-                    <div class="days-selection">
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="1" checked>
-                            <span>Lunedì</span>
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="2" checked>
-                            <span>Martedì</span>
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="3" checked>
-                            <span>Mercoledì</span>
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="4" checked>
-                            <span>Giovedì</span>
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="5" checked>
-                            <span>Venerdì</span>
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="6">
-                            <span>Sabato</span>
-                        </label>
-                        <label class="day-checkbox">
-                            <input type="checkbox" name="available_days" value="7">
-                            <span>Domenica</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Sezione orari di apertura -->
-                <div class="form-group-row">
+            <div class="modal-form-container">
+                <form id="space-form">
                     <div class="form-group">
-                        <label for="space-opening-time">Orario Apertura:</label>
-                        <input type="time" id="space-opening-time" name="opening_time" value="09:00" required>
+                        <label for="space-name">Nome Spazio:</label>
+                        <input type="text" id="space-name" name="name" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="space-closing-time">Orario Chiusura:</label>
-                        <input type="time" id="space-closing-time" name="closing_time" value="18:00" required>
+                        <label for="space-description">Descrizione:</label>
+                        <textarea id="space-description" name="description" rows="3"></textarea>
                     </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="cancel-btn" id="cancel-space-form">Annulla</button>
-                    <button type="submit" class="save-btn" id="save-space-btn">Salva</button>
-                </div>
-            </form>
+                    
+                    <div class="form-group">
+                        <label for="space-location">Location:</label>
+                        <select id="space-location" name="location_id" required>
+                            <option value="">Seleziona una location</option>
+                            <!-- Le location verranno caricate dinamicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-type">Tipo Spazio:</label>
+                        <select id="space-type" name="space_type_id" required>
+                            <option value="">Seleziona un tipo</option>
+                            <!-- I tipi verranno caricati dinamicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-capacity">Capacità:</label>
+                        <input type="number" id="space-capacity" name="capacity" min="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-hourly-rate">Tariffa Oraria (€):</label>
+                        <input type="number" id="space-hourly-rate" name="hourly_rate" step="0.01" min="0" required>
+                    </div>
+                    
+                    <!-- Sezione giorni disponibili -->
+                    <div class="form-group">
+                        <label>Giorni della Settimana Disponibili:</label>
+                        <div class="days-selection">
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="1" checked>
+                                <span>Lunedì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="2" checked>
+                                <span>Martedì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="3" checked>
+                                <span>Mercoledì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="4" checked>
+                                <span>Giovedì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="5" checked>
+                                <span>Venerdì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="6">
+                                <span>Sabato</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="7">
+                                <span>Domenica</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sezione orari di apertura -->
+                    <div class="form-group-row">
+                        <div class="form-group">
+                            <label for="space-opening-time">Orario Apertura:</label>
+                            <input type="time" id="space-opening-time" name="opening_time" value="09:00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-closing-time">Orario Chiusura:</label>
+                            <input type="time" id="space-closing-time" name="closing_time" value="18:00" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" id="cancel-space-form">Annulla</button>
+                <button type="submit" class="save-btn" id="save-space-btn">Salva</button>
+            </div>
         </div>
     </div>
 
@@ -254,35 +255,36 @@
     <div id="location-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="location-modal-title">Aggiungi Nuova Location</h3>
+                <h3 id="location-modal-title">Modifica Location</h3>
                 <span class="close-button" id="close-location-modal">&times;</span>
             </div>
-            <form id="location-form">
-                <div class="form-group">
-                    <label for="location-name">Nome Location:</label>
-                    <input type="text" id="location-name" name="name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="location-description">Descrizione:</label>
-                    <textarea id="location-description" name="description" rows="3"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="location-address">Indirizzo:</label>
-                    <input type="text" id="location-address" name="address" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="location-city">Città:</label>
-                    <input type="text" id="location-city" name="city" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="cancel-btn" id="cancel-location-form">Annulla</button>
-                    <button type="submit" class="save-btn" id="save-location-btn">Salva</button>
-                </div>
-            </form>
+            <div class="modal-form-container">
+                <form id="location-form">
+                    <div class="form-group">
+                        <label for="location-name">Nome Location:</label>
+                        <input type="text" id="location-name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location-description">Descrizione:</label>
+                        <textarea id="location-description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location-address">Indirizzo:</label>
+                        <input type="text" id="location-address" name="address" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location-city">Città:</label>
+                        <input type="text" id="location-city" name="city" required>
+                    </div>
+                </form>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" id="cancel-location-form">Annulla</button>
+                <button type="submit" class="save-btn" id="save-location-btn">Salva</button>
+            </div>
         </div>
     </div>
 
