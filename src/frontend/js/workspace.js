@@ -59,14 +59,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Funzione per aggiornare l'anteprima del prezzo
     async function updatePricePreview() {
         const spaceId = document.getElementById('space-select').value;
-        const date = document.getElementById('date').value;
-        const time = document.getElementById('time').value;
-        const duration = document.getElementById('duration').value;
+        const dateStart = document.getElementById('date-start').value;
+        const dateEnd = document.getElementById('date-end').value;
         
         // Aggiorna il prezzo solo se tutti i campi principali sono compilati
-        if (spaceId && date && time && duration) {
+        if (spaceId && dateStart && dateEnd) {
             try {
-                const price = await window.apiService.calculateBookingPrice(spaceId, date, time, duration, []);
+                // Calcola il numero di giorni tra le date
+                const startDate = new Date(dateStart.split('/').reverse().join('-'));
+                const endDate = new Date(dateEnd.split('/').reverse().join('-'));
+                const diffTime = Math.abs(endDate - startDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 per includere il giorno di inizio
+                
+                const price = await window.apiService.calculateBookingPrice(spaceId, dateStart, '09:00', diffDays * 24, []);
                 const priceEl = document.getElementById('price');
                 if (priceEl) {
                     priceEl.value = price;
@@ -90,46 +95,73 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Aggiungi i listener per l'aggiornamento dinamico del prezzo
     const spaceSelect = document.getElementById('space-select');
-    const dateInput = document.getElementById('date');
-    const timeInput = document.getElementById('time');
-    const durationInput = document.getElementById('duration');
+    const dateStartInput = document.getElementById('date-start');
+    const dateEndInput = document.getElementById('date-end');
 
     if (spaceSelect) spaceSelect.addEventListener('change', updatePricePreview);
-    if (dateInput) dateInput.addEventListener('change', updatePricePreview);
-    if (timeInput) timeInput.addEventListener('change', updatePricePreview);
-    if (durationInput) durationInput.addEventListener('change', updatePricePreview);
+    if (dateStartInput) dateStartInput.addEventListener('change', updatePricePreview);
+    if (dateEndInput) dateEndInput.addEventListener('change', updatePricePreview);
 
     // Gestione form prenotazione
     const bookingForm = document.getElementById('booking-form');
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const date = document.getElementById('date').value;
-        const time = document.getElementById('time').value;
-        const duration = document.getElementById('duration').value;
+        const dateStart = document.getElementById('date-start').value;
+        const dateEnd = document.getElementById('date-end').value;
         const services = Array.from(document.getElementById('services')?.selectedOptions || []).map(opt => opt.value);
-        // Gestione errore sotto input Data
-        let errorEl = document.getElementById('date-error');
-        if (!date) {
-            if (!errorEl) {
-                errorEl = document.createElement('span');
-                errorEl.id = 'date-error';
-                errorEl.className = 'field-error';
-                document.getElementById('date').parentElement.appendChild(errorEl);
+        
+        // Gestione errore sotto input Data di Inizio
+        let errorElStart = document.getElementById('date-start-error');
+        if (!dateStart) {
+            if (!errorElStart) {
+                errorElStart = document.createElement('span');
+                errorElStart.id = 'date-start-error';
+                errorElStart.className = 'field-error';
+                document.getElementById('date-start').parentElement.appendChild(errorElStart);
             }
-            errorEl.textContent = 'Per favore, inserisci una data.';
-            errorEl.style.color = 'red';
-            errorEl.style.display = 'block';
-            errorEl.style.marginTop = '5px';
-            errorEl.style.fontSize = '14px';
+            errorElStart.textContent = 'Per favore, inserisci una data di inizio.';
+            errorElStart.style.color = 'red';
+            errorElStart.style.display = 'block';
+            errorElStart.style.marginTop = '5px';
+            errorElStart.style.fontSize = '14px';
             return;
         } else {
-            if (errorEl) {
-                errorEl.textContent = '';
-                errorEl.style.display = 'none';
+            if (errorElStart) {
+                errorElStart.textContent = '';
+                errorElStart.style.display = 'none';
             }
         }
+        
+        // Gestione errore sotto input Data di Fine
+        let errorElEnd = document.getElementById('date-end-error');
+        if (!dateEnd) {
+            if (!errorElEnd) {
+                errorElEnd = document.createElement('span');
+                errorElEnd.id = 'date-end-error';
+                errorElEnd.className = 'field-error';
+                document.getElementById('date-end').parentElement.appendChild(errorElEnd);
+            }
+            errorElEnd.textContent = 'Per favore, inserisci una data di fine.';
+            errorElEnd.style.color = 'red';
+            errorElEnd.style.display = 'block';
+            errorElEnd.style.marginTop = '5px';
+            errorElEnd.style.fontSize = '14px';
+            return;
+        } else {
+            if (errorElEnd) {
+                errorElEnd.textContent = '';
+                errorElEnd.style.display = 'none';
+            }
+        }
+        
         // Calcola prezzo e mostra sezione pagamento
-        const price = await window.apiService.calculateBookingPrice(workspaceId, date, time, duration, services);
+        const spaceId = document.getElementById('space-select').value;
+        const startDate = new Date(dateStart.split('/').reverse().join('-'));
+        const endDate = new Date(dateEnd.split('/').reverse().join('-'));
+        const diffTime = Math.abs(endDate - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        const price = await window.apiService.calculateBookingPrice(spaceId, dateStart, '09:00', diffDays * 24, services);
         document.getElementById('total-price').textContent = price;
         document.getElementById('payment-section').style.display = 'block';
     });

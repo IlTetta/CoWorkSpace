@@ -61,7 +61,6 @@
             <div class="workspace-card">
                 <div class="workspace-title-block">
                     <h2 class="workspace-title">Prenota Spazio</h2>
-                    <p class="workspace-type" id="selected-space-type">Seleziona uno spazio</p>
                 </div>
 
                 <div class="booking-section">
@@ -74,19 +73,15 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="date">Data:</label>
-                            <input type="text" id="date" name="date" class="date-bar" required readonly>
-                            <span id="date-error" class="field-error" style="display:none;"></span>
+                            <label for="date-start">Data di inizio:</label>
+                            <input type="text" id="date-start" name="date-start" class="date-bar" required readonly>
+                            <span id="date-start-error" class="field-error" style="display:none;"></span>
                         </div>
-                        
+
                         <div class="form-group">
-                            <label for="time">Orario:</label>
-                            <input type="time" id="time" name="time" class="time-bar" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="duration">Durata (ore):</label>
-                            <input type="number" id="duration" name="duration" class="duration-bar" min="1" max="12" required>
+                            <label for="date-end">Data di fine:</label>
+                            <input type="text" id="date-end" name="date-end" class="date-bar" required readonly>
+                            <span id="date-end-error" class="field-error" style="display:none;"></span>
                         </div>
 
                         <div class="form-group">
@@ -98,19 +93,22 @@
                     </form>
                     
                     <div class="calendar" id="custom-calendar">
+                        <div class="calendar-instruction">
+                            <p id="calendar-instruction-text">Clicca su una data per selezionare l'inizio del periodo</p>
+                        </div>
                         <header class="calendar__header">
                             <select class="calendar__month" id="calendar-month"></select>
                             <select class="calendar__year" id="calendar-year"></select>
                         </header>
                         <div class="calendar__grid">
                             <div class="calendar__day-names">
-                                <span class="calendar__day-name">D</span>
                                 <span class="calendar__day-name">L</span>
                                 <span class="calendar__day-name">M</span>
                                 <span class="calendar__day-name">M</span>
                                 <span class="calendar__day-name">G</span>
                                 <span class="calendar__day-name">V</span>
                                 <span class="calendar__day-name">S</span>
+                                <span class="calendar__day-name">D</span>
                             </div>
                             <div class="calendar__day-numbers" id="calendar-day-numbers">
                                 <!-- I giorni del calendario verranno inseriti qui dal JS -->

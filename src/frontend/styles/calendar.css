@@ -8,6 +8,22 @@
   margin-left: 30px;
 }
 
+.calendar-instruction {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(79, 70, 229, 0.1);
+  border-radius: 0.5rem;
+  border-left: 4px solid rgb(79, 70, 229);
+}
+
+.calendar-instruction p {
+  margin: 0;
+  color: rgb(79, 70, 229);
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
 .calendar__header {
   font-weight: bold;
   display: flex;
@@ -85,4 +101,25 @@
 .calendar__day-number.selected {
   background-color: rgb(79, 70, 229);
   color: #fff;
+}
+
+.calendar__day-number.selected-start {
+  background-color: rgb(79, 70, 229);
+  color: #fff;
+}
+
+.calendar__day-number.selected-end {
+  background-color: rgb(99, 89, 255);
+  color: #fff;
+}
+
+.calendar__day-number.in-range {
+  background-color: rgba(79, 70, 229, 0.2);
+  color: rgb(79, 70, 229);
+  border-radius: 50%;
+}
+
+.calendar__day-number.in-range:hover {
+  background-color: rgba(79, 70, 229, 0.4);
+  border-radius: 50%;
 }
