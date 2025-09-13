@@ -4,6 +4,9 @@ FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
+# Install the PostgreSQL client tools
+RUN apk add --no-cache postgresql-client
+
 # Copy package.json and package-lock.json from the root
 COPY package*.json ./
 
