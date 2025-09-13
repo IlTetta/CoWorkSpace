@@ -618,6 +618,13 @@ form {
         gap: 20px;
     }
 
+    .admin-card {
+        width: 100%;
+        max-width: 500px;
+        min-height: 400px; /* Altezza minima uniforme per mobile */
+        height: auto;
+    }
+
     .admin-section {
         width: 100%;
         max-width: 500px;
@@ -640,6 +647,7 @@ form {
     .profile-container {
         margin-left: 15px;
         margin-right: 15px;
+        margin-top: 30px;
         gap: 20px;
     }
     
@@ -668,7 +676,15 @@ form {
         width: calc(100% - 16px);
         box-sizing: border-box;
     }
-    
+
+    .admin-card {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 20px;
+        min-height: 380px; /* Altezza minima uniforme per schermi molto piccoli */
+        height: auto;
+    }
+
     .admin-section {
         width: 100%;
         box-sizing: border-box;
@@ -677,7 +693,7 @@ form {
     
     .profile-container {
         margin-left: 8px;
-        margin-top: 20px;
+        margin-top: 40px;
         width: calc(100% - 16px);
         box-sizing: border-box;
         flex-direction: column;

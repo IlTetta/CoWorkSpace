@@ -111,36 +111,29 @@
 
 @media (max-width: 1000px) {
     .header {
-        height: auto;
-        flex-wrap: wrap;
-        padding-bottom: 10px;
-    }
-    
-    .middle-section {
         height: 100px;
-        width: 100%;
-        order: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        flex-wrap: nowrap;
+        padding: 0 20px;
+        justify-content: space-between;
     }
     
     .left-section {
-        height: 50px;
-        width: 50%;
+        width: auto;
+        order: 1;
+        justify-content: flex-start;
+    }
+    
+    .middle-section {
+        width: auto;
         order: 2;
-        justify-content: start;
+        justify-content: flex-start;
     }
     
     .right-section {
-        width: 50%;
-        order: 2;
-        justify-content: end;
-    }
-    
-    .home-button,
-    .logout-button {
-        margin-right: 5%;
+        width: auto;
+        order: 3;
+        justify-content: flex-end;
+        gap: 0;
     }
 }
 
