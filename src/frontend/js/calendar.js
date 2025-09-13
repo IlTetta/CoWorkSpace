@@ -216,15 +216,3 @@ calendarMonthSelect.addEventListener('change', (e) => {
     state.currentMonth = parseInt(e.target.value, 10);
     renderCalendar(state.currentMonth, state.currentYear);
 });
-
-bookingForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(bookingForm);
-    const bookingData = {
-        date: formData.get('date'),
-        time: formData.get('time'),
-        duration: formData.get('duration')
-    };
-
-    saveBookingToFirestore(bookingData);
-});

@@ -206,6 +206,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const totalPrice = pricePerHour * hoursPerDay * diffDays;
             document.getElementById('total-price').textContent = totalPrice.toFixed(2);
+            
+            // Popola il riepilogo con tutti i dati
+            populateBookingSummary(selectedSpace, dateStart, dateEnd, diffDays, hoursPerDay * diffDays, totalPrice);
         } else {
             // Fallback
             const price = document.getElementById('price').value || '0';
@@ -412,4 +415,33 @@ function getLocationIdFromUrl() {
 // Funzione deprecata - mantenuta per compatibilità
 function getWorkspaceIdFromUrl() {
     return getLocationIdFromUrl();
+}
+
+// Funzione per popolare il riepilogo della prenotazione
+function populateBookingSummary(selectedSpace, dateStart, dateEnd, totalDays, totalHours, totalPrice) {
+    // Dati utente (presi dal localStorage o AuthService)
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    document.getElementById('summary-user-name').textContent = userData.name || 'Utente';
+    document.getElementById('summary-user-email').textContent = userData.email || 'Non disponibile';
+    
+    // Dati location (presi dalla pagina)
+    const locationName = document.getElementById('location-name')?.textContent || 'Location';
+    const locationAddress = document.getElementById('location-address')?.textContent || 'Indirizzo non disponibile';
+    document.getElementById('summary-location-name').textContent = locationName;
+    document.getElementById('summary-location-address').textContent = locationAddress;
+    
+    // Dati spazio
+    const spaceTypeName = selectedSpace.spaceType?.name || selectedSpace.space_type?.name || 'Tipo sconosciuto';
+    const openingTime = selectedSpace.openingTime || selectedSpace.opening_time || '09:00';
+    const closingTime = selectedSpace.closingTime || selectedSpace.closing_time || '18:00';
+    
+    document.getElementById('summary-space-name').textContent = selectedSpace.name || 'Spazio';
+    document.getElementById('summary-space-type').textContent = spaceTypeName;
+    document.getElementById('summary-space-hours').textContent = `${openingTime} - ${closingTime}`;
+    
+    // Dati periodo
+    document.getElementById('summary-date-start').textContent = dateStart;
+    document.getElementById('summary-date-end').textContent = dateEnd;
+    document.getElementById('summary-total-days').textContent = totalDays;
+    document.getElementById('summary-total-hours').textContent = totalHours;
 }

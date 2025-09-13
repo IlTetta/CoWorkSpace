@@ -172,13 +172,76 @@ body {
 /* Sezione pagamento */
 .payment-section {
     display: none;
-    text-align: center;
+    text-align: left;
+    padding: 30px;
+    background: #f8fafc;
+    border-radius: 15px;
+    margin: 20px 30px;
+    border: 2px solid #e2e8f0;
 }
+
 .payment-title {
     font-size: 2.2rem;
     font-weight: 600;
     color: rgb(79, 70, 229);
+    text-align: center;
+    margin-bottom: 25px;
 }
+
+.booking-summary {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.summary-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid rgb(79, 70, 229);
+}
+
+.summary-section h4 {
+    color: rgb(79, 70, 229);
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+.summary-section p {
+    margin: 8px 0;
+    font-size: 1.4rem;
+    color: #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-section strong {
+    color: #1f2937;
+    min-width: 120px;
+}
+
+.summary-total {
+    background: rgb(79, 70, 229);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.summary-total .payment-total {
+    font-size: 2rem;
+    margin: 0;
+    color: white;
+}
+
+.summary-total strong {
+    color: white;
+}
+
 .payment-total {
     font-size: 1.8rem;
     color: #334155;

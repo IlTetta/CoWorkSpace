@@ -119,7 +119,40 @@
                 
                 <div id="payment-section" class="payment-section">
                     <h3 class="payment-title">Riepilogo e Pagamento</h3>
-                    <p class="payment-total">Totale: <span id="total-price"></span> €</p>
+                    
+                    <div class="booking-summary">
+                        <div class="summary-section">
+                            <h4>Dati Utente</h4>
+                            <p><strong>Nome:</strong> <span id="summary-user-name">-</span></p>
+                            <p><strong>Email:</strong> <span id="summary-user-email">-</span></p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h4>Location</h4>
+                            <p><strong>Nome:</strong> <span id="summary-location-name">-</span></p>
+                            <p><strong>Indirizzo:</strong> <span id="summary-location-address">-</span></p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h4>Spazio Selezionato</h4>
+                            <p><strong>Spazio:</strong> <span id="summary-space-name">-</span></p>
+                            <p><strong>Tipo:</strong> <span id="summary-space-type">-</span></p>
+                            <p><strong>Orari:</strong> <span id="summary-space-hours">-</span></p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h4>Periodo Prenotazione</h4>
+                            <p><strong>Data Inizio:</strong> <span id="summary-date-start">-</span></p>
+                            <p><strong>Data Fine:</strong> <span id="summary-date-end">-</span></p>
+                            <p><strong>Numero Giorni:</strong> <span id="summary-total-days">-</span></p>
+                            <p><strong>Ore Totali:</strong> <span id="summary-total-hours">-</span></p>
+                        </div>
+                        
+                        <div class="summary-total">
+                            <p class="payment-total"><strong>Totale da Pagare: €<span id="total-price">0</span></strong></p>
+                        </div>
+                    </div>
+                    
                     <button id="pay-button" class="pay-button">Paga ora</button>
                 </div>
                 
