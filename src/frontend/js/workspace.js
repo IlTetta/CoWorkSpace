@@ -837,7 +837,27 @@ async function getSpaceBookedDates(spaceId) {
         const startDateStr = today.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
         
-        // Usa direttamente il metodo alternativo che sappiamo funziona
+        // Usa l'endpoint pubblico per ottenere TUTTE le prenotazioni di questo spazio
+        // indipendentemente dall'utente corrente (per controllo disponibilità calendario)
+        const response = await fetch(`/api/bookings/public/space/${spaceId}/booked-dates?date_from=${startDateStr}&date_to=${endDateStr}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            // Se l'endpoint pubblico fallisce, usa il metodo alternativo
+            return await getSpaceBookedDatesAlternative(spaceId, startDateStr, endDateStr);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.booked_dates) {
+            return result.data.booked_dates;
+        }
+        
+        // Se il formato non è quello atteso, prova il metodo alternativo
         return await getSpaceBookedDatesAlternative(spaceId, startDateStr, endDateStr);
         
         /* 
@@ -894,6 +914,26 @@ async function getSpaceBookedDates(spaceId) {
 // Funzione alternativa per recuperare le date prenotate
 async function getSpaceBookedDatesAlternative(spaceId, startDate, endDate) {
     try {
+        // PRIMA prova con endpoint pubblico semplificato se disponibile
+        try {
+            const publicResponse = await fetch(`/api/bookings/public/space/${spaceId}/booked-dates?date_from=${startDate}&date_to=${endDate}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (publicResponse.ok) {
+                const publicResult = await publicResponse.json();
+                if (publicResult.success && publicResult.data && publicResult.data.booked_dates) {
+                    return publicResult.data.booked_dates;
+                }
+            }
+        } catch (publicError) {
+            // Continua con il metodo alternativo se quello pubblico fallisce
+        }
+        
+        // Metodo alternativo: usa endpoint con autenticazione (limiterà ai risultati dell'utente)
         const token = window.authService?.getToken();
         
         // Prova a usare l'endpoint generale delle prenotazioni con filtro per spazio
