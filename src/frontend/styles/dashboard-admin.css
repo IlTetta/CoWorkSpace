@@ -144,7 +144,7 @@ body {
 .admin-sections {
     margin: 40px 30px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 30px;
 }
 
@@ -345,7 +345,10 @@ body {
 
 .modal-content {
     background-color: white;
-    margin: 10% auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     padding: 0;
     border-radius: 12px;
     width: 90%;
@@ -649,7 +652,34 @@ form {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+
+@media (max-width: 900px) and (min-width: 651px) {
+    .admin-sections {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin: 20px 15px;
+    }
+    
+    .profile-container {
+        margin-left: 15px;
+        margin-right: 15px;
+        margin-top: 30px;
+        gap: 20px;
+    }
+    
+    .user-info-display {
+        gap: 15px;
+        justify-content: center;
+    }
+    
+    .info-item {
+        min-width: 150px;
+        max-width: 300px;
+    }
+}
+
+/* Media query specifica per schermi medi (650px e sotto) per layout a colonna singola */
+@media (max-width: 650px) {
     .admin-sections {
         grid-template-columns: 1fr;
         justify-items: center;
@@ -659,33 +689,15 @@ form {
 
     .admin-card {
         width: 100%;
-        max-width: 500px;
-        min-height: 400px; /* Altezza minima uniforme per mobile */
+        max-width: 100%;
+        min-height: 350px;
         height: auto;
+        box-sizing: border-box;
+        padding: 25px;
     }
 
     .admin-section {
         width: 100%;
-        max-width: 500px;
-    }
-    
-    .modal-content {
-        margin: 15% auto;
-        width: 95%;
-        max-height: 75vh;
-    }
-    
-    .modal-form-container {
-        padding: 20px;
-        padding-right: 16px;
-    }
-}
-
-@media (max-width: 900px) {
-    .admin-sections {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin: 20px 15px;
     }
     
     .profile-container {
@@ -768,9 +780,13 @@ form {
     }
     
     .modal-content {
-        margin: 20% auto;
-        width: 98%;
-        max-height: 70vh;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 95%;
+        max-width: 95vw;
+        max-height: 85vh;
         padding: 0;
     }
     
