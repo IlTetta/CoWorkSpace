@@ -122,6 +122,11 @@ const selectDate = (selectedDate, dayEl) => {
             instructionText.textContent = 'Ora clicca su una data per selezionare la fine del periodo';
         }
         
+        // Trigger per aggiornare il prezzo
+        if (window.updatePricePreview) {
+            window.updatePricePreview();
+        }
+        
     } else {
         // Selezione data di fine
         if (selectedDate < state.selectedStartDate) {
@@ -138,6 +143,11 @@ const selectDate = (selectedDate, dayEl) => {
         
         if (instructionText) {
             instructionText.textContent = 'Periodo selezionato! Clicca su "Data di inizio" per riselezionare';
+        }
+        
+        // Trigger per aggiornare il prezzo
+        if (window.updatePricePreview) {
+            window.updatePricePreview();
         }
         
         // Re-render del calendario per mostrare il range
@@ -172,6 +182,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const instructionText = document.getElementById('calendar-instruction-text');
             if (instructionText) {
                 instructionText.textContent = 'Clicca su una data per selezionare l\'inizio del periodo';
+            }
+            
+            // Trigger per aggiornare il prezzo (reset)
+            if (window.updatePricePreview) {
+                window.updatePricePreview();
             }
             
             renderCalendar(state.currentMonth, state.currentYear);

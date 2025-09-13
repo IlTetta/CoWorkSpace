@@ -122,6 +122,14 @@ body {
     line-height: 1.4;
 }
 
+.space-type-hours {
+    font-size: 1.3rem;
+    color: #334155;
+    font-weight: 500;
+    margin: 0 0 10px 0;
+    font-style: italic;
+}
+
 .space-type-price {
     font-size: 1.4rem;
     font-weight: 600;
@@ -282,6 +290,13 @@ label {
     color: #000;
     background: white;
     width: 100%;
+}
+
+.price-bar:disabled {
+    background-color: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+    border-color: #ccc;
 }
 .booking-button {
     width: 100%;

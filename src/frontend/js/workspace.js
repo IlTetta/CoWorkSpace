@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Renderizza i dettagli della location CON gli spazi
         await renderLocationDetails(locationData, spaces);
         
+        // Salva gli spazi globalmente per il calcolo del prezzo
+        window.currentSpaces = spaces;
+        
         // Renderizza le opzioni degli spazi nel select del form
         renderSpaceOptions(spaces);
         
@@ -57,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Servizi aggiuntivi rimossi per ora - possono essere aggiunti in futuro
 
     // Funzione per aggiornare l'anteprima del prezzo
-    async function updatePricePreview() {
+    window.updatePricePreview = async function updatePricePreview() {
         const spaceId = document.getElementById('space-select').value;
         const dateStart = document.getElementById('date-start').value;
         const dateEnd = document.getElementById('date-end').value;
@@ -65,16 +68,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Aggiorna il prezzo solo se tutti i campi principali sono compilati
         if (spaceId && dateStart && dateEnd) {
             try {
-                // Calcola il numero di giorni tra le date
-                const startDate = new Date(dateStart.split('/').reverse().join('-'));
-                const endDate = new Date(dateEnd.split('/').reverse().join('-'));
-                const diffTime = Math.abs(endDate - startDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 per includere il giorno di inizio
+                // Trova lo spazio selezionato per ottenere i dati completi
+                const selectedSpace = window.currentSpaces?.find(space => space.id == spaceId);
                 
-                const price = await window.apiService.calculateBookingPrice(spaceId, dateStart, '09:00', diffDays * 24, []);
-                const priceEl = document.getElementById('price');
-                if (priceEl) {
-                    priceEl.value = price;
+                if (selectedSpace) {
+                    // Ottieni gli orari di apertura e chiusura
+                    const openingTime = selectedSpace.openingTime || selectedSpace.opening_time || '09:00';
+                    const closingTime = selectedSpace.closingTime || selectedSpace.closing_time || '18:00';
+                    const pricePerHour = selectedSpace.pricePerHour || selectedSpace.price_per_hour || selectedSpace.spaceType?.price_per_hour || 0;
+                    
+                    // Calcola le ore di funzionamento giornaliere
+                    const openingHour = parseInt(openingTime.split(':')[0]);
+                    const closingHour = parseInt(closingTime.split(':')[0]);
+                    const hoursPerDay = closingHour - openingHour;
+                    
+                    // Calcola il numero di giorni tra le date
+                    const startDate = new Date(dateStart.split('/').reverse().join('-'));
+                    const endDate = new Date(dateEnd.split('/').reverse().join('-'));
+                    const diffTime = Math.abs(endDate - startDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 per includere il giorno di inizio
+                    
+                    // Calcola il prezzo totale: prezzo/ora * ore/giorno * numero giorni
+                    const totalPrice = pricePerHour * hoursPerDay * diffDays;
+                    
+                    const priceEl = document.getElementById('price');
+                    if (priceEl) {
+                        priceEl.value = totalPrice.toFixed(2);
+                    }
+                } else {
+                    // Fallback al metodo precedente se non troviamo lo spazio
+                    const startDate = new Date(dateStart.split('/').reverse().join('-'));
+                    const endDate = new Date(dateEnd.split('/').reverse().join('-'));
+                    const diffTime = Math.abs(endDate - startDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const price = await window.apiService.calculateBookingPrice(spaceId, dateStart, '09:00', diffDays * 8, []); // 8 ore predefinite
+                    const priceEl = document.getElementById('price');
+                    if (priceEl) {
+                        priceEl.value = price;
+                    }
                 }
             } catch (error) {
                 console.error('Error calculating price:', error);
@@ -156,13 +188,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Calcola prezzo e mostra sezione pagamento
         const spaceId = document.getElementById('space-select').value;
-        const startDate = new Date(dateStart.split('/').reverse().join('-'));
-        const endDate = new Date(dateEnd.split('/').reverse().join('-'));
-        const diffTime = Math.abs(endDate - startDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        const selectedSpace = window.currentSpaces?.find(space => space.id == spaceId);
         
-        const price = await window.apiService.calculateBookingPrice(spaceId, dateStart, '09:00', diffDays * 24, services);
-        document.getElementById('total-price').textContent = price;
+        if (selectedSpace) {
+            const openingTime = selectedSpace.openingTime || selectedSpace.opening_time || '09:00';
+            const closingTime = selectedSpace.closingTime || selectedSpace.closing_time || '18:00';
+            const pricePerHour = selectedSpace.pricePerHour || selectedSpace.price_per_hour || selectedSpace.spaceType?.price_per_hour || 0;
+            
+            const openingHour = parseInt(openingTime.split(':')[0]);
+            const closingHour = parseInt(closingTime.split(':')[0]);
+            const hoursPerDay = closingHour - openingHour;
+            
+            const startDate = new Date(dateStart.split('/').reverse().join('-'));
+            const endDate = new Date(dateEnd.split('/').reverse().join('-'));
+            const diffTime = Math.abs(endDate - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            const totalPrice = pricePerHour * hoursPerDay * diffDays;
+            document.getElementById('total-price').textContent = totalPrice.toFixed(2);
+        } else {
+            // Fallback
+            const price = document.getElementById('price').value || '0';
+            document.getElementById('total-price').textContent = price;
+        }
+        
         document.getElementById('payment-section').style.display = 'block';
     });
 
@@ -262,10 +311,15 @@ function renderSpacesGrid(spaces) {
         const spaceTypeDescription = space.spaceType?.description || space.space_type?.description || '';
         const price = space.pricePerHour || space.price_per_hour || space.spaceType?.price_per_hour || '0';
         
+        // Ottieni gli orari di apertura e chiusura
+        const openingTime = space.openingTime || space.opening_time || '09:00';
+        const closingTime = space.closingTime || space.closing_time || '18:00';
+        
         return `
             <div class="space-type-card">
                 <div class="space-type-name">${space.name || 'Spazio senza nome'}</div>
                 <div class="space-type-description">${spaceTypeName}${spaceTypeDescription ? ' - ' + spaceTypeDescription : ''}</div>
+                <div class="space-type-hours">Orari: ${openingTime} - ${closingTime}</div>
                 <div class="space-type-price">€${price}/ora</div>
             </div>
         `;
