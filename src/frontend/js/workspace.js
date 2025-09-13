@@ -156,12 +156,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Aggiungi i listener per l'aggiornamento dinamico del prezzo
+    // Aggiungi i listener per l'aggiornamento dinamico del prezzo e disponibilità
     const spaceSelect = document.getElementById('space-select');
     const dateStartInput = document.getElementById('date-start');
     const dateEndInput = document.getElementById('date-end');
 
-    if (spaceSelect) spaceSelect.addEventListener('change', updatePricePreview);
+    if (spaceSelect) {
+        spaceSelect.addEventListener('change', async () => {
+            await updatePricePreview();
+            await updateDateAvailability();
+        });
+    }
     if (dateStartInput) dateStartInput.addEventListener('change', updatePricePreview);
     if (dateEndInput) dateEndInput.addEventListener('change', updatePricePreview);
 
@@ -636,9 +641,6 @@ async function createBooking(bookingData) {
             status: 'confirmed'
         };
         
-        console.log('Sending booking data:', payload);
-        console.log('Using token:', token ? 'Token presente' : 'Token mancante');
-        
         // Effettua la chiamata al backend
         const response = await fetch('/api/bookings', {
             method: 'POST',
@@ -743,6 +745,385 @@ function showSuccessNotification(bookingId) {
         oscillator.stop(audioContext.currentTime + 0.5);
     } catch (error) {
         // Ignora errori audio (alcuni browser potrebbero bloccare l'audio automatico)
-        console.log('Audio notification not available');
+    }
+}
+
+// ============================================================================
+// FUNZIONI PER GESTIONE DISPONIBILITÀ DATE
+// ============================================================================
+
+// Variabile globale per memorizzare le date occupate dello spazio corrente
+window.currentSpaceBookedDates = [];
+
+// Funzione per aggiornare la disponibilità delle date quando viene selezionato uno spazio
+async function updateDateAvailability() {
+    const spaceId = document.getElementById('space-select').value;
+    const availabilityInfo = document.getElementById('space-availability-info');
+    const availabilityMessage = document.getElementById('availability-message');
+    
+    if (!spaceId) {
+        // Se nessuno spazio è selezionato, resetta la disponibilità
+        window.currentSpaceBookedDates = [];
+        updateDateInputConstraints();
+        
+        // Nascondi info di disponibilità
+        if (availabilityInfo) {
+            availabilityInfo.classList.remove('show');
+            availabilityMessage.textContent = 'Seleziona uno spazio per vedere la disponibilità';
+        }
+        
+        // Aggiorna il calendario per rimuovere le restrizioni
+        if (window.updateCalendarAvailability) {
+            window.updateCalendarAvailability();
+        }
+        return;
+    }
+    
+    // Mostra loading
+    if (availabilityInfo && availabilityMessage) {
+        availabilityInfo.classList.add('show');
+        availabilityMessage.textContent = 'Caricamento disponibilità...';
+    }
+    
+    try {
+        // Recupera le prenotazioni esistenti per questo spazio
+        const bookedDates = await getSpaceBookedDates(spaceId);
+        window.currentSpaceBookedDates = bookedDates;
+        
+        // Aggiorna i vincoli sui campi data
+        updateDateInputConstraints();
+        
+        // Pulisce le date già selezionate se ora sono invalide
+        validateSelectedDates();
+        
+        // Aggiorna il messaggio di disponibilità
+        updateAvailabilityMessage(bookedDates);
+        
+        // Aggiorna il calendario per riflettere le nuove date non disponibili
+        if (window.updateCalendarAvailability) {
+            window.updateCalendarAvailability();
+        }
+        
+    } catch (error) {
+        console.error('Errore nel recupero disponibilità date:', error);
+        // In caso di errore, permetti all'utente di continuare senza restrizioni
+        window.currentSpaceBookedDates = [];
+        updateDateInputConstraints();
+        
+        if (availabilityMessage) {
+            availabilityMessage.textContent = 'Impossibile verificare disponibilità - procedere con cautela';
+        }
+        
+        // Aggiorna comunque il calendario anche in caso di errore
+        if (window.updateCalendarAvailability) {
+            window.updateCalendarAvailability();
+        }
+    }
+}
+
+// Funzione per recuperare le date già prenotate per uno spazio
+async function getSpaceBookedDates(spaceId) {
+    try {
+        const token = window.authService?.getToken();
+        if (!token) {
+            throw new Error('Token di autenticazione non trovato');
+        }
+        
+        // Calcola il range di date da controllare (prossimi 6 mesi)
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setMonth(today.getMonth() + 6);
+        
+        const startDateStr = today.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        // Usa direttamente il metodo alternativo che sappiamo funziona
+        return await getSpaceBookedDatesAlternative(spaceId, startDateStr, endDateStr);
+        
+        /* 
+        const response = await fetch(`/api/bookings/space/${spaceId}/schedule?date_from=${startDateStr}&date_to=${endDateStr}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            // Se l'endpoint non esiste o fallisce, prova con un approccio alternativo
+            console.warn(`Endpoint schedule fallito con status ${response.status}, uso approccio alternativo`);
+            return await getSpaceBookedDatesAlternative(spaceId, startDateStr, endDateStr);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.bookings) {
+            // Estrae le date occupate dal risultato
+            const bookedDates = [];
+            
+            result.data.bookings.forEach(booking => {
+                if (booking.status !== 'cancelled') { // Solo prenotazioni attive
+                    const startDate = new Date(booking.start_date);
+                    const endDate = new Date(booking.end_date);
+                    
+                    // Aggiungi tutti i giorni dal inizio alla fine
+                    const currentDate = new Date(startDate);
+                    while (currentDate <= endDate) {
+                        const dateStr = currentDate.toISOString().split('T')[0];
+                        if (!bookedDates.includes(dateStr)) {
+                            bookedDates.push(dateStr);
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                }
+            });
+            
+            return bookedDates;
+        }
+        
+        return [];
+        */
+        
+    } catch (error) {
+        console.error('Errore nel recupero prenotazioni spazio:', error);
+        // Fallback: prova con endpoint alternativo
+        return await getSpaceBookedDatesAlternative(spaceId);
+    }
+}
+
+// Funzione alternativa per recuperare le date prenotate
+async function getSpaceBookedDatesAlternative(spaceId, startDate, endDate) {
+    try {
+        const token = window.authService?.getToken();
+        
+        // Prova a usare l'endpoint generale delle prenotazioni con filtro per spazio
+        const url = new URL('/api/bookings', window.location.origin);
+        if (spaceId) url.searchParams.set('space_id', parseInt(spaceId)); // Assicurati che sia un numero
+        if (startDate) url.searchParams.set('date_from', startDate);
+        if (endDate) url.searchParams.set('date_to', endDate);
+        
+        const response = await fetch(url.toString(), {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            return [];
+        }
+        
+        const result = await response.json();
+        
+        // Gestisce il formato standard dell'API con ApiResponse.list
+        let bookings = [];
+        if (result.success && result.data && result.data.items) {
+            bookings = result.data.items;
+        } else if (result.success && result.data && result.data.bookings) {
+            // Formato alternativo
+            bookings = result.data.bookings;
+        } else if (result.success && result.data && Array.isArray(result.data)) {
+            // Formato diretto array
+            bookings = result.data;
+        } else {
+            return [];
+        }
+        
+        const bookedDates = [];
+        
+        bookings.forEach(booking => {
+            if (booking.status !== 'cancelled') { // Solo prenotazioni attive
+                const startDate = new Date(booking.start_date);
+                const endDate = new Date(booking.end_date);
+                
+                // Aggiungi tutti i giorni dal inizio alla fine
+                const currentDate = new Date(startDate);
+                while (currentDate <= endDate) {
+                    const dateStr = currentDate.toISOString().split('T')[0];
+                    if (!bookedDates.includes(dateStr)) {
+                        bookedDates.push(dateStr);
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+        });
+        
+        return bookedDates;
+        
+        return [];
+        
+    } catch (error) {
+        console.error('Errore anche nel metodo alternativo:', error);
+        return [];
+    }
+}
+
+// Funzione per aggiornare i vincoli sui campi di input delle date
+function updateDateInputConstraints() {
+    const dateStartInput = document.getElementById('date-start');
+    const dateEndInput = document.getElementById('date-end');
+    
+    if (!dateStartInput || !dateEndInput) return;
+    
+    // Imposta la data minima a oggi
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    dateStartInput.min = todayStr;
+    dateEndInput.min = todayStr;
+    
+    // Imposta la data massima a 6 mesi da oggi
+    const maxDate = new Date();
+    maxDate.setMonth(today.getMonth() + 6);
+    const maxDateStr = maxDate.toISOString().split('T')[0];
+    
+    dateStartInput.max = maxDateStr;
+    dateEndInput.max = maxDateStr;
+    
+    // Se ci sono date occupate, aggiungi un listener per validazione custom
+    if (window.currentSpaceBookedDates.length > 0) {
+        // Rimuovi listener precedenti se esistono
+        dateStartInput.removeEventListener('input', validateDateSelection);
+        dateEndInput.removeEventListener('input', validateDateSelection);
+        
+        // Aggiungi nuovi listener
+        dateStartInput.addEventListener('input', validateDateSelection);
+        dateEndInput.addEventListener('input', validateDateSelection);
+    }
+}
+
+// Funzione per validare la selezione delle date
+function validateDateSelection(event) {
+    const input = event.target;
+    const selectedDate = input.value;
+    
+    if (!selectedDate) return;
+    
+    // Controlla se la data selezionata è in conflitto con prenotazioni esistenti
+    const isDateBooked = window.currentSpaceBookedDates.includes(selectedDate);
+    
+    if (isDateBooked) {
+        // Rimuovi la data non valida
+        input.value = '';
+        
+        // Mostra messaggio di errore
+        showDateErrorMessage(input, 'Questa data non è disponibile - già prenotata');
+        
+        return false;
+    } else {
+        // Rimuovi eventuali messaggi di errore precedenti
+        removeDateErrorMessage(input);
+    }
+    
+    // Se è il campo data-fine, verifica che non ci siano conflitti nel range
+    if (input.id === 'date-end') {
+        const startDateInput = document.getElementById('date-start');
+        const startDate = startDateInput.value;
+        
+        if (startDate && selectedDate) {
+            const hasConflictInRange = checkDateRangeConflict(startDate, selectedDate);
+            
+            if (hasConflictInRange) {
+                input.value = '';
+                showDateErrorMessage(input, 'Il periodo selezionato include date già prenotate');
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Funzione per controllare conflitti in un range di date
+function checkDateRangeConflict(startDateStr, endDateStr) {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        if (window.currentSpaceBookedDates.includes(dateStr)) {
+            return true; // Conflitto trovato
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return false; // Nessun conflitto
+}
+
+// Funzione per mostrare messaggi di errore per le date
+function showDateErrorMessage(input, message) {
+    // Rimuovi messaggio precedente se esiste
+    removeDateErrorMessage(input);
+    
+    // Crea nuovo elemento di errore
+    const errorElement = document.createElement('span');
+    errorElement.id = input.id + '-availability-error';
+    errorElement.className = 'field-error availability-error';
+    errorElement.textContent = message;
+    errorElement.style.color = '#e74c3c';
+    errorElement.style.display = 'block';
+    errorElement.style.marginTop = '5px';
+    errorElement.style.fontSize = '14px';
+    errorElement.style.fontWeight = 'bold';
+    
+    // Aggiungi dopo l'input
+    input.parentElement.appendChild(errorElement);
+}
+
+// Funzione per rimuovere messaggi di errore delle date
+function removeDateErrorMessage(input) {
+    const errorElement = document.getElementById(input.id + '-availability-error');
+    if (errorElement) {
+        errorElement.remove();
+    }
+}
+
+// Funzione per validare le date già selezionate quando cambia lo spazio
+function validateSelectedDates() {
+    const dateStartInput = document.getElementById('date-start');
+    const dateEndInput = document.getElementById('date-end');
+    
+    if (dateStartInput.value) {
+        const isValidStart = !window.currentSpaceBookedDates.includes(dateStartInput.value);
+        if (!isValidStart) {
+            dateStartInput.value = '';
+            showDateErrorMessage(dateStartInput, 'Data di inizio non più disponibile per questo spazio');
+        }
+    }
+    
+    if (dateEndInput.value) {
+        const isValidEnd = !window.currentSpaceBookedDates.includes(dateEndInput.value);
+        if (!isValidEnd || (dateStartInput.value && dateEndInput.value && checkDateRangeConflict(dateStartInput.value, dateEndInput.value))) {
+            dateEndInput.value = '';
+            showDateErrorMessage(dateEndInput, 'Data di fine non più disponibile per questo spazio');
+        }
+    }
+    
+    // Aggiorna il prezzo se le date sono cambiate
+    updatePricePreview();
+}
+
+// Funzione per aggiornare il messaggio di disponibilità
+function updateAvailabilityMessage(bookedDates) {
+    const availabilityMessage = document.getElementById('availability-message');
+    const selectedSpace = window.currentSpaces?.find(space => space.id == document.getElementById('space-select').value);
+    
+    if (!availabilityMessage || !selectedSpace) return;
+    
+    if (bookedDates.length === 0) {
+        availabilityMessage.innerHTML = `
+            <span style="color: #10b981; font-weight: 600;">✅ Spazio completamente disponibile</span><br>
+            <small>Puoi prenotare qualsiasi data nei prossimi 6 mesi</small>
+        `;
+    } else {
+        const totalBookedDays = bookedDates.length;
+        const spaceName = selectedSpace.name || 'Questo spazio';
+        
+        availabilityMessage.innerHTML = `
+            <span style="color: #f59e0b; font-weight: 600;">⚠️ ${spaceName} ha ${totalBookedDays} giorn${totalBookedDays > 1 ? 'i' : 'o'} già prenotat${totalBookedDays > 1 ? 'i' : 'o'}</span><br>
+            <small>Le date non disponibili verranno evidenziate durante la selezione</small>
+        `;
     }
 }

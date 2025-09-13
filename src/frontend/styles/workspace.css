@@ -792,3 +792,124 @@ textarea:focus {
         justify-content: center;
     }
 }
+
+/* ============================================================================
+   STILI PER GESTIONE DISPONIBILITÀ DATE
+   ============================================================================ */
+
+/* Stili per i messaggi di errore di disponibilità */
+.availability-error {
+    display: block !important;
+    color: #e74c3c !important;
+    background: #fdf2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 14px !important;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.1);
+    animation: fadeInError 0.3s ease-in;
+}
+
+@keyframes fadeInError {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Indicatore di stato per input data */
+.date-input-container {
+    position: relative;
+}
+
+.date-input-container input[type="date"] {
+    padding-right: 40px;
+}
+
+.date-availability-indicator {
+    position: absolute;
+    right: 35px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    pointer-events: none;
+}
+
+.date-availability-indicator.available {
+    color: #10b981;
+}
+
+.date-availability-indicator.unavailable {
+    color: #ef4444;
+}
+
+/* Stile per il campo data quando non disponibile */
+input[type="date"].date-unavailable {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Info box per disponibilità spazio */
+.space-availability-info {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 15px 0;
+    font-size: 14px;
+    color: #0369a1;
+    display: none;
+}
+
+.space-availability-info.show {
+    display: block;
+    animation: fadeInInfo 0.3s ease-in;
+}
+
+.space-availability-info .icon {
+    display: inline-block;
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+/* Stile per date prenotate nel calendario */
+.calendar__day-number--booked {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
+    text-decoration: line-through !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+    position: relative;
+}
+
+.calendar__day-number--booked::after {
+    content: '✗';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+    color: #c62828;
+    font-weight: bold;
+}
+
+.calendar__day-number--booked:hover {
+    background-color: #ffcdd2 !important;
+    transform: none !important;
+}
+
+/* Migliori stili per date disponibili */
+.calendar__day-number:not(.calendar__day-number--disabled):not(.calendar__day-number--booked) {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.calendar__day-number:not(.calendar__day-number--disabled):not(.calendar__day-number--booked):hover {
+    background-color: #e3f2fd;
+    transform: scale(1.05);
+}

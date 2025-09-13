@@ -71,16 +71,32 @@ const renderCalendar = (month, year) => {
         fullDate.setHours(0, 0, 0, 0);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        
+        // Formato della data per confronto con le date prenotate (YYYY-MM-DD)
+        const dateStr = fullDate.toISOString().split('T')[0];
 
         if (fullDate.getTime() === today.getTime()) {
             dayEl.classList.add('calendar__day-number--current');
         }
 
+        // Disabilita le date nel passato
         if (fullDate < today) {
             dayEl.classList.add('calendar__day-number--disabled');
             dayEl.style.pointerEvents = 'none';
             dayEl.style.opacity = '0.5';
-        } else {
+        }
+        // Disabilita le date già prenotate per lo spazio selezionato
+        else if (window.currentSpaceBookedDates && window.currentSpaceBookedDates.includes(dateStr)) {
+            dayEl.classList.add('calendar__day-number--booked');
+            dayEl.style.pointerEvents = 'none';
+            dayEl.style.opacity = '0.6';
+            dayEl.style.backgroundColor = '#ffebee';
+            dayEl.style.color = '#c62828';
+            dayEl.style.textDecoration = 'line-through';
+            dayEl.title = 'Data già prenotata';
+        }
+        else {
+            // Date selezionabili
             // Evidenzia le date selezionate
             if (state.selectedStartDate && fullDate.getTime() === state.selectedStartDate.getTime()) {
                 dayEl.classList.add('selected-start');
@@ -106,6 +122,40 @@ const renderCalendar = (month, year) => {
 // Funzione per gestire la selezione delle date
 const selectDate = (selectedDate, dayEl) => {
     const instructionText = document.getElementById('calendar-instruction-text');
+    
+    // Se stiamo selezionando la data di fine, controlla che non ci siano conflitti nel range
+    if (!state.selectingStartDate && state.selectedStartDate && window.currentSpaceBookedDates) {
+        const startDate = state.selectedStartDate;
+        const actualStartDate = selectedDate < startDate ? selectedDate : startDate;
+        const actualEndDate = selectedDate < startDate ? startDate : selectedDate;
+        
+        // Controlla se ci sono date prenotate nel range
+        const currentDate = new Date(actualStartDate);
+        let hasConflict = false;
+        
+        while (currentDate <= actualEndDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            if (window.currentSpaceBookedDates.includes(dateStr)) {
+                hasConflict = true;
+                break;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        if (hasConflict) {
+            // Mostra messaggio di errore
+            if (instructionText) {
+                instructionText.textContent = 'Il periodo selezionato include date già prenotate. Scegli un altro periodo.';
+                instructionText.style.color = '#e74c3c';
+                
+                setTimeout(() => {
+                    instructionText.style.color = '';
+                    instructionText.textContent = 'Clicca su una data per selezionare la fine del periodo';
+                }, 3000);
+            }
+            return; // Non completare la selezione
+        }
+    }
     
     if (state.selectingStartDate || !state.selectedStartDate) {
         // Selezione data di inizio
@@ -216,3 +266,54 @@ calendarMonthSelect.addEventListener('change', (e) => {
     state.currentMonth = parseInt(e.target.value, 10);
     renderCalendar(state.currentMonth, state.currentYear);
 });
+
+// ============================================================================
+// FUNZIONI PER INTEGRAZIONE CON DISPONIBILITÀ SPAZI
+// ============================================================================
+
+/**
+ * Funzione globale per aggiornare il calendario quando cambiano le date prenotate
+ * Chiamata da workspace.js quando si seleziona uno spazio diverso
+ */
+window.updateCalendarAvailability = function() {
+    // Re-render del calendario per applicare le nuove restrizioni
+    renderCalendar(state.currentMonth, state.currentYear);
+    
+    // Verifica se le date attualmente selezionate sono ancora valide
+    if (state.selectedStartDate && window.currentSpaceBookedDates) {
+        const startDateStr = state.selectedStartDate.toISOString().split('T')[0];
+        if (window.currentSpaceBookedDates.includes(startDateStr)) {
+            // Data di inizio non più valida
+            clearSelections();
+            state.selectedStartDate = null;
+            state.selectedEndDate = null;
+            state.selectingStartDate = true;
+            dateStartInput.value = '';
+            dateEndInput.value = '';
+            
+            const instructionText = document.getElementById('calendar-instruction-text');
+            if (instructionText) {
+                instructionText.textContent = 'La data precedentemente selezionata non è più disponibile. Seleziona una nuova data.';
+                instructionText.style.color = '#e74c3c';
+                
+                // Ripristina il colore dopo 3 secondi
+                setTimeout(() => {
+                    instructionText.style.color = '';
+                    instructionText.textContent = 'Clicca su una data per selezionare l\'inizio del periodo';
+                }, 3000);
+            }
+            
+            renderCalendar(state.currentMonth, state.currentYear);
+        }
+    }
+    
+    if (state.selectedEndDate && window.currentSpaceBookedDates) {
+        const endDateStr = state.selectedEndDate.toISOString().split('T')[0];
+        if (window.currentSpaceBookedDates.includes(endDateStr)) {
+            // Data di fine non più valida
+            state.selectedEndDate = null;
+            dateEndInput.value = '';
+            renderCalendar(state.currentMonth, state.currentYear);
+        }
+    }
+};
