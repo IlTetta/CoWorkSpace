@@ -669,7 +669,7 @@ describe('PaymentService', () => {
                 payment_id: 2,
                 amount: '30.00',
                 status: 'completed',
-                payment_method: 'cash',
+                payment_method: 'credit_card',
                 payment_date: '2024-01-20T14:00:00Z'
             },
             {
@@ -705,8 +705,7 @@ describe('PaymentService', () => {
                 failed_payments: 1,
                 refunded_payments: 1,
                 payment_methods: {
-                    credit_card: 3,
-                    cash: 1
+                    credit_card: 4
                 },
                 monthly_revenue: {
                     '2024-01': 80.00, // 50 + 30
@@ -765,7 +764,7 @@ describe('PaymentService', () => {
             // Arrange
             const manager = { user_id: 2, role: 'manager' };
             const paymentsWithInvalidAmount = [
-                { payment_id: 1, amount: 'invalid', status: 'completed', payment_method: 'cash', payment_date: '2024-01-01T10:00:00Z' }
+                { payment_id: 1, amount: 'invalid', status: 'completed', payment_method: 'credit_card', payment_date: '2024-01-01T10:00:00Z' }
             ];
             Payment.findAll.mockResolvedValue(paymentsWithInvalidAmount);
 

@@ -2,7 +2,7 @@
 CREATE TYPE user_role_enum AS ENUM ('user', 'manager', 'admin');
 CREATE TYPE booking_status_enum AS ENUM ('confirmed', 'pending', 'cancelled', 'completed');
 CREATE TYPE payment_status_enum AS ENUM ('pending', 'completed', 'failed', 'refunded');
-CREATE TYPE payment_method_enum AS ENUM ('credit_card', 'paypal', 'bank_transfer', 'cash');
+CREATE TYPE payment_method_enum AS ENUM ('credit_card');
 
 
 -- Tabella Utenti
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS payments (
   payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   payment_method payment_method_enum NOT NULL,
   status payment_status_enum NOT NULL DEFAULT 'completed',
-  transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gataway di pagamento (es. Stripe, PayPal, ecc.)
+  transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gateway di pagamento (es. Stripe, ecc.)
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE CASCADE
 );
 

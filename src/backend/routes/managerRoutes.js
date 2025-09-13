@@ -203,7 +203,7 @@ router.route('/locations/:locationId')
  *                                     enum: ['completed', 'failed', 'refunded']
  *                                   payment_method:
  *                                     type: string
- *                                     enum: ['credit_card', 'paypal', 'bank_transfer', 'cash']
+ *                                     enum: ['credit_card']
  *                             upcoming:
  *                               type: array
  *                               description: Prossime prenotazioni (confermate e pending)
@@ -273,7 +273,7 @@ router.route('/locations/:locationId')
  *                                 properties:
  *                                   payment_method:
  *                                     type: string
- *                                     enum: ['credit_card', 'paypal', 'bank_transfer', 'cash']
+ *                                     enum: ['credit_card']
  *                                   payment_count:
  *                                     type: integer
  *                                   total_amount:
