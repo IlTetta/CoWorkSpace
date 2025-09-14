@@ -33,7 +33,3 @@ AWS credential
 Mail coworkspace.webdev@gmail.com
 Username CacheMeIfYouCan
 Password jzbSs7K?68/j
-
-TODO:
-2- Aggiornamento array disponibilità prenotazione sapazio
-3- Campi precompilati dahboard manager per modifica location/sapazi

@@ -81,11 +81,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         let spaces = [];
         if (locationData.spaces && Array.isArray(locationData.spaces)) {
             spaces = locationData.spaces;
+            console.log('Spazi da endpoint complete:', spaces.length, 'spazi');
+            
+            // Verifica se gli spazi hanno il campo availableDays
+            const hasAvailableDays = spaces.some(space => space.availableDays !== undefined);
+            if (!hasAvailableDays) {
+                console.log('Spazi mancano del campo availableDays, ricarico separatamente...');
+                try {
+                    spaces = await window.apiService.getSpacesByLocation(locationId);
+                } catch (spaceError) {
+                    console.warn('Errore nel caricamento degli spazi separatamente:', spaceError);
+                }
+            }
         } else {
             try {
+                console.log('Caricamento spazi per locationId:', locationId);
                 spaces = await window.apiService.getSpacesByLocation(locationId);
+                console.log('Spazi caricati dall\'API separatamente:', spaces.length, 'spazi');
             } catch (spaceError) {
-                console.warn('Errore nel caricamento degli spazi separatamente:', spaceError);
+                console.warn('Errore nel caricamento degli spazi:', spaceError);
                 spaces = [];
             }
         }
@@ -368,19 +382,36 @@ function renderSpacesGrid(spaces) {
         return;
     }
 
+    const dayNames = {
+        1: 'Lunedì',
+        2: 'Martedì',
+        3: 'Mercoledì',
+        4: 'Giovedì',
+        5: 'Venerdì',
+        6: 'Sabato',
+        7: 'Domenica'
+    };
+
     const spacesHtml = spaces.map(space => {
         const spaceTypeName = space.spaceType?.name || space.space_type?.name || 'Tipo sconosciuto';
         const spaceTypeDescription = space.spaceType?.description || space.space_type?.description || '';
         const price = space.pricePerHour || space.price_per_hour || space.spaceType?.price_per_hour || '0';
-        
+
         // Ottieni gli orari di apertura e chiusura
         const openingTime = space.openingTime || space.opening_time || '09:00';
         const closingTime = space.closingTime || space.closing_time || '18:00';
-        
+
+        // Giorni disponibili
+        const availableDaysArr = space.availableDays || space.available_days || [1,2,3,4,5];
+        const availableDaysText = availableDaysArr.length === 7
+            ? 'Tutti i giorni'
+            : availableDaysArr.map(d => dayNames[d]).join(', ');
+
         return `
             <div class="space-type-card">
                 <div class="space-type-name">${space.name || 'Spazio senza nome'}</div>
                 <div class="space-type-description">${spaceTypeName}${spaceTypeDescription ? ' - ' + spaceTypeDescription : ''}</div>
+                <div class="space-type-days"><strong>Disponibile:</strong> ${availableDaysText}</div>
                 <div class="space-type-hours">Orari: ${openingTime} - ${closingTime}</div>
                 <div class="space-type-price">€${price}/ora</div>
             </div>
@@ -866,6 +897,7 @@ async function updateDateAvailability() {
     if (!spaceId) {
         // Se nessuno spazio è selezionato, resetta la disponibilità
         window.currentSpaceBookedDates = [];
+        window.currentSpaceAvailableDays = null;
         updateDateInputConstraints();
         
         // Nascondi info di disponibilità
@@ -879,6 +911,15 @@ async function updateDateAvailability() {
             window.updateCalendarAvailability();
         }
         return;
+    }
+    
+    // Ottieni informazioni sullo spazio selezionato
+    const selectedSpace = window.currentSpaces?.find(space => space.id == spaceId);
+    if (selectedSpace) {
+        // Salva i giorni disponibili dello spazio (formato: array di numeri 1-7, dove 1=Lunedì, 7=Domenica)
+        window.currentSpaceAvailableDays = selectedSpace.availableDays || selectedSpace.available_days || [1, 2, 3, 4, 5];
+    } else {
+        window.currentSpaceAvailableDays = null;
     }
     
     // Mostra loading
@@ -931,10 +972,10 @@ async function getSpaceBookedDates(spaceId) {
             throw new Error('Token di autenticazione non trovato');
         }
         
-        // Calcola il range di date da controllare (prossimi 6 mesi)
+        // Calcola il range di date da controllare (prossimi 12 mesi)
         const today = new Date();
         const endDate = new Date();
-        endDate.setMonth(today.getMonth() + 6);
+        endDate.setMonth(today.getMonth() + 12);
         
         const startDateStr = today.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
@@ -1115,9 +1156,9 @@ function updateDateInputConstraints() {
     dateStartInput.min = todayStr;
     dateEndInput.min = todayStr;
     
-    // Imposta la data massima a 6 mesi da oggi
+    // Imposta la data massima a 12 mesi da oggi
     const maxDate = new Date();
-    maxDate.setMonth(today.getMonth() + 6);
+    maxDate.setMonth(today.getMonth() + 12);
     const maxDateStr = maxDate.toISOString().split('T')[0];
     
     dateStartInput.max = maxDateStr;
@@ -1257,7 +1298,7 @@ function updateAvailabilityMessage(bookedDates) {
     if (bookedDates.length === 0) {
         availabilityMessage.innerHTML = `
             <span style="color: #10b981; font-weight: 600;">✅ Spazio completamente disponibile</span><br>
-            <small>Puoi prenotare qualsiasi data nei prossimi 6 mesi</small>
+            <small>Puoi prenotare qualsiasi data nei prossimi 12 mesi</small>
         `;
     } else {
         const totalBookedDays = bookedDates.length;

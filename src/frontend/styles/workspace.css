@@ -122,7 +122,7 @@ body {
     line-height: 1.4;
 }
 
-.space-type-hours {
+.space-type-hours, .space-type-days {
     font-size: 1.3rem;
     color: #334155;
     font-weight: 500;

@@ -395,8 +395,8 @@
         // Metodi per la gestione degli spazi
         async getSpacesByLocation(locationId) {
             try {
-                // Use public endpoint with location filter
-                const data = await this.get('/spaces', { locationId: locationId });
+                // Use public endpoint with location filter (backend expects 'location_id')
+                const data = await this.get('/spaces', { location_id: locationId });
                 const allSpaces = Array.isArray(data.data.items) ? data.data.items : [];
                 
                 return allSpaces;

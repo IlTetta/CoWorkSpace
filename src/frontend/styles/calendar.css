@@ -123,3 +123,38 @@
   background-color: rgba(79, 70, 229, 0.4);
   border-radius: 50%;
 }
+
+/* Stili per giorni non disponibili */
+.calendar__day-number--disabled {
+  background-color: #f8f9fa !important;
+  color: #adb5bd !important;
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+.calendar__day-number--booked {
+  background-color: #ffebee !important;
+  color: #c62828 !important;
+  text-decoration: line-through !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.calendar__day-number--unavailable {
+  background-color: #f5f5f5 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.4 !important;
+  position: relative;
+}
+
+.calendar__day-number--unavailable::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background-color: #999;
+  transform: translateY(-50%);
+}
