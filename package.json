@@ -12,7 +12,22 @@
     "dev": "nodemon src/backend/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit/",
+    "test:integration": "jest --config jest.integration.config.json",
+    "test:integration:watch": "jest --config jest.integration.config.json --watch",
+    "test:register": "jest --config jest.integration.config.json tests/integration/register.test.js",
+    "test:auth": "jest tests/integration/auth.integration.test.js",
+    "test:api": "jest tests/integration/api.integration.test.js",
+    "test:booking": "jest tests/integration/booking.integration.test.js",
+    "test:space": "jest tests/integration/space.integration.test.js",
+    "test:manager": "jest tests/integration/manager.integration.test.js",
+    "test:db:start": "powershell -ExecutionPolicy Bypass -File scripts/test-db.ps1 start",
+    "test:db:stop": "powershell -ExecutionPolicy Bypass -File scripts/test-db.ps1 stop",
+    "test:db:reset": "powershell -ExecutionPolicy Bypass -File scripts/test-db.ps1 reset",
+    "test:db:logs": "powershell -ExecutionPolicy Bypass -File scripts/test-db.ps1 logs",
+    "test:db:status": "powershell -ExecutionPolicy Bypass -File scripts/test-db.ps1 status",
+    "test:full": "powershell -ExecutionPolicy Bypass -File scripts/test-db.ps1 test"
   },
   "repository": {
     "type": "git",

@@ -79,20 +79,36 @@ class PaymentService {
         try {
             await client.query('BEGIN');
 
-            // Crea il pagamento
-            const payment = await Payment.create({
-                booking_id,
-                amount,
-                payment_method,
-                status: 'completed',
-                transaction_id
-            });
+            // Crea il pagamento usando il client della transazione
+            const paymentQuery = `
+                INSERT INTO payments (
+                    booking_id, amount, payment_method, status, transaction_id
+                ) VALUES ($1, $2, $3, $4, $5)
+                RETURNING *
+            `;
+            
+            const paymentValues = [
+                booking_id, amount, payment_method, 'completed', transaction_id
+            ];
 
-            // Aggiorna lo stato della prenotazione
-            await Booking.update(booking_id, { status: 'confirmed' });
+            const paymentResult = await client.query(paymentQuery, paymentValues);
+
+            // Aggiorna lo stato della prenotazione e il payment_status usando il client della transazione
+            const bookingQuery = `
+                UPDATE bookings 
+                SET status = $1, payment_status = $2
+                WHERE booking_id = $3
+                RETURNING *
+            `;
+            
+            const bookingValues = ['confirmed', 'completed', booking_id];
+            await client.query(bookingQuery, bookingValues);
 
             await client.query('COMMIT');
 
+            // Crea l'oggetto Payment dal risultato
+            const payment = new Payment(paymentResult.rows[0]);
+            
             // Ricarica il pagamento con tutti i dati correlati
             return await Payment.findById(payment.payment_id);
         } catch (error) {

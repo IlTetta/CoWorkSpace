@@ -25,8 +25,8 @@ const getSpaces = catchAsync(async (req, res) => {
  * GET /api/spaces/:id - Dettagli di uno spazio specifico (pubblico)
  */
 const getSpaceById = catchAsync(async (req, res) => {
-  const { space_id } = req.params;
-  const space = await SpaceService.getSpaceDetails(space_id, null);
+  const { id } = req.params;
+  const space = await SpaceService.getSpaceDetails(id, null);
   
   return ApiResponse.success(res, 200, 'Spazio recuperato con successo', { space });
 });
@@ -59,7 +59,7 @@ const checkSpaceAvailability = catchAsync(async (req, res) => {
  * POST /api/spaces/pricing/calculate - Calcola il prezzo per una prenotazione (pubblico)
  */
 const calculateBookingPrice = catchAsync(async (req, res) => {
-  const { space_id, startDateTime, endDateTime, additionalServices = [] } = req.body;
+  const { space_id, startDateTime, endDateTime } = req.body;
   
   if (!space_id || !startDateTime || !endDateTime) {
     throw AppError.badRequest('ID spazio, data/ora di inizio e fine sono obbligatori');

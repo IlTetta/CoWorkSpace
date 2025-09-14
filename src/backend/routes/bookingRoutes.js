@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const BookingController = require('../controllers/bookingController');
 const authMiddleware = require('../middleware/authMiddleware');
+const pool = require('../config/db');
 
 // ============================================================================
 // ROUTES PUBBLICHE (senza autenticazione)
@@ -22,6 +23,75 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.get('/public/space/:spaceId/availability', 
     BookingController.getPublicAvailability
 );
+
+/**
+ * GET /api/public/bookings/space/:spaceId/booked-dates
+ * Ottieni solo le date già prenotate per uno spazio (pubblico, per calendario frontend)
+ */
+router.get('/public/space/:spaceId/booked-dates', async (req, res) => {
+    try {
+        const spaceId = parseInt(req.params.spaceId);
+        if (isNaN(spaceId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID spazio non valido'
+            });
+        }
+
+        // Range di date (default 6 mesi dal oggi)
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setMonth(today.getMonth() + 6);
+        
+        const dateFrom = req.query.date_from || today.toISOString().split('T')[0];
+        const dateTo = req.query.date_to || endDate.toISOString().split('T')[0];
+
+        const query = `
+            SELECT DISTINCT start_date, end_date 
+            FROM bookings 
+            WHERE space_id = $1 
+                AND status IN ('confirmed', 'pending')
+                AND start_date <= $3
+                AND end_date >= $2
+            ORDER BY start_date
+        `;
+
+        const result = await pool.query(query, [spaceId, dateFrom, dateTo]);
+        
+        // Genera array di tutte le date occupate
+        const bookedDates = [];
+        result.rows.forEach(booking => {
+            const start = new Date(booking.start_date);
+            const end = new Date(booking.end_date);
+            
+            const currentDate = new Date(start);
+            while (currentDate <= end) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                if (!bookedDates.includes(dateStr)) {
+                    bookedDates.push(dateStr);
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        });
+
+        res.json({
+            success: true,
+            data: {
+                space_id: spaceId,
+                period: { from: dateFrom, to: dateTo },
+                booked_dates: bookedDates,
+                total_booked_days: bookedDates.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Errore nel recupero date prenotate:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Errore interno del server'
+        });
+    }
+});
 
 /**
  * @swagger
@@ -37,29 +107,23 @@ router.get('/public/space/:spaceId/availability',
  *             type: object
  *             required:
  *               - space_id
- *               - booking_date
- *               - start_time
- *               - end_time
+ *               - start_date
+ *               - end_date
  *             properties:
  *               space_id:
  *                 type: integer
  *                 description: ID dello spazio
  *                 example: 1
- *               booking_date:
+ *               start_date:
  *                 type: string
  *                 format: date
- *                 description: Data della prenotazione
+ *                 description: Data di inizio della prenotazione
  *                 example: '2024-01-20'
- *               start_time:
+ *               end_date:
  *                 type: string
- *                 format: time
- *                 description: Ora di inizio
- *                 example: '09:00:00'
- *               end_time:
- *                 type: string
- *                 format: time
- *                 description: Ora di fine
- *                 example: '17:00:00'
+ *                 format: date
+ *                 description: Data di fine della prenotazione
+ *                 example: '2024-01-22'
  *     responses:
  *       200:
  *         description: Risultato verifica disponibilità
@@ -186,39 +250,27 @@ router.use(authMiddleware.protect);
  *             type: object
  *             required:
  *               - space_id
- *               - booking_date
- *               - start_time
- *               - end_time
+ *               - start_date
+ *               - end_date
  *             properties:
  *               space_id:
  *                 type: integer
  *                 description: ID dello spazio da prenotare
  *                 example: 1
- *               booking_date:
+ *               start_date:
  *                 type: string
  *                 format: date
- *                 description: Data della prenotazione
+ *                 description: Data di inizio della prenotazione
  *                 example: '2024-01-20'
- *               start_time:
+ *               end_date:
  *                 type: string
- *                 format: time
- *                 description: Ora di inizio
- *                 example: '09:00:00'
- *               end_time:
- *                 type: string
- *                 format: time
- *                 description: Ora di fine
- *                 example: '17:00:00'
+ *                 format: date
+ *                 description: Data di fine della prenotazione
+ *                 example: '2024-01-22'
  *               notes:
  *                 type: string
  *                 description: Note aggiuntive
  *                 example: 'Richiesta accesso anticipato'
- *               additionalServices:
- *                 type: array
- *                 items:
- *                   type: integer
- *                 description: ID dei servizi aggiuntivi
- *                 example: [1, 2]
  *     responses:
  *       201:
  *         description: Prenotazione creata con successo
@@ -332,18 +384,14 @@ router.get('/', BookingController.getBookings);
  *           schema:
  *             type: object
  *             properties:
- *               booking_date:
+ *               start_date:
  *                 type: string
  *                 format: date
  *                 example: '2024-01-21'
- *               start_time:
+ *               end_date:
  *                 type: string
- *                 format: time
- *                 example: '10:00:00'
- *               end_time:
- *                 type: string
- *                 format: time
- *                 example: '16:00:00'
+ *                 format: date
+ *                 example: '2024-01-23'
  *               status:
  *                 type: string
  *                 enum: [confirmed, pending, cancelled, completed]

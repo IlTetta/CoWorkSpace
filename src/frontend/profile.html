@@ -4,6 +4,7 @@
 <head>
     <title>CoWorkSpace - Profile</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="styles/profile.css">
     <link rel="stylesheet" href="styles/profile-header.css">
     <link rel="stylesheet" href="styles/background.css">
@@ -15,7 +16,7 @@
     <div class="header">
         <div class="left-section"></div>
         <div class="middle-section">
-            <div class="logo">CoWorkSpace</div>
+            <div class="logo" id="logo">CoWorkSpace</div>
         </div>
         <div class="right-section">
             <button class="home-button" id="home-btn">Home</button>
@@ -23,61 +24,48 @@
         </div>
     </div>
 
-    <div class="profile-sidebar">
-        <div class="people-icon" id="profile-icon-container">
-            <span class="material-symbols-outlined account-icon" id="default-icon">account_circle</span>
-            <img id="profile-image" src="" alt="Profile Image" style="display: none;">
-        </div>
-        <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
-        
-        <!-- Menu contestuale per l'immagine del profilo -->
-        <div id="profile-context-menu" class="profile-context-menu">
-            <div class="context-menu-item" id="change-image">Cambia immagine</div>
-            <div class="context-menu-item remove" id="remove-image">Rimuovi immagine</div>
-        </div>
-        
-        <div class="profile-menu">
-            <div class="menu-item" id="user-info-btn">
-                <span>Info utente</span>
+    <div class="profile-container">
+        <div class="profile-left-section">
+            <div class="people-icon" id="profile-icon-container">
+                <span class="material-symbols-outlined account-icon" id="default-icon">account_circle</span>
+                <img id="profile-image" src="" alt="Profile Image" style="display: none;">
             </div>
-            <div class="menu-item" id="booking-history-btn">
-                <span>Storico prenotazioni</span>
+            <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
+            
+            <!-- Menu contestuale per l'immagine del profilo -->
+            <div id="profile-context-menu" class="profile-context-menu">
+                <div class="context-menu-item" id="change-image">Cambia immagine</div>
+                <div class="context-menu-item remove" id="remove-image">Rimuovi immagine</div>
+            </div>
+        </div>
+        
+        <div class="user-info-display">
+            <div class="info-item">
+                <label>Nome:</label>
+                <span id="display-name"></span>
+            </div>
+            <div class="info-item">
+                <label>Cognome:</label>
+                <span id="display-surname"></span>
+            </div>
+            <div class="info-item">
+                <label>Email:</label>
+                <span id="display-email"></span>
+            </div>
+            <div class="info-item">
+                <label>Ruolo:</label>
+                <span id="display-role"></span>
+            </div>
+            <div class="info-item">
+                <label>Data Registrazione:</label>
+                <span id="display-registration"></span>
             </div>
         </div>
     </div>
 
-    <!-- Modal per Info Utente -->
-    <div id="user-info-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="close-user-info">&times;</span>
-            <h2>Informazioni Utente</h2>
-            <form id="user-info-form" class="user-info-form">
-                <div class="form-group">
-                    <label for="display-name">Nome</label>
-                    <input type="text" id="display-name" name="name" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="display-surname">Cognome</label>
-                    <input type="text" id="display-surname" name="surname" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="display-email">Email</label>
-                    <input type="email" id="display-email" name="email" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="display-role">Ruolo</label>
-                    <input type="text" id="display-role" name="role" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="display-registration">Data Registrazione</label>
-                    <input type="text" id="display-registration" name="registration" readonly>
-                </div>
-            </form>
-        </div>
+    <!-- Sezione cronologia pagamenti -->
+    <div id="payment-history-container" class="payment-history-container">
+        <!-- Contenuto generato dinamicamente da JavaScript -->
     </div>
 
     <script src="js/apiService.js"></script>

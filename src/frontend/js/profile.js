@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
             manager_request_pending: false
         };
         localStorage.setItem('coworkspace_user', JSON.stringify(testUser));
+        // Popola automaticamente le informazioni utente nella pagina
+        populateUserInfoDisplay();
     }
     
     // Inizializza i gestori dei pulsanti
@@ -35,12 +37,28 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeProfileImageUpload();
     // Carica l'immagine del profilo salvata (se presente)
     loadSavedProfileImage();
+    // Carica e popola le informazioni utente
+    loadAndPopulateUserInfo();
+    // Carica la cronologia pagamenti se la sezione è presente
+    if (document.getElementById('payment-history-container')) {
+        loadPaymentHistory();
+    }
 });
 
 /**
  * Inizializza i gestori degli eventi per i pulsanti
  */
 function initializeButtons() {
+    // Gestore per il logo (reindirizza alla home)
+    const logo = document.getElementById('logo');
+    if (logo) {
+        logo.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Reindirizza alla pagina home
+            window.location.href = 'home.html';
+        });
+    }
+
     // Gestore per il pulsante Home
     const homeBtn = document.getElementById('home-btn');
     if (homeBtn) {
@@ -385,4 +403,431 @@ function closeUserInfoForm() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+/**
+ * Popola automaticamente le informazioni utente nelle card della pagina
+ */
+function populateUserInfoDisplay() {
+    const user = getUserData();
+    if (!user) {
+        console.log('Nessun dato utente trovato');
+        return;
+    }
+
+    // Popola i campi con i dati dell'utente usando textContent invece di value
+    const nameSpan = document.getElementById('display-name');
+    const surnameSpan = document.getElementById('display-surname');
+    const emailSpan = document.getElementById('display-email');
+    const roleSpan = document.getElementById('display-role');
+    const registrationSpan = document.getElementById('display-registration');
+
+    if (nameSpan) nameSpan.textContent = user.name || 'N/A';
+    if (surnameSpan) surnameSpan.textContent = user.surname || 'N/A';
+    if (emailSpan) emailSpan.textContent = user.email || 'N/A';
+    
+    // Determina il ruolo basato sui dati dell'utente
+    let role = 'Client'; // Default
+    if (user.role === 'manager') {
+        role = 'Manager';
+    } else if (user.role === 'admin') {
+        role = 'Admin';
+    } else if (user.manager_request_pending) {
+        role = 'Client (Richiesta Manager in sospeso)';
+    }
+    
+    if (roleSpan) roleSpan.textContent = role;
+    
+    // Formatta la data di registrazione
+    if (registrationSpan) {
+        if (user.created_at) {
+            const date = new Date(user.created_at);
+            const formattedDate = date.toLocaleDateString('it-IT', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            registrationSpan.textContent = formattedDate;
+        } else {
+            registrationSpan.textContent = 'N/A';
+        }
+    }
+}
+
+/**
+ * Carica le informazioni utente dal server e le popola nella pagina
+ */
+async function loadAndPopulateUserInfo() {
+    try {
+        // Prima controlla se abbiamo un token
+        const token = localStorage.getItem('coworkspace_token');
+        
+        if (!token) {
+            // Se non c'è token, usa i dati di test per lo sviluppo
+            const isDevelopment = window.location.protocol === 'file:' || 
+                                 window.location.hostname === '127.0.0.1' || 
+                                 window.location.hostname === 'localhost' ||
+                                 window.location.hostname.includes('localhost') ||
+                                 ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
+            
+            if (isDevelopment) {
+                populateUserInfoDisplay();
+                return;
+            }
+        }
+
+        // Se abbiamo un token, prova a recuperare i dati dal server
+        if (window.apiService && typeof window.apiService.getCurrentUser === 'function') {
+            const userResponse = await window.apiService.getCurrentUser();
+            
+            if (userResponse) {
+                // Salva i dati aggiornati nel localStorage
+                localStorage.setItem('coworkspace_user', JSON.stringify(userResponse));
+                // Popola la pagina con i dati del server
+                populateUserInfoDisplay();
+                return;
+            }
+        }
+
+        // Fallback: usa i dati dal localStorage se disponibili
+        populateUserInfoDisplay();
+        
+    } catch (error) {
+        console.error('Errore nel caricare le informazioni utente dal server:', error);
+        // In caso di errore, usa i dati dal localStorage
+        populateUserInfoDisplay();
+    }
+}
+
+/**
+ * Carica la cronologia pagamenti dell'utente
+ */
+async function loadPaymentHistory() {
+    const container = document.getElementById('payment-history-container');
+    if (!container) return;
+
+    try {
+        // Mostra lo stato di caricamento
+        showPaymentHistoryLoading();
+
+        // Prima controlla se abbiamo un token
+        const token = localStorage.getItem('coworkspace_token');
+        
+        if (!token) {
+            // Se non c'è token, usa i dati di test per lo sviluppo
+            const isDevelopment = window.location.protocol === 'file:' || 
+                                 window.location.hostname === '127.0.0.1' || 
+                                 window.location.hostname === 'localhost' ||
+                                 window.location.hostname.includes('localhost') ||
+                                 ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
+            
+            if (isDevelopment) {
+                // Simula un ritardo per il caricamento
+                setTimeout(() => {
+                    displayTestPaymentHistory();
+                }, 1000);
+                return;
+            }
+        }
+
+        // Se abbiamo un token, prova a recuperare i dati dal server
+        const bookings = await fetchUserBookings();
+        
+        if (bookings && bookings.length > 0) {
+            displayPaymentHistory(bookings);
+        } else {
+            showEmptyPaymentHistory();
+        }
+        
+    } catch (error) {
+        console.error('Errore nel caricare la cronologia pagamenti:', error);
+        // In caso di errore, mostra stato vuoto
+        showEmptyPaymentHistory();
+    }
+}
+
+/**
+ * Recupera le prenotazioni dell'utente dal server
+ */
+async function fetchUserBookings() {
+    try {
+        const token = localStorage.getItem('coworkspace_token');
+        if (!token) {
+            console.log('Nessun token disponibile');
+            return null;
+        }
+
+        console.log('Chiamata API per recuperare prenotazioni...');
+        
+        // URL dell'API backend
+        const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+        const response = await fetch(`${baseUrl}/api/bookings`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('Risposta API:', response.status, response.statusText);
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error('Errore API:', errorData);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Dati ricevuti:', data);
+        
+        // L'API restituisce i dati in formato { success: true, data: { items: [...] } }
+        if (data.success && data.data && data.data.items) {
+            return data.data.items;
+        } else if (Array.isArray(data)) {
+            // Fallback se l'API restituisce direttamente l'array
+            return data;
+        } else {
+            console.log('Nessuna prenotazione trovata');
+            return [];
+        }
+    } catch (error) {
+        console.error('Errore nel recuperare le prenotazioni:', error);
+        return null;
+    }
+}
+
+/**
+ * Mostra lo stato di caricamento per la cronologia pagamenti
+ */
+function showPaymentHistoryLoading() {
+    const container = document.getElementById('payment-history-container');
+    container.innerHTML = `
+        <div class="payment-list-container">
+            <div class="payment-history-header">
+                <h2 class="payment-history-title">Cronologia Pagamenti</h2>
+                <div class="payment-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">-</span>
+                        <span class="stat-label">Prenotazioni</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">-</span>
+                        <span class="stat-label">Totale Speso</span>
+                    </div>
+                </div>
+            </div>
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Mostra lo stato vuoto per la cronologia pagamenti
+ */
+function showEmptyPaymentHistory() {
+    const container = document.getElementById('payment-history-container');
+    container.innerHTML = `
+        <div class="payment-list-container">
+            <div class="payment-history-header">
+                <h2 class="payment-history-title">Cronologia Pagamenti</h2>
+                <div class="payment-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">0</span>
+                        <span class="stat-label">Prenotazioni</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">€0</span>
+                        <span class="stat-label">Totale Speso</span>
+                    </div>
+                </div>
+            </div>
+            <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <h3>Nessun pagamento trovato</h3>
+                <p>Non hai ancora effettuato prenotazioni. Inizia a prenotare i tuoi spazi!</p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Visualizza i dati di test per la cronologia pagamenti
+ */
+function displayTestPaymentHistory() {
+    const testBookings = [
+        {
+            booking_id: 1,
+            location_name: "CoWork Milano Centro",
+            space_name: "Sala Riunioni A",
+            start_date: "2024-12-15",
+            end_date: "2024-12-15",
+            total_price: 75.00,
+            status: "completed",
+            payment_status: "completed",
+            created_at: "2024-12-10T10:30:00Z"
+        },
+        {
+            booking_id: 2,
+            location_name: "CoWork Roma EUR",
+            space_name: "Postazione Desk 12",
+            start_date: "2024-12-08",
+            end_date: "2024-12-10",
+            total_price: 150.00,
+            status: "completed",
+            payment_status: "completed",
+            created_at: "2024-12-05T14:15:00Z"
+        },
+        {
+            booking_id: 3,
+            location_name: "CoWork Torino",
+            space_name: "Ufficio Privato 3",
+            start_date: "2024-11-25",
+            end_date: "2024-11-25",
+            total_price: 120.00,
+            status: "completed",
+            payment_status: "completed",
+            created_at: "2024-11-20T09:45:00Z"
+        }
+    ];
+
+    displayPaymentHistory(testBookings);
+}
+
+/**
+ * Visualizza la cronologia pagamenti
+ */
+function displayPaymentHistory(bookings) {
+    const container = document.getElementById('payment-history-container');
+    
+    if (!container) {
+        return;
+    }
+    
+    // Calcola le statistiche
+    const totalBookings = bookings.length;
+    const totalSpent = bookings.reduce((sum, booking) => sum + (parseFloat(booking.total_price) || 0), 0);
+    
+    // Crea l'HTML per la cronologia
+    const paymentListHTML = bookings.map(booking => {
+        const startDate = new Date(booking.start_date);
+        const endDate = new Date(booking.end_date);
+        const createdDate = new Date(booking.created_at);
+        
+        const formatDate = (date) => {
+            return date.toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        };
+        
+        const getStatusClass = (status) => {
+            switch(status) {
+                case 'completed': return 'status-completed';
+                case 'confirmed': return 'status-completed';
+                case 'pending': return 'status-pending';
+                case 'cancelled': return 'status-cancelled';
+                default: return 'status-pending';
+            }
+        };
+        
+        const getStatusText = (status) => {
+            switch(status) {
+                case 'completed': return 'Completata';
+                case 'confirmed': return 'Confermata';
+                case 'pending': return 'In Attesa';
+                case 'cancelled': return 'Cancellata';
+                default: return 'In Attesa';
+            }
+        };
+        
+        const getPaymentStatusClass = (paymentStatus) => {
+            switch(paymentStatus) {
+                case 'completed': return 'status-completed';
+                case 'paid': return 'status-completed'; // Supporto legacy
+                case 'pending': return 'status-pending';
+                case 'failed': return 'status-cancelled';
+                case 'refunded': return 'status-cancelled';
+                default: return 'status-pending';
+            }
+        };
+        
+        const getPaymentStatusText = (paymentStatus) => {
+            switch(paymentStatus) {
+                case 'completed': return 'Pagato';
+                case 'paid': return 'Pagato'; // Supporto legacy
+                case 'pending': return 'In Attesa';
+                case 'failed': return 'Fallito';
+                case 'refunded': return 'Rimborsato';
+                default: return 'In Attesa';
+            }
+        };
+        
+        const duration = startDate.getTime() === endDate.getTime() 
+            ? `${formatDate(startDate)}`
+            : `${formatDate(startDate)} - ${formatDate(endDate)}`;
+            
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        const durationText = daysDiff === 1 ? '1 giorno' : `${daysDiff} giorni`;
+            
+        return `
+            <div class="payment-item">
+                <div class="payment-header">
+                    <h3 class="payment-location">${booking.location_name || 'N/A'}</h3>
+                    <span class="payment-amount">€${parseFloat(booking.total_price || 0).toFixed(2)}</span>
+                </div>
+                <div class="payment-details">
+                    <div class="payment-detail">
+                        <span class="payment-detail-label">Spazio</span>
+                        <span class="payment-detail-value">${booking.space_name || 'N/A'}</span>
+                    </div>
+                    <div class="payment-detail">
+                        <span class="payment-detail-label">Periodo</span>
+                        <span class="payment-detail-value">${duration}</span>
+                    </div>
+                    <div class="payment-detail">
+                        <span class="payment-detail-label">Durata</span>
+                        <span class="payment-detail-value">${durationText}</span>
+                    </div>
+                    <div class="payment-detail">
+                        <span class="payment-detail-label">Data Prenotazione</span>
+                        <span class="payment-detail-value">${formatDate(createdDate)}</span>
+                    </div>
+                    <div class="payment-detail">
+                        <span class="payment-detail-label">Stato Prenotazione</span>
+                        <span class="payment-status ${getStatusClass(booking.status)}">${getStatusText(booking.status)}</span>
+                    </div>
+                    <div class="payment-detail">
+                        <span class="payment-detail-label">Stato Pagamento</span>
+                        <span class="payment-status ${getPaymentStatusClass(booking.payment_status)}">${getPaymentStatusText(booking.payment_status)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        <div class="payment-list-container">
+            <div class="payment-history-header">
+                <h2 class="payment-history-title">Cronologia Pagamenti</h2>
+                <div class="payment-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">${totalBookings}</span>
+                        <span class="stat-label">Prenotazioni</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">€${totalSpent.toFixed(2)}</span>
+                        <span class="stat-label">Totale Speso</span>
+                    </div>
+                </div>
+            </div>
+            <div class="payment-list">
+                ${paymentListHTML}
+            </div>
+        </div>
+    `;
 }

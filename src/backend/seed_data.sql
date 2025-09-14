@@ -2,16 +2,14 @@
 -- Almeno 10 righe per ogni tabella
 
 -- Pulizia dati esistenti (opzionale - decommentare se necessario)
-TRUNCATE TABLE notifications RESTART IDENTITY CASCADE;
-TRUNCATE TABLE space_services CASCADE;
-TRUNCATE TABLE additional_services RESTART IDENTITY CASCADE;
-TRUNCATE TABLE payments RESTART IDENTITY CASCADE;
-TRUNCATE TABLE bookings RESTART IDENTITY CASCADE;
-TRUNCATE TABLE availability RESTART IDENTITY CASCADE;
-TRUNCATE TABLE spaces RESTART IDENTITY CASCADE;
-TRUNCATE TABLE space_types RESTART IDENTITY CASCADE;
-TRUNCATE TABLE locations RESTART IDENTITY CASCADE;
-TRUNCATE TABLE users RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE notifications RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE payments RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE bookings RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE availability RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE spaces RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE space_types RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE locations RESTART IDENTITY CASCADE;
+-- TRUNCATE TABLE users RESTART IDENTITY CASCADE;
 
 -- INSERIMENTO UTENTI (15 utenti)
 INSERT INTO users (name, surname, email, password_hash, role) VALUES
@@ -83,56 +81,54 @@ INSERT INTO spaces (location_id, space_type_id, space_name, description, capacit
 (1, 2, 'Postazione Milano E5', 'Postazione premium nell''area business.', 1, 12.00, 65.00);
 
 -- INSERIMENTO DISPONIBILITÀ (30 slot di disponibilità)
-INSERT INTO availability (space_id, availability_date, start_time, end_time, is_available) VALUES
--- Disponibilità per oggi e prossimi giorni
-(1, CURRENT_DATE, '09:00', '17:00', true),
-(1, CURRENT_DATE + 1, '09:00', '17:00', true),
-(2, CURRENT_DATE, '10:00', '12:00', true),
-(2, CURRENT_DATE, '14:00', '16:00', true),
-(3, CURRENT_DATE, '08:00', '18:00', true),
-(4, CURRENT_DATE, '09:00', '11:00', true),
-(4, CURRENT_DATE, '15:00', '17:00', false), -- Non disponibile
-(5, CURRENT_DATE, '09:00', '17:00', true),
-(6, CURRENT_DATE, '08:00', '20:00', true),
-(7, CURRENT_DATE + 1, '09:00', '17:00', true),
-(8, CURRENT_DATE + 1, '10:00', '18:00', true),
-(9, CURRENT_DATE, '09:00', '12:00', true),
-(9, CURRENT_DATE, '13:00', '17:00', true),
-(10, CURRENT_DATE + 2, '09:00', '17:00', true),
-(11, CURRENT_DATE, '08:00', '16:00', true),
-(12, CURRENT_DATE + 1, '09:00', '17:00', true),
-(13, CURRENT_DATE, '10:00', '18:00', true),
-(14, CURRENT_DATE, '00:00', '23:59', true), -- Sala relax sempre disponibile
-(15, CURRENT_DATE, '09:00', '17:00', true),
-(16, CURRENT_DATE + 1, '08:00', '18:00', true),
-(17, CURRENT_DATE, '09:00', '17:00', true),
-(18, CURRENT_DATE + 2, '10:00', '16:00', true),
-(19, CURRENT_DATE, '09:00', '17:00', true),
-(20, CURRENT_DATE, '08:00', '20:00', true),
-(1, CURRENT_DATE + 3, '09:00', '17:00', true),
-(2, CURRENT_DATE + 3, '10:00', '16:00', true),
-(3, CURRENT_DATE + 3, '08:00', '18:00', true),
-(5, CURRENT_DATE + 3, '09:00', '17:00', true),
-(7, CURRENT_DATE + 3, '09:00', '17:00', true),
-(10, CURRENT_DATE + 3, '09:00', '17:00', true);
+INSERT INTO availability (space_id, availability_date, is_available) VALUES
+(1, CURRENT_DATE, true),
+(1, CURRENT_DATE + 1, true),
+(2, CURRENT_DATE, true),
+(2, CURRENT_DATE + 1, true),
+(3, CURRENT_DATE, true),
+(4, CURRENT_DATE, true),
+(4, CURRENT_DATE + 1, false), -- Non disponibile
+(5, CURRENT_DATE, true),
+(6, CURRENT_DATE, true),
+(7, CURRENT_DATE + 1, true),
+(8, CURRENT_DATE + 1, true),
+(9, CURRENT_DATE, true),
+(10, CURRENT_DATE + 2, true),
+(11, CURRENT_DATE, true),
+(12, CURRENT_DATE + 1, true),
+(13, CURRENT_DATE, true),
+(14, CURRENT_DATE, true), -- Sala relax sempre disponibile
+(15, CURRENT_DATE, true),
+(16, CURRENT_DATE + 1, true),
+(17, CURRENT_DATE, true),
+(18, CURRENT_DATE + 2, true),
+(19, CURRENT_DATE, true),
+(20, CURRENT_DATE, true),
+(1, CURRENT_DATE + 3, true),
+(2, CURRENT_DATE + 3, true),
+(3, CURRENT_DATE + 3, true),
+(5, CURRENT_DATE + 3, true),
+(7, CURRENT_DATE + 3, true),
+(10, CURRENT_DATE + 3, true);
 
 -- INSERIMENTO PRENOTAZIONI (15 prenotazioni)
-INSERT INTO bookings (user_id, space_id, booking_date, start_time, end_time, total_hours, total_price, status) VALUES
-(1, 1, CURRENT_DATE, '09:00', '12:00', 3.00, 45.00, 'confirmed'),
-(3, 2, CURRENT_DATE, '10:00', '12:00', 2.00, 50.00, 'confirmed'),
-(5, 3, CURRENT_DATE + 1, '09:00', '17:00', 8.00, 64.00, 'pending'),
-(7, 5, CURRENT_DATE, '14:00', '17:00', 3.00, 60.00, 'confirmed'),
-(10, 6, CURRENT_DATE, '10:00', '16:00', 6.00, 72.00, 'completed'),
-(11, 8, CURRENT_DATE + 1, '10:00', '15:00', 5.00, 150.00, 'confirmed'),
-(12, 9, CURRENT_DATE, '09:00', '12:00', 3.00, 15.00, 'confirmed'),
-(14, 11, CURRENT_DATE, '08:00', '16:00', 8.00, 72.00, 'completed'),
-(1, 13, CURRENT_DATE, '14:00', '18:00', 4.00, 56.00, 'confirmed'),
-(3, 15, CURRENT_DATE, '09:00', '17:00', 8.00, 176.00, 'pending'),
-(5, 17, CURRENT_DATE, '10:00', '17:00', 7.00, 196.00, 'confirmed'),
-(7, 19, CURRENT_DATE, '09:00', '13:00', 4.00, 180.00, 'completed'),
-(10, 20, CURRENT_DATE, '15:00', '18:00', 3.00, 36.00, 'confirmed'),
-(11, 1, CURRENT_DATE + 2, '09:00', '12:00', 3.00, 45.00, 'pending'),
-(12, 4, CURRENT_DATE + 1, '09:00', '11:00', 2.00, 80.00, 'cancelled');
+INSERT INTO bookings (user_id, space_id, start_date, end_date, total_price, status, payment_status, notes) VALUES
+(1, 1, CURRENT_DATE, CURRENT_DATE, 45.00, 'confirmed', 'completed', 'Prenotazione 1'),
+(3, 2, CURRENT_DATE, CURRENT_DATE, 50.00, 'confirmed', 'completed', 'Prenotazione 2'),
+(5, 3, CURRENT_DATE + 1, CURRENT_DATE + 1, 64.00, 'pending', 'pending', 'Prenotazione 3'),
+(7, 5, CURRENT_DATE, CURRENT_DATE, 60.00, 'confirmed', 'completed', 'Prenotazione 4'),
+(10, 6, CURRENT_DATE, CURRENT_DATE, 72.00, 'completed', 'completed', 'Prenotazione 5'),
+(11, 8, CURRENT_DATE + 1, CURRENT_DATE + 1, 150.00, 'confirmed', 'completed', 'Prenotazione 6'),
+(12, 9, CURRENT_DATE, CURRENT_DATE, 15.00, 'confirmed', 'completed', 'Prenotazione 7'),
+(14, 11, CURRENT_DATE, CURRENT_DATE, 72.00, 'completed', 'completed', 'Prenotazione 8'),
+(1, 13, CURRENT_DATE, CURRENT_DATE, 56.00, 'confirmed', 'completed', 'Prenotazione 9'),
+(3, 15, CURRENT_DATE, CURRENT_DATE, 176.00, 'pending', 'pending', 'Prenotazione 10'),
+(5, 17, CURRENT_DATE, CURRENT_DATE, 196.00, 'confirmed', 'completed', 'Prenotazione 11'),
+(7, 19, CURRENT_DATE, CURRENT_DATE, 180.00, 'completed', 'completed', 'Prenotazione 12'),
+(10, 20, CURRENT_DATE, CURRENT_DATE, 36.00, 'confirmed', 'completed', 'Prenotazione 13'),
+(11, 1, CURRENT_DATE + 2, CURRENT_DATE + 2, 45.00, 'pending', 'pending', 'Prenotazione 14'),
+(12, 4, CURRENT_DATE + 1, CURRENT_DATE + 1, 80.00, 'cancelled', 'refunded', 'Prenotazione 15');
 
 -- INSERIMENTO PAGAMENTI (12 pagamenti - solo per prenotazioni confermate/completate)
 INSERT INTO payments (booking_id, amount, payment_method, status, transaction_id) VALUES
@@ -148,51 +144,6 @@ INSERT INTO payments (booking_id, amount, payment_method, status, transaction_id
 (12, 180.00, 'bank_transfer', 'completed', 'TXN_012_BT_20250905'),
 (13, 36.00, 'paypal', 'completed', 'TXN_013_PP_20250905'),
 (15, 80.00, 'credit_card', 'refunded', 'TXN_015_CC_20250905');
-
--- INSERIMENTO SERVIZI AGGIUNTIVI (12 servizi)
-INSERT INTO additional_services (service_name, description, price, is_active) VALUES
-('WiFi Premium', 'Connessione internet ad alta velocità dedicata', 5.00, true),
-('Caffè e Bevande', 'Accesso illimitato alla macchina del caffè e bevande', 3.00, true),
-('Stampante e Scanner', 'Utilizzo di stampante multifunzione professionale', 0.10, true),
-('Supporto Tecnico', 'Assistenza tecnica per meeting e presentazioni', 15.00, true),
-('Catering Leggero', 'Snack e bevande per riunioni', 8.00, true),
-('Parcheggio Riservato', 'Posto auto dedicato per la giornata', 10.00, true),
-('Accesso 24/7', 'Accesso al coworking anche fuori orario', 20.00, true),
-('Servizio Pulizie Extra', 'Pulizia approfondita dello spazio', 12.00, true),
-('Noleggio Monitor Extra', 'Monitor aggiuntivo per postazioni', 8.00, true),
-('Sala Relax Premium', 'Accesso alla sala relax con massaggi', 25.00, true),
-('Servizio Concierge', 'Assistenza per prenotazioni esterne e servizi', 30.00, false),
-('Kit Ufficio Completo', 'Cancelleria, block notes e materiali per ufficio', 5.00, true);
-
--- INSERIMENTO RELAZIONI SPAZI-SERVIZI (25 associazioni)
-INSERT INTO space_services (space_id, service_id) VALUES
--- Stanze private hanno molti servizi
-(1, 1), (1, 2), (1, 3), (1, 6), (1, 12),
-(5, 1), (5, 2), (5, 3), (5, 4), (5, 6), (5, 10),
-(10, 1), (10, 2), (10, 3), (10, 6), (10, 12),
-(15, 1), (15, 2), (15, 3), (15, 6),
--- Sale riunioni hanno servizi tech e catering
-(2, 1), (2, 3), (2, 4), (2, 5), (2, 9),
-(4, 1), (4, 3), (4, 4), (4, 5), (4, 8), (4, 9),
-(12, 1), (12, 3), (12, 4), (12, 5), (12, 8),
-(17, 1), (17, 3), (17, 4), (17, 5),
-(19, 1), (19, 3), (19, 4), (19, 5), (19, 8), (19, 9),
--- Postazioni flessibili hanno servizi base
-(3, 1), (3, 2), (3, 12),
-(6, 1), (6, 2), (6, 7), (6, 12),
-(7, 1), (7, 2), (7, 12),
-(11, 1), (11, 2), (11, 12),
-(13, 1), (13, 2), (13, 12),
-(16, 1), (16, 2), (16, 12),
-(20, 1), (20, 2), (20, 9), (20, 12),
--- Team spaces hanno servizi collaborativi
-(8, 1), (8, 2), (8, 3), (8, 4), (8, 5), (8, 12),
--- Studio creativo ha servizi specializzati
-(18, 1), (18, 2), (18, 3), (18, 4), (18, 9), (18, 12),
--- Phone booth ha servizi essenziali
-(9, 1), (9, 4),
--- Sala relax ha servizi comfort
-(14, 2), (14, 10);
 
 -- INSERIMENTO NOTIFICHE (15 notifiche)
 INSERT INTO notifications (user_id, type, channel, recipient, subject, content, status, booking_id, payment_id) VALUES
@@ -222,6 +173,4 @@ SELECT
     (SELECT COUNT(*) FROM availability) as disponibilita,
     (SELECT COUNT(*) FROM bookings) as prenotazioni,
     (SELECT COUNT(*) FROM payments) as pagamenti,
-    (SELECT COUNT(*) FROM additional_services) as servizi,
-    (SELECT COUNT(*) FROM space_services) as spazi_servizi,
     (SELECT COUNT(*) FROM notifications) as notifiche;

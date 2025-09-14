@@ -21,9 +21,8 @@ class Payment {
                 id: data.booking_id,
                 user_id: data.booking_user_id,
                 space_id: data.space_id,
-                booking_date: data.booking_date,
-                start_time: data.start_time,
-                end_time: data.end_time
+                start_date: data.start_date,
+                end_date: data.end_date
             };
         }
         
@@ -103,9 +102,8 @@ class Payment {
                     p.*,
                     b.user_id as booking_user_id,
                     b.space_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
+                    b.start_date,
+                    b.end_date,
                     s.space_name,
                     l.location_name,
                     l.manager_id,
@@ -141,9 +139,8 @@ class Payment {
                     p.*,
                     b.user_id as booking_user_id,
                     b.space_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
+                    b.start_date,
+                    b.end_date,
                     s.space_name,
                     l.location_name,
                     u.name as user_name,
@@ -178,9 +175,8 @@ class Payment {
                     p.*,
                     b.user_id as booking_user_id,
                     b.space_id,
-                    b.booking_date,
-                    b.start_time,
-                    b.end_time,
+                    b.start_date,
+                    b.end_date,
                     s.space_name,
                     l.location_name,
                     l.manager_id,

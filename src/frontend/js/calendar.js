@@ -1,7 +1,9 @@
 const state = {
     currentMonth: new Date().getMonth(),
     currentYear: new Date().getFullYear(),
-    selectedDate: null,
+    selectedStartDate: null,
+    selectedEndDate: null,
+    selectingStartDate: true, // flag per sapere se stiamo selezionando inizio o fine
     loading: false
 };
 
@@ -9,7 +11,8 @@ const state = {
 const calendarYearSelect = document.getElementById('calendar-year');
 const calendarMonthSelect = document.getElementById('calendar-month');
 const calendarDayNumbersEl = document.getElementById('calendar-day-numbers');
-const dateInput = document.getElementById('date');
+const dateStartInput = document.getElementById('date-start');
+const dateEndInput = document.getElementById('date-end');
 const bookingForm = document.getElementById('booking-form');
 const bookingMessage = document.getElementById('booking-message');
 
@@ -46,7 +49,10 @@ const populateSelects = () => {
 const renderCalendar = (month, year) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const startDay = firstDay.getDay(); // 0 = Domenica, 1 = Lunedì
+    let startDay = firstDay.getDay(); // 0 = Domenica, 1 = Lunedì, ...
+    
+    // Converti per iniziare da lunedì (0 = Lunedì, 6 = Domenica)
+    startDay = startDay === 0 ? 6 : startDay - 1;
 
     calendarDayNumbersEl.innerHTML = '';
 
@@ -65,33 +71,208 @@ const renderCalendar = (month, year) => {
         fullDate.setHours(0, 0, 0, 0);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        
+        // Formato della data per confronto con le date prenotate (YYYY-MM-DD)
+        const dateStr = fullDate.toISOString().split('T')[0];
 
         if (fullDate.getTime() === today.getTime()) {
             dayEl.classList.add('calendar__day-number--current');
         }
 
+        // Disabilita le date nel passato
         if (fullDate < today) {
             dayEl.classList.add('calendar__day-number--disabled');
             dayEl.style.pointerEvents = 'none';
             dayEl.style.opacity = '0.5';
-        } else {
-            dayEl.addEventListener('click', () => {
-                const allDays = calendarDayNumbersEl.querySelectorAll('.calendar__day-number');
-                // Se il giorno è già selezionato, deseleziona
-                if (dayEl.classList.contains('selected')) {
-                    dayEl.classList.remove('selected');
-                    state.selectedDate = null;
-                    dateInput.value = '';
-                } else {
-                    allDays.forEach(d => d.classList.remove('selected'));
-                    dayEl.classList.add('selected');
-                    state.selectedDate = fullDate;
-                    dateInput.value = fullDate.toLocaleDateString('it-IT');
+        }
+        // Verifica se il giorno della settimana è disponibile per lo spazio selezionato
+        else if (window.currentSpaceAvailableDays && window.currentSpaceAvailableDays.length > 0) {
+            const dayOfWeek = fullDate.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+            const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek; // Converti a formato ISO (1=Lunedì, 7=Domenica)
+            
+            if (!window.currentSpaceAvailableDays.includes(dayOfWeekISO)) {
+                // Il giorno della settimana non è disponibile per questo spazio
+                dayEl.classList.add('calendar__day-number--unavailable');
+                dayEl.style.pointerEvents = 'none';
+                dayEl.style.opacity = '0.4';
+                dayEl.style.backgroundColor = '#f5f5f5';
+                dayEl.style.color = '#999';
+                dayEl.title = 'Lo spazio non è aperto in questo giorno della settimana';
+            }
+            // Disabilita le date già prenotate per lo spazio selezionato
+            else if (window.currentSpaceBookedDates && window.currentSpaceBookedDates.includes(dateStr)) {
+                dayEl.classList.add('calendar__day-number--booked');
+                dayEl.style.pointerEvents = 'none';
+                dayEl.style.opacity = '0.6';
+                dayEl.style.backgroundColor = '#ffebee';
+                dayEl.style.color = '#c62828';
+                dayEl.style.textDecoration = 'line-through';
+                dayEl.title = 'Data già prenotata';
+            }
+            else {
+                // Date selezionabili
+                // Evidenzia le date selezionate
+                if (state.selectedStartDate && fullDate.getTime() === state.selectedStartDate.getTime()) {
+                    dayEl.classList.add('selected-start');
                 }
+                if (state.selectedEndDate && fullDate.getTime() === state.selectedEndDate.getTime()) {
+                    dayEl.classList.add('selected-end');
+                }
+                
+                // Evidenzia il range tra le date
+                if (state.selectedStartDate && state.selectedEndDate && 
+                    fullDate >= state.selectedStartDate && fullDate <= state.selectedEndDate) {
+                    dayEl.classList.add('in-range');
+                }
+
+                dayEl.addEventListener('click', () => {
+                    selectDate(fullDate, dayEl);
+                });
+            }
+        }
+        // Disabilita le date già prenotate per lo spazio selezionato (fallback se non ci sono giorni disponibili)
+        else if (window.currentSpaceBookedDates && window.currentSpaceBookedDates.includes(dateStr)) {
+            dayEl.classList.add('calendar__day-number--booked');
+            dayEl.style.pointerEvents = 'none';
+            dayEl.style.opacity = '0.6';
+            dayEl.style.backgroundColor = '#ffebee';
+            dayEl.style.color = '#c62828';
+            dayEl.style.textDecoration = 'line-through';
+            dayEl.title = 'Data già prenotata';
+        }
+        else {
+            // Date selezionabili
+            // Evidenzia le date selezionate
+            if (state.selectedStartDate && fullDate.getTime() === state.selectedStartDate.getTime()) {
+                dayEl.classList.add('selected-start');
+            }
+            if (state.selectedEndDate && fullDate.getTime() === state.selectedEndDate.getTime()) {
+                dayEl.classList.add('selected-end');
+            }
+            
+            // Evidenzia il range tra le date
+            if (state.selectedStartDate && state.selectedEndDate && 
+                fullDate >= state.selectedStartDate && fullDate <= state.selectedEndDate) {
+                dayEl.classList.add('in-range');
+            }
+
+            dayEl.addEventListener('click', () => {
+                selectDate(fullDate, dayEl);
             });
         }
         calendarDayNumbersEl.appendChild(dayEl);
     }
+};
+
+// Funzione per gestire la selezione delle date
+const selectDate = (selectedDate, dayEl) => {
+    const instructionText = document.getElementById('calendar-instruction-text');
+    
+    // Se stiamo selezionando la data di fine, controlla che non ci siano conflitti nel range
+    if (!state.selectingStartDate && state.selectedStartDate && (window.currentSpaceBookedDates || window.currentSpaceAvailableDays)) {
+        const startDate = state.selectedStartDate;
+        const actualStartDate = selectedDate < startDate ? selectedDate : startDate;
+        const actualEndDate = selectedDate < startDate ? startDate : selectedDate;
+        
+        // Controlla se ci sono date prenotate o giorni non disponibili nel range
+        const currentDate = new Date(actualStartDate);
+        let hasConflict = false;
+        let conflictReason = '';
+        
+        while (currentDate <= actualEndDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            
+            // Verifica se la data è già prenotata
+            if (window.currentSpaceBookedDates && window.currentSpaceBookedDates.includes(dateStr)) {
+                hasConflict = true;
+                conflictReason = 'Il periodo selezionato include date già prenotate.';
+                break;
+            }
+            
+            // Verifica se il giorno della settimana è disponibile
+            if (window.currentSpaceAvailableDays && window.currentSpaceAvailableDays.length > 0) {
+                const dayOfWeek = currentDate.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+                const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek; // Converti a formato ISO (1=Lunedì, 7=Domenica)
+                
+                if (!window.currentSpaceAvailableDays.includes(dayOfWeekISO)) {
+                    hasConflict = true;
+                    conflictReason = 'Il periodo selezionato include giorni in cui lo spazio non è aperto.';
+                    break;
+                }
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        if (hasConflict) {
+            // Mostra messaggio di errore
+            if (instructionText) {
+                instructionText.textContent = conflictReason + ' Scegli un altro periodo.';
+                instructionText.style.color = '#e74c3c';
+                
+                setTimeout(() => {
+                    instructionText.style.color = '';
+                    instructionText.textContent = 'Clicca su una data per selezionare la fine del periodo';
+                }, 3000);
+            }
+            return; // Non completare la selezione
+        }
+    }
+    
+    if (state.selectingStartDate || !state.selectedStartDate) {
+        // Selezione data di inizio
+        clearSelections();
+        state.selectedStartDate = selectedDate;
+        state.selectedEndDate = null;
+        state.selectingStartDate = false;
+        
+        dayEl.classList.add('selected-start');
+        dateStartInput.value = selectedDate.toLocaleDateString('it-IT');
+        dateEndInput.value = '';
+        
+        if (instructionText) {
+            instructionText.textContent = 'Ora clicca su una data per selezionare la fine del periodo';
+        }
+        
+        // Trigger per aggiornare il prezzo
+        if (window.updatePricePreview) {
+            window.updatePricePreview();
+        }
+        
+    } else {
+        // Selezione data di fine
+        if (selectedDate < state.selectedStartDate) {
+            // Se la data di fine è prima di quella di inizio, scambia
+            state.selectedEndDate = state.selectedStartDate;
+            state.selectedStartDate = selectedDate;
+        } else {
+            state.selectedEndDate = selectedDate;
+        }
+        
+        dateStartInput.value = state.selectedStartDate.toLocaleDateString('it-IT');
+        dateEndInput.value = state.selectedEndDate.toLocaleDateString('it-IT');
+        state.selectingStartDate = true; // Reset per la prossima selezione
+        
+        if (instructionText) {
+            instructionText.textContent = 'Periodo selezionato! Clicca su "Data di inizio" per riselezionare';
+        }
+        
+        // Trigger per aggiornare il prezzo
+        if (window.updatePricePreview) {
+            window.updatePricePreview();
+        }
+        
+        // Re-render del calendario per mostrare il range
+        renderCalendar(state.currentMonth, state.currentYear);
+    }
+};
+
+// Funzione per pulire le selezioni
+const clearSelections = () => {
+    const allDays = calendarDayNumbersEl.querySelectorAll('.calendar__day-number');
+    allDays.forEach(day => {
+        day.classList.remove('selected-start', 'selected-end', 'in-range');
+    });
 };
 
 
@@ -99,6 +280,43 @@ const renderCalendar = (month, year) => {
 document.addEventListener('DOMContentLoaded', () => {
     populateSelects();
     renderCalendar(state.currentMonth, state.currentYear);
+    
+    // Listener per pulire le selezioni quando si clicca sui campi input
+    if (dateStartInput) {
+        dateStartInput.addEventListener('click', () => {
+            clearSelections();
+            state.selectedStartDate = null;
+            state.selectedEndDate = null;
+            state.selectingStartDate = true;
+            dateStartInput.value = '';
+            dateEndInput.value = '';
+            
+            const instructionText = document.getElementById('calendar-instruction-text');
+            if (instructionText) {
+                instructionText.textContent = 'Clicca su una data per selezionare l\'inizio del periodo';
+            }
+            
+            // Trigger per aggiornare il prezzo (reset)
+            if (window.updatePricePreview) {
+                window.updatePricePreview();
+            }
+            
+            renderCalendar(state.currentMonth, state.currentYear);
+        });
+    }
+    
+    if (dateEndInput) {
+        dateEndInput.addEventListener('click', () => {
+            if (state.selectedStartDate) {
+                state.selectingStartDate = false; // Forza selezione data di fine
+                
+                const instructionText = document.getElementById('calendar-instruction-text');
+                if (instructionText) {
+                    instructionText.textContent = 'Clicca su una data per selezionare la fine del periodo';
+                }
+            }
+        });
+    }
 });
 
 calendarYearSelect.addEventListener('change', (e) => {
@@ -111,14 +329,91 @@ calendarMonthSelect.addEventListener('change', (e) => {
     renderCalendar(state.currentMonth, state.currentYear);
 });
 
-bookingForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(bookingForm);
-    const bookingData = {
-        date: formData.get('date'),
-        time: formData.get('time'),
-        duration: formData.get('duration')
-    };
+// ============================================================================
+// FUNZIONI PER INTEGRAZIONE CON DISPONIBILITÀ SPAZI
+// ============================================================================
 
-    saveBookingToFirestore(bookingData);
-});
+/**
+ * Funzione globale per aggiornare il calendario quando cambiano le date prenotate
+ * Chiamata da workspace.js quando si seleziona uno spazio diverso
+ */
+window.updateCalendarAvailability = function() {
+    // Re-render del calendario per applicare le nuove restrizioni
+    renderCalendar(state.currentMonth, state.currentYear);
+    
+    // Verifica se le date attualmente selezionate sono ancora valide
+    if (state.selectedStartDate) {
+        const startDateStr = state.selectedStartDate.toISOString().split('T')[0];
+        let dateInvalid = false;
+        let invalidReason = '';
+        
+        // Verifica se la data è prenotata
+        if (window.currentSpaceBookedDates && window.currentSpaceBookedDates.includes(startDateStr)) {
+            dateInvalid = true;
+            invalidReason = 'La data precedentemente selezionata è già prenotata.';
+        }
+        
+        // Verifica se il giorno della settimana è disponibile
+        if (!dateInvalid && window.currentSpaceAvailableDays && window.currentSpaceAvailableDays.length > 0) {
+            const dayOfWeek = state.selectedStartDate.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+            const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek; // Converti a formato ISO (1=Lunedì, 7=Domenica)
+            
+            if (!window.currentSpaceAvailableDays.includes(dayOfWeekISO)) {
+                dateInvalid = true;
+                invalidReason = 'La data precedentemente selezionata non è più disponibile (spazio chiuso in questo giorno).';
+            }
+        }
+        
+        if (dateInvalid) {
+            // Data di inizio non più valida
+            clearSelections();
+            state.selectedStartDate = null;
+            state.selectedEndDate = null;
+            state.selectingStartDate = true;
+            dateStartInput.value = '';
+            dateEndInput.value = '';
+            
+            const instructionText = document.getElementById('calendar-instruction-text');
+            if (instructionText) {
+                instructionText.textContent = invalidReason + ' Seleziona una nuova data.';
+                instructionText.style.color = '#e74c3c';
+                
+                // Ripristina il colore dopo 3 secondi
+                setTimeout(() => {
+                    instructionText.style.color = '';
+                    instructionText.textContent = 'Clicca su una data per selezionare l\'inizio del periodo';
+                }, 3000);
+            }
+            
+            renderCalendar(state.currentMonth, state.currentYear);
+            return; // Esci presto se la data di inizio non è valida
+        }
+    }
+    
+    if (state.selectedEndDate) {
+        const endDateStr = state.selectedEndDate.toISOString().split('T')[0];
+        let dateInvalid = false;
+        
+        // Verifica se la data è prenotata
+        if (window.currentSpaceBookedDates && window.currentSpaceBookedDates.includes(endDateStr)) {
+            dateInvalid = true;
+        }
+        
+        // Verifica se il giorno della settimana è disponibile
+        if (!dateInvalid && window.currentSpaceAvailableDays && window.currentSpaceAvailableDays.length > 0) {
+            const dayOfWeek = state.selectedEndDate.getDay(); // 0=Domenica, 1=Lunedì, ..., 6=Sabato
+            const dayOfWeekISO = dayOfWeek === 0 ? 7 : dayOfWeek; // Converti a formato ISO (1=Lunedì, 7=Domenica)
+            
+            if (!window.currentSpaceAvailableDays.includes(dayOfWeekISO)) {
+                dateInvalid = true;
+            }
+        }
+        
+        if (dateInvalid) {
+            // Data di fine non più valida
+            state.selectedEndDate = null;
+            dateEndInput.value = '';
+            renderCalendar(state.currentMonth, state.currentYear);
+        }
+    }
+};

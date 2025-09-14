@@ -8,6 +8,32 @@ const AppError = require('../utils/AppError');
  */
 class LocationService {
     /**
+     * Ottieni tutte le locations gestite da un manager specifico
+     * @param {number} managerId - ID del manager
+     * @returns {Promise<Location[]>} - Array di locations gestite dal manager
+     */
+    static async getLocationsByManager(managerId) {
+        if (!managerId) {
+            throw AppError.badRequest('ID manager richiesto');
+        }
+
+        // Verifica che l'utente esista e sia un manager
+        const manager = await User.findById(managerId);
+        if (!manager) {
+            throw AppError.notFound('Manager non trovato');
+        }
+
+        if (!['manager', 'admin'].includes(manager.role)) {
+            throw AppError.badRequest('L\'utente specificato non ha il ruolo di manager');
+        }
+
+        const locations = await Location.findByManager(managerId);
+        
+        // Ritorna le locations con formato JSON
+        return locations.map(location => location.toJSON());
+    }
+
+    /**
      * Crea una nuova location con validazioni avanzate
      * @param {Object} locationData - Dati della location
      * @param {Object} currentUser - Utente che fa la richiesta
@@ -83,12 +109,39 @@ class LocationService {
             throw AppError.notFound('Location non trovata');
         }
 
-        // Solo admin può eliminare locations
-        if (currentUser.role !== 'admin') {
-            throw AppError.forbidden('Solo gli amministratori possono eliminare locations');
+        // Admin può eliminare tutte le locations, manager solo le proprie
+        if (currentUser.role === 'admin') {
+            // Admin può eliminare qualsiasi location
+        } else if (currentUser.role === 'manager' && location.manager_id === currentUser.user_id) {
+            // Manager può eliminare solo le proprie location
+        } else {
+            throw AppError.forbidden('Non hai i permessi per eliminare questa location');
         }
 
         return await Location.delete(locationId);
+    }
+
+    /**
+     * Ottieni una location per ID con controlli di accesso
+     * @param {number} locationId - ID della location
+     * @param {Object} currentUser - Utente che fa la richiesta (opzionale)
+     * @returns {Promise<Location>} - Location trovata
+     */
+    static async getLocationById(locationId, currentUser = null) {
+        const location = await Location.findById(locationId);
+        if (!location) {
+            throw AppError.notFound('Location non trovata');
+        }
+
+        // Se c'è un utente, verifica i permessi
+        if (currentUser) {
+            // Manager possono vedere solo le loro location
+            if (currentUser.role === 'manager' && location.manager_id !== currentUser.user_id) {
+                throw AppError.forbidden('Non hai i permessi per visualizzare questa location');
+            }
+        }
+
+        return location;
     }
 
     /**
@@ -104,6 +157,31 @@ class LocationService {
         }
 
         return await Location.findAll(filters);
+    }
+
+    /**
+     
+Ottieni tutte le locations gestite da un manager specifico
+@param {number} managerId - ID del manager
+@returns {Promise<Location[]>} - Array di locations gestite dal manager*/
+static async getLocationsByManager(managerId) {
+    if (!managerId) {
+        throw AppError.badRequest('ID manager richiesto');}
+
+        // Verifica che l'utente esista e sia un manager
+        const manager = await User.findById(managerId);
+        if (!manager) {
+            throw AppError.notFound('Manager non trovato');
+        }
+
+        if (!['manager', 'admin'].includes(manager.role)) {
+            throw AppError.badRequest('L\'utente specificato non ha il ruolo di manager');
+        }
+
+        const locations = await Location.findByManager(managerId);
+
+        // Ritorna le locations con formato JSON
+        return locations.map(location => location.toJSON());
     }
 
     /**
@@ -206,7 +284,7 @@ class LocationService {
             paramCount++;
         }
 
-        // Filtro disponibilità temporale
+        // Filtro disponibilità temporale per prenotazioni giornaliere
         if (startDate && endDate) {
             conditions.push(`
                 NOT EXISTS (
@@ -214,9 +292,9 @@ class LocationService {
                     WHERE b.space_id = s.space_id 
                     AND b.status IN ('confirmed', 'pending')
                     AND (
-                        (b.start_time <= $${paramCount} AND b.end_time > $${paramCount}) OR
-                        (b.start_time < $${paramCount + 1} AND b.end_time >= $${paramCount + 1}) OR
-                        (b.start_time >= $${paramCount} AND b.end_time <= $${paramCount + 1})
+                        (b.start_date <= $${paramCount + 1} AND b.end_date >= $${paramCount}) OR
+                        (b.start_date <= $${paramCount} AND b.end_date >= $${paramCount}) OR
+                        (b.start_date <= $${paramCount + 1} AND b.end_date >= $${paramCount + 1})
                     )
                 )
             `);
@@ -346,15 +424,16 @@ class LocationService {
             spaces,
             statistics,
             recentBookings,
-            spaceTypes,
-            availableServices
+            spaceTypes
         ] = await Promise.all([
             Location.getLocationSpaces(locationId),
             Location.getLocationStatistics(locationId),
             Location.getLocationRecentBookings(locationId),
-            Location.getLocationSpaceTypes(locationId),
-            Location.getLocationAvailableServices(locationId)
+            Location.getLocationSpaceTypes(locationId)
         ]);
+
+        // TODO: Implement getLocationAvailableServices when services functionality is added
+        const availableServices = [];
 
         return {
             location: location.toJSON(),

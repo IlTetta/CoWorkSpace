@@ -7,5 +7,11 @@
   "verbose": true,
   "forceExit": true,
   "detectOpenHandles": true,
-  "testTimeout": 30000
+  "testTimeout": 30000,
+  "silent": false,
+  "collectCoverageFrom": [
+    "src/**/*.js",
+    "!src/**/*.test.js",
+    "!src/**/index.js"
+  ]
 }

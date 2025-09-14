@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CoWorkSpace - Dashboard Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles/dashboard-admin.css">
+    <link rel="stylesheet" href="styles/dashboard-admin-header.css">
+    <link rel="stylesheet" href="styles/background.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0&icon_names=account_circle" />
+</head>
+
+<body>
+    <div class="header">
+        <div class="left-section">
+        </div>
+        <div class="middle-section">
+            <div class="logo" id="logo">CoWorkSpace</div>
+        </div>
+        <div class="right-section">
+            <button class="home-button" id="home-btn">Home</button>
+            <button class="logout-button" id="logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <div class="profile-container">
+        <div class="profile-left-section">
+            <div class="people-icon" id="profile-icon-container">
+                <span class="material-symbols-outlined account-icon" id="default-icon">account_circle</span>
+                <img id="profile-image" src="" alt="Profile Image" style="display: none;">
+            </div>
+        </div>
+        
+        <div class="user-info-display">
+            <div class="info-item">
+                <label>Nome:</label>
+                <span id="display-name"></span>
+            </div>
+            <div class="info-item">
+                <label>Cognome:</label>
+                <span id="display-surname"></span>
+            </div>
+            <div class="info-item">
+                <label>Email:</label>
+                <span id="display-email"></span>
+            </div>
+            <div class="info-item">
+                <label>Ruolo:</label>
+                <span id="display-role">Administrator</span>
+            </div>
+            <div class="info-item">
+                <label>Data Registrazione:</label>
+                <span id="display-registration"></span>
+            </div>
+        </div>
+    </div>
+    <!-- Sezioni Admin -->
+    <div class="admin-sections">
+        <!-- Sezione richieste manager -->
+        <div class="admin-card">
+            <h2>Richieste Manager</h2>
+            <p>Accetta o rifiuta le richieste dei futuri manager</p>
+            <div class="card-actions">
+                <button class="refresh-btn" id="refresh-manager-requests">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="manager-requests-list">
+                <!-- Le richieste verranno caricate dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione lista utenti -->
+        <div class="admin-card">
+            <h2>Lista Utenti</h2>
+            <p>Visualizza tutti gli utenti registrati</p>
+            <div class="card-actions">
+                <button class="refresh-btn" id="refresh-users-list">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="users-list">
+                <!-- Gli utenti verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione lista manager -->
+        <div class="admin-card">
+            <h2>Lista Manager</h2>
+            <p>Visualizza tutti i manager attivi</p>
+            <div class="card-actions">
+                <button class="refresh-btn" id="refresh-managers-list">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="managers-list">
+                <!-- I manager verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione gestione location -->
+        <div class="admin-card">
+            <h2>Gestione Location</h2>
+            <p>Modifica ed elimina location</p>
+            <div class="card-actions">
+                <button class="refresh-btn" id="refresh-locations-list">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="locations-list">
+                <!-- Le location verranno caricate dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione gestione spazi -->
+        <div class="admin-card">
+            <h2>Gestione Spazi</h2>
+            <p>Modifica ed elimina spazi di lavoro</p>
+            <div class="card-actions">
+                <button class="refresh-btn" id="refresh-spaces-list">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="spaces-list">
+                <!-- Gli spazi verranno caricati dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Sezione gestione prenotazioni -->
+        <div class="admin-card">
+            <h2>Gestione Prenotazioni</h2>
+            <p>Visualizza ed elimina prenotazioni</p>
+            <div class="card-actions">
+                <button class="refresh-btn" id="refresh-bookings-list">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Aggiorna
+                </button>
+            </div>
+            <div id="bookings-list">
+                <!-- Le prenotazioni verranno caricate dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Message container -->
+    <div id="message-container"></div>
+
+    <!-- Modal per creare/modificare spazio -->
+    <div id="space-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="space-modal-title">Modifica Spazio</h3>
+                <span class="close-button" id="close-space-modal">&times;</span>
+            </div>
+            <div class="modal-form-container">
+                <form id="space-form">
+                    <div class="form-group">
+                        <label for="space-name">Nome Spazio:</label>
+                        <input type="text" id="space-name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-description">Descrizione:</label>
+                        <textarea id="space-description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-location">Location:</label>
+                        <select id="space-location" name="location_id" required>
+                            <option value="">Seleziona una location</option>
+                            <!-- Le location verranno caricate dinamicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-type">Tipo Spazio:</label>
+                        <select id="space-type" name="space_type_id" required>
+                            <option value="">Seleziona un tipo</option>
+                            <!-- I tipi verranno caricati dinamicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-capacity">Capacità:</label>
+                        <input type="number" id="space-capacity" name="capacity" min="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="space-hourly-rate">Tariffa Oraria (€):</label>
+                        <input type="number" id="space-hourly-rate" name="hourly_rate" step="0.01" min="0" required>
+                    </div>
+                    
+                    <!-- Sezione giorni disponibili -->
+                    <div class="form-group">
+                        <label>Giorni della Settimana Disponibili:</label>
+                        <div class="days-selection">
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="1" checked>
+                                <span>Lunedì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="2" checked>
+                                <span>Martedì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="3" checked>
+                                <span>Mercoledì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="4" checked>
+                                <span>Giovedì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="5" checked>
+                                <span>Venerdì</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="6">
+                                <span>Sabato</span>
+                            </label>
+                            <label class="day-checkbox">
+                                <input type="checkbox" name="available_days" value="7">
+                                <span>Domenica</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sezione orari di apertura -->
+                    <div class="form-group-row">
+                        <div class="form-group">
+                            <label for="space-opening-time">Orario Apertura:</label>
+                            <input type="time" id="space-opening-time" name="opening_time" value="09:00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="space-closing-time">Orario Chiusura:</label>
+                            <input type="time" id="space-closing-time" name="closing_time" value="18:00" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" id="cancel-space-form">Annulla</button>
+                <button type="submit" class="save-btn" id="save-space-btn">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per creare/modificare location -->
+    <div id="location-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="location-modal-title">Modifica Location</h3>
+                <span class="close-button" id="close-location-modal">&times;</span>
+            </div>
+            <div class="modal-form-container">
+                <form id="location-form">
+                    <div class="form-group">
+                        <label for="location-name">Nome Location:</label>
+                        <input type="text" id="location-name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location-description">Descrizione:</label>
+                        <textarea id="location-description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location-address">Indirizzo:</label>
+                        <input type="text" id="location-address" name="address" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location-city">Città:</label>
+                        <input type="text" id="location-city" name="city" required>
+                    </div>
+                </form>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" id="cancel-location-form">Annulla</button>
+                <button type="submit" class="save-btn" id="save-location-btn">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/authService.js"></script>
+    <script src="js/apiService.js"></script>
+    <script src="js/dashboard-admin.js"></script>
+</body>
+</html>

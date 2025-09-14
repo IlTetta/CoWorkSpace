@@ -19,13 +19,7 @@ GMail coworkspace.webdev@gmail.com
 pass BM7oh1,0o9]>
 AppPass (CoWorkSpace): vknf nbmg oaoh ryww
 
-TODO:
-1 - Pagina location details 
-1.1 - Detail space
-1.2 - Prenotazione space con calendario
-1.3 - Pagina pagamento
-2 - Dashboard utente (dettagli utente, storico prenotazioni, storico pagamenti, pagamenti in pending)
-3 - Pagina Manager
-3.1 - Gestione location/space/servizi (CRUD)
-3.2 - dashboard manager (dettagli manager, storico prenotazioni, storico pagamenti, pagamenti in pending, CRUD location/space/servizi, ...)
-4 - Sezione admin
+AWS credential
+Mail coworkspace.webdev@gmail.com
+Username CacheMeIfYouCan
+Password jzbSs7K?68/j

@@ -747,3 +747,69 @@ exports.rejectManagerRequest = catchAsync(async (req, res, next) => {
     }, 'Richiesta manager rifiutata con successo');
 });
 
+/**
+ * Recupera singola location per admin
+ */
+exports.getLocationById = catchAsync(async (req, res, next) => {
+    const locationId = parseInt(req.params.locationId);
+    
+    if (!locationId || locationId <= 0) {
+        return next(AppError.badRequest('ID location non valido'));
+    }
+
+    const location = await LocationService.getLocationById(locationId);
+
+    return ApiResponse.success(res, 200, 'Location recuperata con successo', {
+        location
+    });
+});
+
+/**
+ * Recupera singolo spazio per admin
+ */
+exports.getSpaceById = catchAsync(async (req, res, next) => {
+    const spaceId = parseInt(req.params.spaceId);
+    
+    if (!spaceId || spaceId <= 0) {
+        return next(AppError.badRequest('ID spazio non valido'));
+    }
+
+    const space = await SpaceService.getSpaceById(spaceId);
+
+    return ApiResponse.success(res, 200, 'Spazio recuperato con successo', {
+        space
+    });
+});
+
+/**
+ * Aggiorna spazio (admin override)
+ */
+exports.updateSpace = catchAsync(async (req, res, next) => {
+    const spaceId = parseInt(req.params.spaceId);
+    
+    if (!spaceId || spaceId <= 0) {
+        return next(AppError.badRequest('ID spazio non valido'));
+    }
+
+    const updatedSpace = await SpaceService.updateSpace(spaceId, req.body, req.user);
+
+    return ApiResponse.updated(res, {
+        space: updatedSpace
+    }, 'Spazio aggiornato con successo');
+});
+
+/**
+ * Elimina spazio (admin override)
+ */
+exports.deleteSpace = catchAsync(async (req, res, next) => {
+    const spaceId = parseInt(req.params.spaceId);
+    
+    if (!spaceId || spaceId <= 0) {
+        return next(AppError.badRequest('ID spazio non valido'));
+    }
+
+    await SpaceService.deleteSpace(spaceId, req.user);
+
+    return ApiResponse.success(res, 200, 'Spazio eliminato con successo');
+});
+

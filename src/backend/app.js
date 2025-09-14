@@ -17,7 +17,6 @@ const spaceRoutes = require('./routes/spaceRoutes');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
-const additionalServiceRoutes = require('./routes/additionalServiceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const managerRoutes = require('./routes/managerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -109,7 +108,66 @@ app.get('/health', async (req, res) => {
     }
 });
 
-// --- API Info ---
+/**
+ * @swagger
+ * /api:
+ *   get:
+ *     summary: Informazioni generali sull'API
+ *     tags: [API Info]
+ *     responses:
+ *       200:
+ *         description: Informazioni API e lista degli endpoint disponibili
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   example: 'CoWorkSpace API'
+ *                 version:
+ *                   type: string
+ *                   example: '1.0.0'
+ *                 description:
+ *                   type: string
+ *                   example: 'API per la gestione di spazi co-working'
+ *                 endpoints:
+ *                   type: object
+ *                   properties:
+ *                     auth:
+ *                       type: string
+ *                       example: '/api/users'
+ *                     locations:
+ *                       type: string
+ *                       example: '/api/locations'
+ *                     spaces:
+ *                       type: string
+ *                       example: '/api/spaces'
+ *                     space-types:
+ *                       type: string
+ *                       example: '/api/space-types'
+ *                     availability:
+ *                       type: string
+ *                       example: '/api/availability'
+ *                     bookings:
+ *                       type: string
+ *                       example: '/api/bookings'
+ *                     payments:
+ *                       type: string
+ *                       example: '/api/payments'
+ *                     notifications:
+ *                       type: string
+ *                       example: '/api/notifications'
+ *                 docs:
+ *                   type: string
+ *                   example: '/api-docs'
+ *                   description: 'URL della documentazione Swagger'
+ *                 health:
+ *                   type: string
+ *                   example: '/health'
+ *                   description: 'URL del health check'
+ */
+// --- API Info Endpoint ---
 app.get('/api', (req, res) => {
     res.json({
         name: 'CoWorkSpace API',
@@ -123,7 +181,6 @@ app.get('/api', (req, res) => {
             availability: '/api/availability',
             bookings: '/api/bookings',
             payments: '/api/payments',
-            'additional-services': '/api/additional-services',
             notifications: '/api/notifications',
             manager: '/api/manager',
             admin: '/api/admin'
@@ -141,7 +198,6 @@ app.use('/api/spaces', spaceRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/additional-services', additionalServiceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/admin', adminRoutes);

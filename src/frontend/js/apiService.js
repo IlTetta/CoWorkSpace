@@ -158,28 +158,55 @@
             }
         }
 
-        async getLocationById(id) {
+        // --- MANAGER LOCATIONS ---
+        async getMyLocations(filters = {}) {
             try {
-                const data = await this.get(`/locations/${id}`);
-                return data.data;
+                const cleanFilters = Object.keys(filters).reduce((acc, key) => {
+                    const value = filters[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = value;
+                    }
+                    return acc;
+                }, {});
+                
+                const data = await this.get('/manager/locations', cleanFilters);
+                return Array.isArray(data.data.items) ? data.data.items : Array.isArray(data.data) ? data.data : [];
             } catch (error) {
-                console.error('Error getting location by id:', error);
-                throw error;
+                console.error('Error in getMyLocations:', error);
+                return [];
             }
         }
 
         async createLocation(locationData) {
-            const data = await this.post('/locations', locationData);
+            const data = await this.post('/manager/locations', locationData);
             return data.data;
         }
 
         async updateLocation(id, locationData) {
-            const data = await this.put(`/locations/${id}`, locationData);
+            const data = await this.put(`/manager/locations/${id}`, locationData);
             return data.data;
         }
 
         async deleteLocation(id) {
-            return this.delete(`/locations/${id}`);
+            return this.delete(`/manager/locations/${id}`);
+        }
+
+        async getLocationById(id) {
+            try {
+                // Try complete endpoint first
+                const data = await this.get(`/locations/${id}/complete`);
+                return data.data;
+            } catch (error) {
+                console.warn('Complete endpoint failed, trying basic endpoint:', error.message);
+                try {
+                    // Fallback to basic endpoint
+                    const data = await this.get(`/locations/${id}`);
+                    return data.data;
+                } catch (fallbackError) {
+                    console.error('Error getting location by id (both endpoints failed):', fallbackError);
+                    throw fallbackError;
+                }
+            }
         }
 
         // Ottieni locations ordinate alfabeticamente
@@ -243,9 +270,9 @@
                     return acc;
                 }, {});
                 
-                const data = await this.get('/spaces', cleanFilters);
+                const data = await this.get('/manager/spaces', cleanFilters);
                 // Il backend restituisce data.items per le liste
-                return Array.isArray(data.data.items) ? data.data.items : [];
+                return Array.isArray(data.data.items) ? data.data.items : Array.isArray(data.data) ? data.data : [];
             } catch (error) {
                 console.error('Error in getAllSpaces:', error);
                 return []; // Sempre restituisci un array
@@ -253,22 +280,23 @@
         }
 
         async getSpaceById(id) {
+            // Use public endpoint for space details
             const data = await this.get(`/spaces/${id}`);
-            return data.data.space;
+            return data.data.space || data.data;
         }
 
         async createSpace(spaceData) {
-            const data = await this.post('/spaces', spaceData);
+            const data = await this.post('/manager/spaces', spaceData);
             return data.data;
         }
 
         async updateSpace(id, spaceData) {
-            const data = await this.put(`/spaces/${id}`, spaceData);
+            const data = await this.put(`/manager/spaces/${id}`, spaceData);
             return data.data;
         }
 
         async deleteSpace(id) {
-            return this.delete(`/spaces/${id}`);
+            return this.delete(`/manager/spaces/${id}`);
         }
 
         // --- SPACE TYPES ---
@@ -288,6 +316,16 @@
         }
 
         // --- USERS ---
+        async getCurrentUser() {
+            try {
+                const data = await this.get('/users/profile');
+                return data.data.user; // Il backend restituisce { data: { user: {...} } }
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                throw error;
+            }
+        }
+
         async getAllUsers() {
             try {
                 const data = await this.get('/users');
@@ -360,16 +398,11 @@
         // Metodi per la gestione degli spazi
         async getSpacesByLocation(locationId) {
             try {
-                // Ottieni tutti gli spazi e filtra per location
-                const data = await this.get('/spaces');
+                // Use public endpoint with location filter (backend expects 'location_id')
+                const data = await this.get('/spaces', { location_id: locationId });
                 const allSpaces = Array.isArray(data.data.items) ? data.data.items : [];
                 
-                // Filtra per location ID
-                const locationSpaces = allSpaces.filter(space => 
-                    space.locationId === parseInt(locationId) || space.location_id === parseInt(locationId)
-                );
-                
-                return locationSpaces;
+                return allSpaces;
             } catch (error) {
                 console.error('Error getting spaces by location:', error);
                 return [];
@@ -407,6 +440,7 @@
 
         async getSpaceById(spaceId) {
             try {
+                // Use public endpoint for space details
                 const data = await this.get(`/spaces/${spaceId}`);
                 return data.data;
             } catch (error) {

@@ -1,0 +1,210 @@
+/* Dashboard Manager - Base Styles */
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    width: 100%;
+    font-family: sans-serif, Arial;
+    padding-top: 100px;
+    background: radial-gradient(circle at top left, rgba(60, 52, 200, 0.5), rgba(40, 35, 150, 0.9));
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    overflow-x: hidden; /* mantieni solo per evitare scroll orizzontale */
+    box-sizing: border-box;
+}
+
+/* Shared Action Button Styles */
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+    user-select: none;
+    position: relative;
+}
+
+.create-btn {
+    background-color: rgb(79, 70, 229);
+    color: white;
+}
+
+.create-btn:hover {
+    background-color: rgb(67, 56, 202);
+    transform: translateY(-2px);
+}
+
+.refresh-btn {
+    background-color: rgb(238, 238, 238);
+    color: rgb(67, 56, 202);
+}
+
+.refresh-btn:hover {
+    background-color: rgb(204, 204, 204);
+    transform: translateY(-2px);
+}
+
+/* Shared Button Styles for Cards */
+.action-button {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-button:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.edit-btn .material-symbols-outlined,
+.delete-btn .material-symbols-outlined {
+    color: white;
+    font-size: 18px;
+}
+
+/* Legacy button styles for compatibility */
+.edit-btn, .delete-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-btn {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.edit-btn:hover {
+    background-color: #2563eb;
+}
+
+.delete-btn {
+    background-color: #ef4444;
+    color: white;
+}
+
+.delete-btn:hover {
+    background-color: #dc2626;
+}
+
+/* Shared Search Components */
+.search-section {
+    display: flex;
+    align-items: center;
+    min-width: 400px;
+    position: absolute;
+    left: 40px;
+}
+
+.search-bar {
+    width: 60%;
+    height: 35px;
+    margin-left: 0;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(79, 70, 229);
+    border-right: none;
+    border-bottom-left-radius: 20px;
+    border-top-left-radius: 20px;
+    padding: 0px 20px 0px 20px;
+    color: black;
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: normal;
+}
+
+.search-bar::placeholder {
+    color: rgba(78, 70, 229, 0.753);
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: italic;
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: rgb(79, 70, 229);
+    color: black;
+    font-family: sans-serif, Arial;
+    font-size: 18px;
+    font-style: normal;
+}
+
+.search-button {
+    width: 50px;
+    height: 39px;
+    margin-left: -20px;
+    background-color: rgb(79, 70, 229);
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(79, 70, 229);
+    border-radius: 20px;
+    transition: ease-in-out 0.15s;
+    cursor: pointer;
+}
+
+.search-button:hover {
+    transform: scale(1.05);
+    background-color: white;
+    color: rgb(79, 70, 229);
+}
+
+.search-button:hover .material-symbols-outlined {
+    color: rgb(79, 70, 229);
+}
+
+.search-button:active {
+    transform: scale(1);
+    box-shadow: inset 0 0 5px rgba(79, 70, 229, 0.9);
+    transition: all 0.01s ease-out;
+}
+
+.search-button:active .material-symbols-outlined {
+    transform: scale(0.9);
+}
+
+.search-button .material-symbols-outlined {
+    color: white;
+    margin-top: 5px;
+    font-variation-settings:
+    'FILL' 0,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+    transition: transform 0.15s ease-in-out;
+}
+
+/* Loading and Empty States */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #6b7280;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #6b7280;
+}
+
+.empty-state .material-symbols-outlined {
+    font-size: 48px;
+    color: #d1d5db;
+    margin-bottom: 10px;
+}

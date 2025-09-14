@@ -133,6 +133,129 @@ class User {
         }
     }
 
+    /**
+     * Ottieni tutti gli utenti con filtri (per admin)
+     * @param {Object} filters - Filtri di ricerca
+     * @returns {Promise<Array>} - Lista utenti
+     */
+    static async getAllUsers(filters = {}) {
+        try {
+            const whereConditions = [];
+            const params = [];
+            let paramIndex = 1;
+
+            // Filtro per ruolo
+            if (filters.role) {
+                whereConditions.push(`role = $${paramIndex}`);
+                params.push(filters.role);
+                paramIndex++;
+            }
+
+            // Filtro per email (ricerca parziale)
+            if (filters.email) {
+                whereConditions.push(`LOWER(email) LIKE LOWER($${paramIndex})`);
+                params.push(`%${filters.email}%`);
+                paramIndex++;
+            }
+
+            // Filtro per nome (ricerca parziale)
+            if (filters.name) {
+                whereConditions.push(`(LOWER(name) LIKE LOWER($${paramIndex}) OR LOWER(surname) LIKE LOWER($${paramIndex}))`);
+                params.push(`%${filters.name}%`);
+                paramIndex++;
+            }
+
+            let query = `
+                SELECT user_id, name, surname, email, role, created_at,
+                       manager_request_pending, manager_request_date
+                FROM users
+            `;
+
+            if (whereConditions.length > 0) {
+                query += ` WHERE ${whereConditions.join(' AND ')}`;
+            }
+
+            // Ordinamento
+            let orderBy = 'created_at DESC'; // Default
+
+            if (filters.sort_by) {
+                switch (filters.sort_by) {
+                    case 'name_asc':
+                        orderBy = 'name ASC, surname ASC';
+                        break;
+                    case 'name_desc':
+                        orderBy = 'name DESC, surname DESC';
+                        break;
+                    case 'email_asc':
+                        orderBy = 'email ASC';
+                        break;
+                    case 'email_desc':
+                        orderBy = 'email DESC';
+                        break;
+                    case 'role_asc':
+                        orderBy = 'role ASC, name ASC';
+                        break;
+                    case 'role_desc':
+                        orderBy = 'role DESC, name ASC';
+                        break;
+                    case 'created_asc':
+                        orderBy = 'created_at ASC';
+                        break;
+                    case 'created_desc':
+                    default:
+                        orderBy = 'created_at DESC';
+                        break;
+                }
+            }
+
+            query += ` ORDER BY ${orderBy}`;
+
+            // Limite risultati se specificato
+            if (filters.limit && parseInt(filters.limit) > 0) {
+                query += ` LIMIT ${parseInt(filters.limit)}`;
+            }
+
+            const result = await pool.query(query, params);
+            return result.rows;
+        } catch (error) {
+            throw AppError.internal('Errore nel recupero utenti', error);
+        }
+    }
+
+    /**
+     * Aggiorna ruolo utente (per admin)
+     * @param {number} userId - ID dell'utente
+     * @param {string} newRole - Nuovo ruolo
+     * @returns {Promise<User>} - Utente aggiornato
+     */
+    static async updateUserRole(userId, newRole) {
+        const validRoles = ['user', 'manager', 'admin'];
+        if (!validRoles.includes(newRole)) {
+            throw AppError.badRequest(`Ruolo non valido. Valori ammessi: ${validRoles.join(', ')}`);
+        }
+
+        try {
+            const user = await this.findById(userId);
+            if (!user) {
+                throw AppError.notFound('Utente non trovato');
+            }
+
+            // Aggiorna ruolo
+            const result = await pool.query(
+                `UPDATE users 
+                 SET role = $1, updated_at = CURRENT_TIMESTAMP
+                 WHERE user_id = $2
+                 RETURNING user_id, name, surname, email, role, created_at, updated_at, manager_request_pending, manager_request_date`,
+                [newRole, userId]
+            );
+
+            return new User(result.rows[0]);
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw AppError.internal('Errore nell\'aggiornamento ruolo utente', error);
+        }
+    }
+
     static async updateFcmToken(user) {
         try {
             const result = await pool.query(
@@ -470,7 +593,7 @@ class User {
                  ORDER BY manager_request_date ASC`
             );
 
-            return result.rows.map(row => new User(row));
+            return result.rows; // Restituire direttamente i row invece di creare istanze User
         } catch (error) {
             throw AppError.internal('Errore durante il recupero delle richieste manager pending', error);
         }
@@ -493,10 +616,9 @@ class User {
             const bookingsQuery = `
                 SELECT 
                     b.booking_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
-                    b.total_hours,
+                    b.start_date,
+                    b.end_date,
+                    b.total_days,
                     b.total_price,
                     b.status,
                     b.created_at,
@@ -533,7 +655,7 @@ class User {
                     COUNT(DISTINCT CASE WHEN b.status = 'confirmed' THEN b.booking_id END) as confirmed_bookings,
                     COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END) as cancelled_bookings,
                     COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as total_spent,
-                    COALESCE(SUM(b.total_hours), 0) as total_hours_booked,
+                    COALESCE(SUM(b.total_days), 0) as total_days_booked,
                     COUNT(DISTINCT s.location_id) as locations_visited,
                     COUNT(DISTINCT s.space_type_id) as space_types_used
                 FROM bookings b
@@ -549,9 +671,8 @@ class User {
             const upcomingBookingsQuery = `
                 SELECT 
                     b.booking_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
+                    b.start_date,
+                    b.end_date,
                     s.space_name,
                     st.type_name as space_type,
                     l.location_name,
@@ -562,8 +683,8 @@ class User {
                 JOIN locations l ON s.location_id = l.location_id
                 WHERE b.user_id = $1 
                 AND b.status = 'confirmed'
-                AND b.start_datetime > CURRENT_TIMESTAMP
-                ORDER BY b.start_datetime ASC
+                AND b.start_date > CURRENT_DATE
+                ORDER BY b.start_date ASC
                 LIMIT 5
             `;
 
@@ -573,9 +694,8 @@ class User {
             const recentBookingsQuery = `
                 SELECT 
                     b.booking_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
+                    b.start_date,
+                    b.end_date,
                     b.status,
                     s.space_name,
                     st.type_name as space_type,
@@ -641,7 +761,7 @@ class User {
                     confirmed_bookings: parseInt(stats.confirmed_bookings || 0),
                     cancelled_bookings: parseInt(stats.cancelled_bookings || 0),
                     total_spent: parseFloat(stats.total_spent || 0),
-                    total_hours_booked: parseFloat(stats.total_hours_booked || 0),
+                    total_days_booked: parseFloat(stats.total_days_booked || 0),
                     locations_visited: parseInt(stats.locations_visited || 0),
                     space_types_used: parseInt(stats.space_types_used || 0)
                 },
@@ -693,7 +813,7 @@ class User {
                     COUNT(DISTINCT b.user_id) as unique_customers
                 FROM locations l
                 LEFT JOIN spaces s ON l.location_id = s.location_id
-                LEFT JOIN bookings b ON s.space_id = b.space_id AND DATE(b.start_datetime) >= CURRENT_DATE
+                LEFT JOIN bookings b ON s.space_id = b.space_id AND b.start_date >= CURRENT_DATE
                 WHERE l.manager_id = $1
                 GROUP BY l.location_id, l.location_name, l.address, l.city, l.description
                 ORDER BY l.location_name
@@ -705,10 +825,9 @@ class User {
             const bookingsQuery = `
                 SELECT 
                     b.booking_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
-                    b.total_hours,
+                    b.start_date,
+                    b.end_date,
+                    b.total_days,
                     b.total_price,
                     b.status,
                     b.created_at,
@@ -750,7 +869,7 @@ class User {
                     COUNT(DISTINCT CASE WHEN b.status = 'cancelled' THEN b.booking_id END) as cancelled_bookings,
                     COUNT(DISTINCT CASE WHEN b.status = 'pending' THEN b.booking_id END) as pending_bookings,
                     COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as total_revenue,
-                    COALESCE(SUM(b.total_hours), 0) as total_hours_booked,
+                    COALESCE(SUM(b.total_days), 0) as total_days_booked,
                     COUNT(DISTINCT b.user_id) as unique_customers,
                     COUNT(DISTINCT s.space_id) as spaces_used,
                     COUNT(DISTINCT l.location_id) as locations_managed
@@ -768,9 +887,8 @@ class User {
             const upcomingBookingsQuery = `
                 SELECT 
                     b.booking_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
+                    b.start_date,
+                    b.end_date,
                     b.status,
                     u.name as customer_name,
                     u.surname as customer_surname,
@@ -787,8 +905,8 @@ class User {
                 LEFT JOIN payments p ON b.booking_id = p.booking_id
                 WHERE l.manager_id = $1 
                 AND b.status IN ('confirmed', 'pending')
-                AND b.start_datetime > CURRENT_TIMESTAMP
-                ORDER BY b.start_datetime ASC
+                AND b.start_date > CURRENT_DATE
+                ORDER BY b.start_date ASC
                 LIMIT 10
             `;
 
@@ -798,9 +916,8 @@ class User {
             const recentBookingsQuery = `
                 SELECT 
                     b.booking_id,
-                    DATE(b.start_datetime) as booking_date,
-                    TIME(b.start_datetime) as start_time,
-                    TIME(b.end_datetime) as end_time,
+                    b.start_date,
+                    b.end_date,
                     b.status,
                     b.created_at,
                     u.name as customer_name,
@@ -856,7 +973,7 @@ class User {
                     COUNT(b.booking_id) as total_bookings,
                     COALESCE(SUM(CASE WHEN p.status = 'completed' THEN p.amount END), 0) as revenue,
                     COUNT(DISTINCT b.user_id) as unique_customers,
-                    AVG(b.total_hours) as avg_booking_hours
+                    AVG(b.total_days) as avg_booking_days
                 FROM locations l
                 LEFT JOIN spaces s ON l.location_id = s.location_id
                 LEFT JOIN bookings b ON s.space_id = b.space_id

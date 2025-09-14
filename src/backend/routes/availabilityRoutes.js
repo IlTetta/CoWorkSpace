@@ -76,7 +76,7 @@ router.get('/', availabilityController.getSpaceAvailability);
  * @swagger
  * /availability/check:
  *   get:
- *     summary: Verifica disponibilità per una prenotazione
+ *     summary: Verifica disponibilità per una prenotazione giornaliera
  *     tags: [Availability]
  *     parameters:
  *       - in: query
@@ -86,26 +86,19 @@ router.get('/', availabilityController.getSpaceAvailability);
  *         description: ID dello spazio
  *         required: true
  *       - in: query
- *         name: booking_date
+ *         name: start_date
  *         schema:
  *           type: string
  *           format: date
- *         description: Data della prenotazione
+ *         description: Data di inizio prenotazione
  *         required: true
  *       - in: query
- *         name: start_time
+ *         name: end_date
  *         schema:
  *           type: string
- *           format: time
- *         description: Ora di inizio
- *         required: true
- *       - in: query
- *         name: end_time
- *         schema:
- *           type: string
- *           format: time
- *         description: Ora di fine
- *         required: true
+ *           format: date
+ *         description: Data di fine prenotazione
+ *         required: false
  *     responses:
  *       200:
  *         description: Risultato della verifica disponibilità
@@ -270,20 +263,12 @@ router.get('/statistics',
  *             required:
  *               - space_id
  *               - availability_date
- *               - start_time
- *               - end_time
  *             properties:
  *               space_id:
  *                 type: integer
  *               availability_date:
  *                 type: string
  *                 format: date
- *               start_time:
- *                 type: string
- *                 format: time
- *               end_time:
- *                 type: string
- *                 format: time
  *               is_available:
  *                 type: boolean
  *     responses:

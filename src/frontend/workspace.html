@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prenota Workspace - CoWorkSpace</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="styles/workspace.css">
     <link rel="stylesheet" href="styles/workspace-header.css">
     <link rel="stylesheet" href="styles/calendar.css">
@@ -61,7 +62,6 @@
             <div class="workspace-card">
                 <div class="workspace-title-block">
                     <h2 class="workspace-title">Prenota Spazio</h2>
-                    <p class="workspace-type" id="selected-space-type">Seleziona uno spazio</p>
                 </div>
 
                 <div class="booking-section">
@@ -72,45 +72,50 @@
                                 <option value="">Seleziona uno spazio</option>
                             </select>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="date">Data:</label>
-                            <input type="text" id="date" name="date" class="date-bar" required readonly>
-                            <span id="date-error" class="field-error" style="display:none;"></span>
+
+                        <!-- Info box disponibilità spazio -->
+                        <div class="space-availability-info" id="space-availability-info">
+                            <span class="icon">ℹ️</span>
+                            <span id="availability-message">Seleziona uno spazio per vedere la disponibilità</span>
                         </div>
                         
                         <div class="form-group">
-                            <label for="time">Orario:</label>
-                            <input type="time" id="time" name="time" class="time-bar" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="duration">Durata (ore):</label>
-                            <input type="number" id="duration" name="duration" class="duration-bar" min="1" max="12" required>
+                            <label for="date-start">Data di inizio:</label>
+                            <input type="text" id="date-start" name="date-start" class="date-bar" required readonly>
+                            <span id="date-start-error" class="field-error" style="display:none;"></span>
                         </div>
 
                         <div class="form-group">
-                            <label for="price">Prezzo (€):</label>
-                            <input type="number" id="price" name="price" class="price-bar" readonly placeholder="0">
+                            <label for="date-end">Data di fine:</label>
+                            <input type="text" id="date-end" name="date-end" class="date-bar" required readonly>
+                            <span id="date-end-error" class="field-error" style="display:none;"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price">Prezzo Totale (€):</label>
+                            <input type="number" id="price" name="price" class="price-bar" readonly disabled placeholder="0">
                         </div>
                         
                         <button type="submit" class="booking-button">Prenota e Paga</button>
                     </form>
                     
                     <div class="calendar" id="custom-calendar">
+                        <div class="calendar-instruction">
+                            <p id="calendar-instruction-text">Clicca su una data per selezionare l'inizio del periodo</p>
+                        </div>
                         <header class="calendar__header">
                             <select class="calendar__month" id="calendar-month"></select>
                             <select class="calendar__year" id="calendar-year"></select>
                         </header>
                         <div class="calendar__grid">
                             <div class="calendar__day-names">
-                                <span class="calendar__day-name">D</span>
                                 <span class="calendar__day-name">L</span>
                                 <span class="calendar__day-name">M</span>
                                 <span class="calendar__day-name">M</span>
                                 <span class="calendar__day-name">G</span>
                                 <span class="calendar__day-name">V</span>
                                 <span class="calendar__day-name">S</span>
+                                <span class="calendar__day-name">D</span>
                             </div>
                             <div class="calendar__day-numbers" id="calendar-day-numbers">
                                 <!-- I giorni del calendario verranno inseriti qui dal JS -->
@@ -121,12 +126,83 @@
                 
                 <div id="payment-section" class="payment-section">
                     <h3 class="payment-title">Riepilogo e Pagamento</h3>
-                    <p class="payment-total">Totale: <span id="total-price"></span> €</p>
+                    
+                    <div class="booking-summary">
+                        <div class="summary-section">
+                            <h4>Dati Utente</h4>
+                            <p><strong>Nome:</strong> <span id="summary-user-name">-</span></p>
+                            <p><strong>Email:</strong> <span id="summary-user-email">-</span></p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h4>Location</h4>
+                            <p><strong>Nome:</strong> <span id="summary-location-name">-</span></p>
+                            <p><strong>Indirizzo:</strong> <span id="summary-location-address">-</span></p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h4>Spazio Selezionato</h4>
+                            <p><strong>Spazio:</strong> <span id="summary-space-name">-</span></p>
+                            <p><strong>Tipo:</strong> <span id="summary-space-type">-</span></p>
+                            <p><strong>Orari:</strong> <span id="summary-space-hours">-</span></p>
+                        </div>
+                        
+                        <div class="summary-section">
+                            <h4>Periodo Prenotazione</h4>
+                            <p><strong>Data Inizio:</strong> <span id="summary-date-start">-</span></p>
+                            <p><strong>Data Fine:</strong> <span id="summary-date-end">-</span></p>
+                            <p><strong>Numero Giorni:</strong> <span id="summary-total-days">-</span></p>
+                            <p><strong>Ore Totali:</strong> <span id="summary-total-hours">-</span></p>
+                        </div>
+                        
+                        <div class="summary-total">
+                            <p class="payment-total"><strong>Totale da Pagare: €<span id="total-price">0</span></strong></p>
+                        </div>
+                    </div>
+                    
                     <button id="pay-button" class="pay-button">Paga ora</button>
                 </div>
                 
                 <div id="booking-message"></div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Modal per il pagamento -->
+    <div id="payment-modal" class="payment-modal">
+        <div class="payment-modal-content">
+            <div class="payment-modal-header">
+                <h3>Inserisci i Dati di Pagamento</h3>
+                <span class="payment-modal-close">&times;</span>
+            </div>
+            
+            <form id="payment-form" class="payment-form">
+                <div class="form-group">
+                    <label for="card-number">Numero Carta di Credito:</label>
+                    <input type="text" id="card-number" name="cardNumber" class="payment-input" 
+                           placeholder="1234 5678 9012 3456" maxlength="19" required>
+                </div>
+                
+                <div class="payment-row">
+                    <div class="form-group">
+                        <label for="expiry-date">Data Scadenza (MM/YY):</label>
+                        <input type="text" id="expiry-date" name="expiryDate" class="payment-input" 
+                               placeholder="12/25" maxlength="5" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="security-code">Codice Sicurezza (CVV):</label>
+                        <input type="text" id="security-code" name="securityCode" class="payment-input" 
+                               placeholder="123" maxlength="4" required>
+                    </div>
+                </div>
+                
+                <div class="payment-total-modal">
+                    <p><strong>Totale da Pagare: €<span id="modal-total-price">0</span></strong></p>
+                </div>
+                
+                <button type="submit" class="confirm-payment-button">Conferma e Paga</button>
+            </form>
         </div>
     </div>
     

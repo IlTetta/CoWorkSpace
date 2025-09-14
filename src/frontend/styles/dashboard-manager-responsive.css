@@ -1,0 +1,344 @@
+/* Dashboard Manager - Responsive Design Styles */
+
+@media (max-width: 1000px) {
+    .header {
+        height: 100px;
+        justify-content: space-between;
+        padding: 0;
+    }
+
+    .profile-container {
+        margin-top: 30px;
+        margin-left: 15px;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .people-icon {
+        width: 120px;
+        height: 120px;
+    }
+
+    .account-icon {
+        font-size: 80px !important;
+    }
+
+    .user-info-display {
+        gap: 15px;
+        justify-content: flex-start;
+        margin-top: 15px;
+    }
+
+    .info-item {
+        min-width: 140px;
+        padding: 10px 16px;
+        min-height: 55px;
+    }
+
+    .info-item label {
+        font-size: 13px;
+    }
+
+    .info-item span {
+        font-size: 16px;
+    }
+
+    .profile-menu {
+        min-width: auto;
+        width: calc(100% - 30px);
+        margin-right: 15px;
+    }
+
+    .menu-item {
+        padding: 12px 15px;
+    }
+
+    .menu-item span {
+        font-size: 14px;
+    }
+    
+    /* Responsività per la sezione ricerca */
+    .workspace-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 10px;
+    }
+    
+    .search-section {
+        min-width: auto;
+        order: 1;
+        margin-left: 0;
+    }
+    
+    .search-bar {
+        width: 60%;
+        margin-left: 0;
+    }
+    
+    .workspace-actions {
+        order: 2;
+        justify-content: center;
+        margin-right: 0;
+    }
+    
+    .action-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .workspace-management-section {
+        margin: 20px 15px;
+        padding: 20px;
+    }
+    
+    .spaces-grid {
+        padding: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    
+    .space-card {
+        max-width: none;
+    }
+    
+    .space-name {
+        font-size: 18px;
+        padding: 15px;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .space-actions {
+        align-self: center;
+    }
+}
+
+@media (max-width: 900px) {
+    .workspace-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 15px;
+        position: relative;
+    }
+    
+    .workspace-actions {
+        position: relative;
+        right: auto;
+        order: 1;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        order: 2;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .search-bar {
+        width: 70%;
+        max-width: 400px;
+    }
+
+    /* Responsive per location header */
+    .location-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 15px;
+        position: relative;
+    }
+    
+    .location-actions {
+        position: relative;
+        right: auto;
+        order: 1;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .location-header .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        order: 2;
+        justify-content: center;
+        margin: 0;
+    }
+    
+    .location-header .search-bar {
+        width: 70%;
+        max-width: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .workspace-management-section {
+        margin: 20px 15px;
+        padding: 20px;
+    }
+
+    .location-management-section {
+        margin: 20px 15px;
+        padding: 20px;
+    }
+    
+    .spaces-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    .locations-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+    
+    .workspace-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .location-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .action-btn {
+        width: 100%;
+        max-width: 250px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 470px) {
+    body {
+        background-size: 150% 100%;
+        background-position: center top;
+    }
+    
+    .workspace-management-section {
+        margin: 15px 8px;
+        padding: 12px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+
+    .location-management-section {
+        margin: 15px 8px;
+        padding: 12px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+    
+    .profile-container {
+        margin-left: 8px;
+        margin-top: 20px;
+        width: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+    
+    .user-info-display {
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: center;
+    }
+    
+    .info-item {
+        min-width: calc(100% - 20px);
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .spaces-grid {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+    }
+
+    .locations-grid {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+    }
+    
+    .space-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .location-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Correzione posizionamento search section e workspace actions */
+    .workspace-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 8px;
+    }
+    
+    .workspace-actions {
+        position: relative;
+        right: auto;
+        width: 100%;
+        margin: 0;
+        order: 1;
+        justify-content: center;
+    }
+    
+    .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        width: 100%;
+        margin: 0;
+        order: 2;
+        justify-content: center;
+    }
+    
+    .search-bar {
+        width: calc(100% - 60px);
+        max-width: none;
+    }
+
+    /* Correzione posizionamento search section e location actions */
+    .location-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 0 8px;
+    }
+    
+    .location-actions {
+        position: relative;
+        right: auto;
+        width: 100%;
+        margin: 0;
+        order: 1;
+        justify-content: center;
+    }
+    
+    .location-header .search-section {
+        position: relative;
+        left: auto;
+        min-width: auto;
+        width: 100%;
+        margin: 0;
+        order: 2;
+        justify-content: center;
+    }
+    
+    .location-header .search-bar {
+        width: calc(100% - 60px);
+        max-width: none;
+    }
+}
