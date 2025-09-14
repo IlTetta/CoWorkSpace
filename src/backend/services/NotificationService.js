@@ -360,7 +360,7 @@ static async sendPasswordReset(user, tempPassword) {
         tempPassword: tempPassword,
         companyName: 'CoWorkSpace',
         EmailAzienda: 'coworkspace.webdev@gmail.com', // aggiunto per il placeholder
-        loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
+        loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login.html` : '#',
         OggettoEmail: `Reset Password - CoWorkSpace` // rinominato per match con il template
     };
 
