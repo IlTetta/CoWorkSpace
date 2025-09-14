@@ -26,7 +26,7 @@ const adminRoutes = require('./routes/adminRoutes');
 // Rate limiting stricter per operazioni di autenticazione
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minuti
-    max: 100, // Solo 100 tentativi di login per IP ogni 15 minuti
+    max: 1000, // Solo 1000 tentativi di login per IP ogni 15 minuti
     message: {
         error: 'Troppi tentativi di accesso. Riprova tra 15 minuti.'
     },
