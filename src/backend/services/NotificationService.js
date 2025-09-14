@@ -340,7 +340,7 @@ class NotificationService {
             email: user.email,
             tempPassword: tempPassword,
             companyName: 'CoWorkSpace',
-            loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
+            loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login.html` : '#',
             subject: `Reset Password - CoWorkSpace`
         };
 
