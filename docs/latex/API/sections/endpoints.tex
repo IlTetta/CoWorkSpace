@@ -1,0 +1,336 @@
+\section{Endpoints API}
+
+\subsection{Panoramica degli Endpoints}
+L'API CoWorkSpace è organizzata in 10 categorie principali di endpoint, ciascuna dedicata a specifiche funzionalità del sistema:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lp{8cm}l@{}}
+\toprule
+\textbf{Categoria} & \textbf{Descrizione} & \textbf{Base Path} \\
+\midrule
+Users & Gestione utenti e autenticazione & /api/users \\
+Locations & Gestione sedi coworking & /api/locations \\
+Spaces & Gestione spazi prenotabili & /api/spaces \\
+Space Types & Gestione tipologie di spazio & /api/space-types \\
+Bookings & Gestione prenotazioni & /api/bookings \\
+Availability & Gestione disponibilità spazi & /api/availability \\
+Payments & Gestione pagamenti & /api/payments \\
+Notifications & Gestione notifiche & /api/notifications \\
+Manager & Endpoint specifici per manager & /api/manager \\
+Admin & Endpoint amministrativi & /api/admin \\
+\bottomrule
+\end{tabular}
+\caption{Categorie di Endpoint API}
+\end{table}
+
+\newpage
+
+\subsection{Endpoint Users}
+Gestione degli utenti, autenticazione e profili.
+
+\apiendpoint{POST}{/api/users/register}{Registrazione nuovo utente}{Pubblica}
+
+\textbf{Parametri Body:}
+\begin{itemize}
+    \item \parameter{email}{string}{Email utente (formato email valido)}
+    \item \parameter{password}{string}{Password (minimo 8 caratteri)}
+    \item \parameter{name}{string}{Nome utente (massimo 100 caratteri)}
+    \item \parameter{surname}{string}{Cognome utente (massimo 100 caratteri)}
+    \item \parameter{requestManagerRole}{boolean}{Richiesta ruolo manager (opzionale)}
+\end{itemize}
+
+\textbf{Risposte:}
+\begin{itemize}
+    \item \textbf{201}: Utente registrato con successo (può effettuare login)
+    \item \textbf{202}: Utente registrato, in attesa approvazione manager
+    \item \textbf{400}: Dati non validi
+    \item \textbf{409}: Email già esistente
+\end{itemize}
+
+\begin{lstlisting}[caption=Esempio Registrazione Utente]
+POST /api/users/register
+
+{
+  "email": "mario.rossi@email.com",
+  "password": "Password123!",
+  "name": "Mario",
+  "surname": "Rossi",
+  "requestManagerRole": false
+}
+\end{lstlisting}
+
+\apiendpoint{POST}{/api/users/login}{Login utente}{Pubblica + Rate Limiting}
+
+\textbf{Parametri Body:}
+\begin{itemize}
+    \item \parameter{email}{string}{Email registrata}
+    \item \parameter{password}{string}{Password utente}
+\end{itemize}
+
+\textbf{Risposte:}
+\begin{itemize}
+    \item \textbf{200}: Login effettuato con successo
+    \item \textbf{401}: Credenziali non valide
+    \item \textbf{429}: Troppi tentativi di login
+\end{itemize}
+
+\apiendpoint{GET}{/api/users/profile}{Ottieni profilo utente corrente}{JWT Required}
+
+\apiendpoint{GET}{/api/users/dashboard}{Dashboard con statistiche e prenotazioni}{JWT Required}
+
+\apiendpoint{PUT}{/api/users/profile}{Aggiorna profilo utente}{JWT Required}
+
+\apiendpoint{PUT}{/api/users/change-password}{Cambia password utente}{JWT Required}
+
+\apiendpoint{POST}{/api/users/request-password-reset}{Richiesta reset password}{Pubblica + Rate Limiting}
+
+\apiendpoint{POST}{/api/users/logout}{Logout utente}{JWT Required}
+
+\apiendpoint{POST}{/api/users/fcm-token}{Salva token FCM per notifiche push}{JWT Required}
+
+\apiendpoint{GET}{/api/users/check-email}{Verifica se email è registrata}{Pubblica}
+
+\subsection{Endpoint Locations}
+Gestione delle sedi coworking.
+
+\apiendpoint{GET}{/api/locations}{Lista tutte le location}{Pubblica}
+
+\textbf{Parametri Query (opzionali):}
+\begin{itemize}
+    \item \parameter{city}{string}{Filtra per città}
+    \item \parameter{search}{string}{Ricerca nel nome o descrizione}
+    \item \parameter{manager\_id}{integer}{Filtra per manager}
+\end{itemize}
+
+\apiendpoint{GET}{/api/locations/:id}{Dettagli specifica location}{Pubblica}
+
+\apiendpoint{GET}{/api/locations/:id/spaces}{Spazi di una location}{Pubblica}
+
+\apiendpoint{POST}{/api/locations}{Crea nuova location}{Admin Only}
+
+\apiendpoint{PUT}{/api/locations/:id}{Aggiorna location}{Admin Only}
+
+\apiendpoint{DELETE}{/api/locations/:id}{Elimina location}{Admin Only}
+
+\subsection{Endpoint Spaces}
+Gestione degli spazi prenotabili.
+
+\apiendpoint{GET}{/api/spaces}{Lista spazi con filtri avanzati}{Pubblica}
+
+\textbf{Parametri Query (opzionali):}
+\begin{itemize}
+    \item \parameter{location\_id}{integer}{Filtra per location}
+    \item \parameter{space\_type\_id}{integer}{Filtra per tipo spazio}
+    \item \parameter{capacity\_min}{integer}{Capacità minima}
+    \item \parameter{capacity\_max}{integer}{Capacità massima}
+    \item \parameter{price\_max}{number}{Prezzo massimo giornaliero}
+    \item \parameter{available\_date}{date}{Data disponibilità}
+    \item \parameter{city}{string}{Filtra per città location}
+    \item \parameter{search}{string}{Ricerca nel nome}
+\end{itemize}
+
+\begin{lstlisting}[caption=Esempio Ricerca Spazi con Filtri]
+GET /api/spaces?location_id=1&capacity_min=4&price_max=150&available_date=2024-01-20
+\end{lstlisting}
+
+\apiendpoint{GET}{/api/spaces/:id}{Dettagli specifico spazio}{Pubblica}
+
+\apiendpoint{GET}{/api/spaces/:id/availability}{Disponibilità spazio per periodo}{Pubblica}
+
+\apiendpoint{POST}{/api/spaces}{Crea nuovo spazio}{Manager/Admin}
+
+\apiendpoint{PUT}{/api/spaces/:id}{Aggiorna spazio}{Manager/Admin}
+
+\apiendpoint{DELETE}{/api/spaces/:id}{Elimina spazio}{Manager/Admin}
+
+\subsection{Endpoint Space Types}
+Gestione tipologie di spazio.
+
+\apiendpoint{GET}{/api/space-types}{Lista tutte le tipologie}{Pubblica}
+
+\apiendpoint{GET}{/api/space-types/:id}{Dettagli tipologia specifica}{Pubblica}
+
+\apiendpoint{POST}{/api/space-types}{Crea nuova tipologia}{Admin Only}
+
+\apiendpoint{PUT}{/api/space-types/:id}{Aggiorna tipologia}{Admin Only}
+
+\apiendpoint{DELETE}{/api/space-types/:id}{Elimina tipologia}{Admin Only}
+
+\subsection{Endpoint Bookings}
+Gestione del sistema di prenotazioni.
+
+\apiendpoint{POST}{/api/bookings/check-availability}{Verifica disponibilità spazio}{Pubblica}
+
+\textbf{Parametri Body:}
+\begin{itemize}
+    \item \parameter{space\_id}{integer}{ID dello spazio}
+    \item \parameter{start\_date}{date}{Data inizio prenotazione}
+    \item \parameter{end\_date}{date}{Data fine prenotazione}
+\end{itemize}
+
+\apiendpoint{POST}{/api/bookings}{Crea nuova prenotazione}{JWT Required}
+
+\textbf{Parametri Body:}
+\begin{itemize}
+    \item \parameter{space\_id}{integer}{ID dello spazio da prenotare}
+    \item \parameter{start\_date}{date}{Data inizio (formato YYYY-MM-DD)}
+    \item \parameter{end\_date}{date}{Data fine (formato YYYY-MM-DD)}
+    \item \parameter{notes}{string}{Note aggiuntive (opzionale)}
+\end{itemize}
+
+\begin{lstlisting}[caption=Esempio Creazione Prenotazione]
+POST /api/bookings
+Authorization: Bearer <jwt-token>
+
+{
+  "space_id": 1,
+  "start_date": "2024-01-20",
+  "end_date": "2024-01-22",
+  "notes": "Riunione team marketing"
+}
+\end{lstlisting}
+
+\apiendpoint{GET}{/api/bookings}{Lista prenotazioni utente corrente}{JWT Required}
+
+\textbf{Parametri Query (opzionali):}
+\begin{itemize}
+    \item \parameter{status}{string}{Filtra per stato (confirmed, pending, cancelled, completed)}
+    \item \parameter{from\_date}{date}{Prenotazioni da questa data}
+    \item \parameter{to\_date}{date}{Prenotazioni fino a questa data}
+    \item \parameter{page}{integer}{Numero pagina (default: 1)}
+    \item \parameter{limit}{integer}{Elementi per pagina (default: 10)}
+\end{itemize}
+
+\apiendpoint{GET}{/api/bookings/:id}{Dettagli prenotazione specifica}{JWT Required}
+
+\apiendpoint{PUT}{/api/bookings/:id}{Aggiorna prenotazione}{JWT Required}
+
+\apiendpoint{DELETE}{/api/bookings/:id}{Cancella prenotazione}{JWT Required}
+
+\apiendpoint{PUT}{/api/bookings/:id/confirm}{Conferma prenotazione}{Manager/Admin}
+
+\apiendpoint{PUT}{/api/bookings/:id/complete}{Completa prenotazione}{Manager/Admin}
+
+\subsection{Endpoint Availability}
+Gestione disponibilità degli spazi.
+
+\apiendpoint{GET}{/api/availability/space/:spaceId}{Disponibilità spazio per periodo}{Pubblica}
+
+\textbf{Parametri Query:}
+\begin{itemize}
+    \item \parameter{from\_date}{date}{Data inizio periodo}
+    \item \parameter{to\_date}{date}{Data fine periodo}
+\end{itemize}
+
+\apiendpoint{POST}{/api/availability}{Imposta disponibilità spazio}{Manager/Admin}
+
+\apiendpoint{PUT}{/api/availability/:id}{Aggiorna disponibilità}{Manager/Admin}
+
+\apiendpoint{DELETE}{/api/availability/:id}{Rimuovi disponibilità}{Manager/Admin}
+
+\subsection{Endpoint Payments}
+Gestione sistema di pagamenti.
+
+\apiendpoint{GET}{/api/payments}{Lista pagamenti utente corrente}{JWT Required}
+
+\apiendpoint{GET}{/api/payments/:id}{Dettagli pagamento specifico}{JWT Required}
+
+\apiendpoint{POST}{/api/payments}{Crea nuovo pagamento}{JWT Required}
+
+\textbf{Parametri Body:}
+\begin{itemize}
+    \item \parameter{booking\_id}{integer}{ID prenotazione da pagare}
+    \item \parameter{payment\_method}{string}{Metodo: credit\_card (solo carta di credito)}
+    \item \parameter{amount}{number}{Importo pagamento}
+    \item \parameter{transaction\_id}{string}{ID transazione gateway (opzionale)}
+\end{itemize}
+
+\apiendpoint{PUT}{/api/payments/:id/refund}{Rimborsa pagamento}{Manager/Admin}
+
+\newpage
+
+\subsection{Endpoint Notifications}
+Gestione sistema notifiche.
+
+\apiendpoint{GET}{/api/notifications}{Lista notifiche utente corrente}{JWT Required}
+
+\apiendpoint{GET}{/api/notifications/:id}{Dettagli notifica specifica}{JWT Required}
+
+\apiendpoint{PUT}{/api/notifications/:id/read}{Segna notifica come letta}{JWT Required}
+
+\apiendpoint{POST}{/api/notifications/test}{Invia notifica di test}{Admin Only}
+
+\subsection{Endpoint Manager}
+Funzionalità specifiche per manager.
+
+\apiendpoint{GET}{/api/manager/dashboard}{Dashboard manager con statistiche}{Manager/Admin}
+
+\apiendpoint{GET}{/api/manager/location}{Location gestita dal manager}{Manager/Admin}
+
+\apiendpoint{GET}{/api/manager/bookings}{Prenotazioni location del manager}{Manager/Admin}
+
+\apiendpoint{GET}{/api/manager/spaces}{Spazi della location del manager}{Manager/Admin}
+
+\apiendpoint{PUT}{/api/manager/spaces/:id}{Aggiorna spazio della propria location}{Manager/Admin}
+
+\subsection{Endpoint Admin}
+Funzionalità amministrative del sistema.
+
+\apiendpoint{GET}{/api/admin/dashboard}{Dashboard amministrativa completa}{Admin Only}
+
+\apiendpoint{GET}{/api/admin/users}{Lista tutti gli utenti}{Admin Only}
+
+\apiendpoint{GET}{/api/admin/users/pending-managers}{Utenti in attesa approvazione manager}{Admin Only}
+
+\apiendpoint{PUT}{/api/admin/users/:id/promote-manager}{Promuovi utente a manager}{Admin Only}
+
+\apiendpoint{PUT}{/api/admin/users/:id/demote}{Rimuovi ruolo manager}{Admin Only}
+
+\apiendpoint{GET}{/api/admin/bookings}{Tutte le prenotazioni sistema}{Admin Only}
+
+\apiendpoint{GET}{/api/admin/stats}{Statistiche globali sistema}{Admin Only}
+
+\apiendpoint{POST}{/api/admin/locations}{Crea nuova location}{Admin Only}
+
+\apiendpoint{PUT}{/api/admin/locations/:id/assign-manager}{Assegna manager a location}{Admin Only}
+
+\subsection{Endpoint di Sistema}
+
+\apiendpoint{GET}{/api/health}{Health check sistema}{Pubblica}
+
+\begin{lstlisting}[caption=Risposta Health Check]
+{
+  "success": true,
+  "data": {
+    "status": "ok",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "version": "1.0.0",
+    "database": "connected",
+    "uptime": 3600
+  }
+}
+\end{lstlisting}
+
+\apiendpoint{GET}{/api/}{Informazioni generali API}{Pubblica}
+
+\apiendpoint{GET}{/api-docs}{Documentazione Swagger}{Sviluppo}
+
+\subsection{Convenzioni degli Endpoint}
+L'API segue convenzioni REST standard:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}llp{8cm}@{}}
+\toprule
+\textbf{Metodo} & \textbf{Utilizzo} & \textbf{Esempio} \\
+\midrule
+GET & Lettura risorse & \texttt{GET /api/spaces} - Lista spazi \\
+POST & Creazione risorse & \texttt{POST /api/bookings} - Nuova prenotazione \\
+PUT & Aggiornamento completo & \texttt{PUT /api/spaces/:id} - Aggiorna spazio \\
+PATCH & Aggiornamento parziale & \texttt{PATCH /api/users/profile} - Aggiorna profilo \\
+DELETE & Eliminazione risorse & \texttt{DELETE /api/bookings/:id} - Cancella prenotazione \\
+\bottomrule
+\end{tabular}
+\caption{Convenzioni Metodi HTTP}
+\end{table}

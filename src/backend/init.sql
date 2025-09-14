@@ -2,7 +2,7 @@
 CREATE TYPE user_role_enum AS ENUM ('user', 'manager', 'admin');
 CREATE TYPE booking_status_enum AS ENUM ('confirmed', 'pending', 'cancelled', 'completed');
 CREATE TYPE payment_status_enum AS ENUM ('pending', 'completed', 'failed', 'refunded');
-CREATE TYPE payment_method_enum AS ENUM ('credit_card', 'paypal', 'bank_transfer', 'cash');
+CREATE TYPE payment_method_enum AS ENUM ('credit_card');
 
 
 -- Tabella Utenti
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS payments (
   payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   payment_method payment_method_enum NOT NULL,
   status payment_status_enum NOT NULL DEFAULT 'completed',
-  transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gataway di pagamento (es. Stripe, PayPal, ecc.)
+  transaction_id VARCHAR(100) UNIQUE, -- ID della transazione del gateway di pagamento (es. Stripe, ecc.)
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE CASCADE
 );
 
@@ -139,6 +139,20 @@ CREATE TABLE IF NOT EXISTS notifications (
   FOREIGN KEY (booking_id) REFERENCES bookings(booking_id) ON DELETE SET NULL,
   FOREIGN KEY (payment_id) REFERENCES payments(payment_id) ON DELETE SET NULL
 );
+
+-- Inserimento tipi di spazio predefiniti
+INSERT INTO space_types (type_name, description) VALUES
+  ('Ufficio Privato', 'Ufficio privato per singola persona o piccoli team'),
+  ('Sala Riunioni', 'Sala attrezzata per meeting e riunioni di lavoro'),
+  ('Open Space', 'Spazio aperto condiviso per lavoro collaborativo'),
+  ('Coworking Desk', 'Singola postazione di lavoro in ambiente condiviso'),
+  ('Phone Booth', 'Cabina telefonica insonorizzata per chiamate private'),
+  ('Sala Conferenze', 'Ampia sala per conferenze e presentazioni'),
+  ('Focus Room', 'Stanza silenziosa per lavoro concentrato'),
+  ('Lounge Area', 'Area relax informale per incontri casual'),
+  ('Training Room', 'Aula per formazione e workshop'),
+  ('Event Space', 'Spazio per eventi e networking')
+ON CONFLICT (type_name) DO NOTHING;
 
 -- Inserimento utente admin di default
 -- Password: CoWorkSpace2025!

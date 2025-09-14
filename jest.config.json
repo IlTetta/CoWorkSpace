@@ -2,16 +2,24 @@
   "testEnvironment": "node",
   "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
   "testMatch": [
-    "<rootDir>/tests/**/*.test.js"
+    "<rootDir>/tests/unit/**/*.test.js"
   ],
   "verbose": true,
-  "forceExit": true,
-  "detectOpenHandles": true,
-  "testTimeout": 30000,
+  "testTimeout": 15000,
   "silent": false,
   "collectCoverageFrom": [
-    "src/**/*.js",
+    "src/backend/services/**/*.js",
+    "src/backend/models/**/*.js",
+    "src/backend/utils/**/*.js",
     "!src/**/*.test.js",
     "!src/**/index.js"
-  ]
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 85,
+      "lines": 85,
+      "statements": 85
+    }
+  }
 }

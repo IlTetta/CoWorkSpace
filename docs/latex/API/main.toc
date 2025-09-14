@@ -1,0 +1,174 @@
+\babel@toc {italian}{}\relax 
+\babel@toc {italian}{}\relax 
+\contentsline {section}{\numberline {1}Panoramica del Sistema API}{7}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Architettura Generale}{7}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Architettura REST}{7}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}URL Base e Versioning}{8}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Formato delle Risposte}{8}{subsection.1.4}%
+\contentsline {subsubsection}{\numberline {1.4.1}Risposta di Successo}{8}{subsubsection.1.4.1}%
+\contentsline {subsubsection}{\numberline {1.4.2}Risposta di Errore}{8}{subsubsection.1.4.2}%
+\contentsline {subsection}{\numberline {1.5}Codici di Stato HTTP}{8}{subsection.1.5}%
+\contentsline {subsection}{\numberline {1.6}Rate Limiting}{9}{subsection.1.6}%
+\contentsline {subsection}{\numberline {1.7}CORS e Sicurezza}{10}{subsection.1.7}%
+\contentsline {subsubsection}{\numberline {1.7.1}Sviluppo}{10}{subsubsection.1.7.1}%
+\contentsline {subsubsection}{\numberline {1.7.2}Produzione}{10}{subsubsection.1.7.2}%
+\contentsline {subsection}{\numberline {1.8}Middleware di Sicurezza}{10}{subsection.1.8}%
+\contentsline {subsection}{\numberline {1.9}Gestione degli Errori}{10}{subsection.1.9}%
+\contentsline {subsection}{\numberline {1.10}Gestione Transazioni e Rollback}{11}{subsection.1.10}%
+\contentsline {subsubsection}{\numberline {1.10.1}Operazioni Transazionali}{11}{subsubsection.1.10.1}%
+\contentsline {subsubsection}{\numberline {1.10.2}Pattern di Implementazione}{11}{subsubsection.1.10.2}%
+\contentsline {subsubsection}{\numberline {1.10.3}Strategie di Rollback}{11}{subsubsection.1.10.3}%
+\contentsline {subsubsection}{\numberline {1.10.4}Esempio Pratico: Pagamento con Aggiornamento Prenotazione}{12}{subsubsection.1.10.4}%
+\contentsline {subsection}{\numberline {1.11}Paginazione}{13}{subsection.1.11}%
+\contentsline {subsection}{\numberline {1.12}Content-Type e Accept Headers}{13}{subsection.1.12}%
+\contentsline {subsection}{\numberline {1.13}Documentazione Interattiva}{13}{subsection.1.13}%
+\contentsline {subsection}{\numberline {1.14}Health Check e Monitoring}{13}{subsection.1.14}%
+\contentsline {section}{\numberline {2}Autenticazione e Autorizzazione}{14}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Sistema di Autenticazione JWT}{14}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Processo di Login}{14}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {2.1.2}Struttura del JWT Token}{15}{subsubsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.2}Utilizzo del Token}{15}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Sistema di Autorizzazione Basato sui Ruoli}{16}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Ruoli Disponibili}{16}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Matrice dei Permessi}{16}{subsubsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.4}Middleware di Autenticazione}{16}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}authMiddleware.protect}{16}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}authMiddleware.authorize}{17}{subsubsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.5}Gestione delle Password}{17}{subsection.2.5}%
+\contentsline {subsubsection}{\numberline {2.5.1}Hashing delle Password}{17}{subsubsection.2.5.1}%
+\contentsline {subsubsection}{\numberline {2.5.2}Reset Password}{17}{subsubsection.2.5.2}%
+\contentsline {subsection}{\numberline {2.6}Rate Limiting per Sicurezza}{18}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Gestione Token FCM}{18}{subsection.2.7}%
+\contentsline {subsection}{\numberline {2.8}Logout e Invalidazione Token}{18}{subsection.2.8}%
+\contentsline {subsection}{\numberline {2.9}Sicurezza delle Sessioni}{18}{subsection.2.9}%
+\contentsline {subsection}{\numberline {2.10}Validazione Input}{19}{subsection.2.10}%
+\contentsline {subsection}{\numberline {2.11}Gestione Errori di Autenticazione}{19}{subsection.2.11}%
+\contentsline {section}{\numberline {3}Endpoints API}{19}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Panoramica degli Endpoints}{19}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Endpoint Users}{20}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}\texttt {POST /api/users/register}}{20}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}\texttt {POST /api/users/login}}{20}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3}\texttt {GET /api/users/profile}}{21}{subsubsection.3.2.3}%
+\contentsline {subsubsection}{\numberline {3.2.4}\texttt {GET /api/users/dashboard}}{21}{subsubsection.3.2.4}%
+\contentsline {subsubsection}{\numberline {3.2.5}\texttt {PUT /api/users/profile}}{21}{subsubsection.3.2.5}%
+\contentsline {subsubsection}{\numberline {3.2.6}\texttt {PUT /api/users/change-password}}{21}{subsubsection.3.2.6}%
+\contentsline {subsubsection}{\numberline {3.2.7}\texttt {POST /api/users/request-password-reset}}{21}{subsubsection.3.2.7}%
+\contentsline {subsubsection}{\numberline {3.2.8}\texttt {POST /api/users/logout}}{21}{subsubsection.3.2.8}%
+\contentsline {subsubsection}{\numberline {3.2.9}\texttt {POST /api/users/fcm-token}}{21}{subsubsection.3.2.9}%
+\contentsline {subsubsection}{\numberline {3.2.10}\texttt {GET /api/users/check-email}}{21}{subsubsection.3.2.10}%
+\contentsline {subsection}{\numberline {3.3}Endpoint Locations}{21}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}\texttt {GET /api/locations}}{21}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}\texttt {GET /api/locations/:id}}{22}{subsubsection.3.3.2}%
+\contentsline {subsubsection}{\numberline {3.3.3}\texttt {GET /api/locations/:id/spaces}}{22}{subsubsection.3.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.4}\texttt {POST /api/locations}}{22}{subsubsection.3.3.4}%
+\contentsline {subsubsection}{\numberline {3.3.5}\texttt {PUT /api/locations/:id}}{22}{subsubsection.3.3.5}%
+\contentsline {subsubsection}{\numberline {3.3.6}\texttt {DELETE /api/locations/:id}}{22}{subsubsection.3.3.6}%
+\contentsline {subsection}{\numberline {3.4}Endpoint Spaces}{22}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}\texttt {GET /api/spaces}}{22}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}\texttt {GET /api/spaces/:id}}{23}{subsubsection.3.4.2}%
+\contentsline {subsubsection}{\numberline {3.4.3}\texttt {GET /api/spaces/:id/availability}}{23}{subsubsection.3.4.3}%
+\contentsline {subsubsection}{\numberline {3.4.4}\texttt {POST /api/spaces}}{23}{subsubsection.3.4.4}%
+\contentsline {subsubsection}{\numberline {3.4.5}\texttt {PUT /api/spaces/:id}}{23}{subsubsection.3.4.5}%
+\contentsline {subsubsection}{\numberline {3.4.6}\texttt {DELETE /api/spaces/:id}}{23}{subsubsection.3.4.6}%
+\contentsline {subsection}{\numberline {3.5}Endpoint Space Types}{23}{subsection.3.5}%
+\contentsline {subsubsection}{\numberline {3.5.1}\texttt {GET /api/space-types}}{23}{subsubsection.3.5.1}%
+\contentsline {subsubsection}{\numberline {3.5.2}\texttt {GET /api/space-types/:id}}{23}{subsubsection.3.5.2}%
+\contentsline {subsubsection}{\numberline {3.5.3}\texttt {POST /api/space-types}}{23}{subsubsection.3.5.3}%
+\contentsline {subsubsection}{\numberline {3.5.4}\texttt {PUT /api/space-types/:id}}{24}{subsubsection.3.5.4}%
+\contentsline {subsubsection}{\numberline {3.5.5}\texttt {DELETE /api/space-types/:id}}{24}{subsubsection.3.5.5}%
+\contentsline {subsection}{\numberline {3.6}Endpoint Bookings}{24}{subsection.3.6}%
+\contentsline {subsubsection}{\numberline {3.6.1}\texttt {POST /api/bookings/check-availability}}{24}{subsubsection.3.6.1}%
+\contentsline {subsubsection}{\numberline {3.6.2}\texttt {POST /api/bookings}}{24}{subsubsection.3.6.2}%
+\contentsline {subsubsection}{\numberline {3.6.3}\texttt {GET /api/bookings}}{25}{subsubsection.3.6.3}%
+\contentsline {subsubsection}{\numberline {3.6.4}\texttt {GET /api/bookings/:id}}{25}{subsubsection.3.6.4}%
+\contentsline {subsubsection}{\numberline {3.6.5}\texttt {PUT /api/bookings/:id}}{25}{subsubsection.3.6.5}%
+\contentsline {subsubsection}{\numberline {3.6.6}\texttt {DELETE /api/bookings/:id}}{25}{subsubsection.3.6.6}%
+\contentsline {subsubsection}{\numberline {3.6.7}\texttt {PUT /api/bookings/:id/confirm}}{25}{subsubsection.3.6.7}%
+\contentsline {subsubsection}{\numberline {3.6.8}\texttt {PUT /api/bookings/:id/complete}}{25}{subsubsection.3.6.8}%
+\contentsline {subsection}{\numberline {3.7}Endpoint Availability}{25}{subsection.3.7}%
+\contentsline {subsubsection}{\numberline {3.7.1}\texttt {GET /api/availability/space/:spaceId}}{25}{subsubsection.3.7.1}%
+\contentsline {subsubsection}{\numberline {3.7.2}\texttt {POST /api/availability}}{26}{subsubsection.3.7.2}%
+\contentsline {subsubsection}{\numberline {3.7.3}\texttt {PUT /api/availability/:id}}{26}{subsubsection.3.7.3}%
+\contentsline {subsubsection}{\numberline {3.7.4}\texttt {DELETE /api/availability/:id}}{26}{subsubsection.3.7.4}%
+\contentsline {subsection}{\numberline {3.8}Endpoint Payments}{26}{subsection.3.8}%
+\contentsline {subsubsection}{\numberline {3.8.1}\texttt {GET /api/payments}}{26}{subsubsection.3.8.1}%
+\contentsline {subsubsection}{\numberline {3.8.2}\texttt {GET /api/payments/:id}}{26}{subsubsection.3.8.2}%
+\contentsline {subsubsection}{\numberline {3.8.3}\texttt {POST /api/payments}}{26}{subsubsection.3.8.3}%
+\contentsline {subsubsection}{\numberline {3.8.4}\texttt {PUT /api/payments/:id/refund}}{26}{subsubsection.3.8.4}%
+\contentsline {subsection}{\numberline {3.9}Endpoint Notifications}{27}{subsection.3.9}%
+\contentsline {subsubsection}{\numberline {3.9.1}\texttt {GET /api/notifications}}{27}{subsubsection.3.9.1}%
+\contentsline {subsubsection}{\numberline {3.9.2}\texttt {GET /api/notifications/:id}}{27}{subsubsection.3.9.2}%
+\contentsline {subsubsection}{\numberline {3.9.3}\texttt {PUT /api/notifications/:id/read}}{27}{subsubsection.3.9.3}%
+\contentsline {subsubsection}{\numberline {3.9.4}\texttt {POST /api/notifications/test}}{27}{subsubsection.3.9.4}%
+\contentsline {subsection}{\numberline {3.10}Endpoint Manager}{27}{subsection.3.10}%
+\contentsline {subsubsection}{\numberline {3.10.1}\texttt {GET /api/manager/dashboard}}{27}{subsubsection.3.10.1}%
+\contentsline {subsubsection}{\numberline {3.10.2}\texttt {GET /api/manager/location}}{27}{subsubsection.3.10.2}%
+\contentsline {subsubsection}{\numberline {3.10.3}\texttt {GET /api/manager/bookings}}{27}{subsubsection.3.10.3}%
+\contentsline {subsubsection}{\numberline {3.10.4}\texttt {GET /api/manager/spaces}}{27}{subsubsection.3.10.4}%
+\contentsline {subsubsection}{\numberline {3.10.5}\texttt {PUT /api/manager/spaces/:id}}{27}{subsubsection.3.10.5}%
+\contentsline {subsection}{\numberline {3.11}Endpoint Admin}{28}{subsection.3.11}%
+\contentsline {subsubsection}{\numberline {3.11.1}\texttt {GET /api/admin/dashboard}}{28}{subsubsection.3.11.1}%
+\contentsline {subsubsection}{\numberline {3.11.2}\texttt {GET /api/admin/users}}{28}{subsubsection.3.11.2}%
+\contentsline {subsubsection}{\numberline {3.11.3}\texttt {GET /api/admin/users/pending-managers}}{28}{subsubsection.3.11.3}%
+\contentsline {subsubsection}{\numberline {3.11.4}\texttt {PUT /api/admin/users/:id/promote-manager}}{28}{subsubsection.3.11.4}%
+\contentsline {subsubsection}{\numberline {3.11.5}\texttt {PUT /api/admin/users/:id/demote}}{28}{subsubsection.3.11.5}%
+\contentsline {subsubsection}{\numberline {3.11.6}\texttt {GET /api/admin/bookings}}{28}{subsubsection.3.11.6}%
+\contentsline {subsubsection}{\numberline {3.11.7}\texttt {GET /api/admin/stats}}{28}{subsubsection.3.11.7}%
+\contentsline {subsubsection}{\numberline {3.11.8}\texttt {POST /api/admin/locations}}{28}{subsubsection.3.11.8}%
+\contentsline {subsubsection}{\numberline {3.11.9}\texttt {PUT /api/admin/locations/:id/assign-manager}}{28}{subsubsection.3.11.9}%
+\contentsline {subsection}{\numberline {3.12}Endpoint di Sistema}{29}{subsection.3.12}%
+\contentsline {subsubsection}{\numberline {3.12.1}\texttt {GET /api/health}}{29}{subsubsection.3.12.1}%
+\contentsline {subsubsection}{\numberline {3.12.2}\texttt {GET /api/}}{29}{subsubsection.3.12.2}%
+\contentsline {subsubsection}{\numberline {3.12.3}\texttt {GET /api-docs}}{29}{subsubsection.3.12.3}%
+\contentsline {subsection}{\numberline {3.13}Convenzioni degli Endpoint}{29}{subsection.3.13}%
+\contentsline {section}{\numberline {4}Schemi Dati e Validazioni}{30}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Panoramica degli Schemi}{30}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Schema User}{30}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Schema Location}{31}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Schema Space Type}{31}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Schema Space}{32}{subsection.4.5}%
+\contentsline {subsection}{\numberline {4.6}Schema Booking}{33}{subsection.4.6}%
+\contentsline {subsection}{\numberline {4.7}Schema Payment}{34}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.8}Schema Notification}{34}{subsection.4.8}%
+\contentsline {subsection}{\numberline {4.9}Schema Availability}{36}{subsection.4.9}%
+\contentsline {subsection}{\numberline {4.10}Validazioni Globali del Sistema}{36}{subsection.4.10}%
+\contentsline {subsubsection}{\numberline {4.10.1}Validazioni Date}{36}{subsubsection.4.10.1}%
+\contentsline {subsubsection}{\numberline {4.10.2}Validazioni Email}{36}{subsubsection.4.10.2}%
+\contentsline {subsubsection}{\numberline {4.10.3}Validazioni Password}{37}{subsubsection.4.10.3}%
+\contentsline {subsubsection}{\numberline {4.10.4}Validazioni Numeriche}{37}{subsubsection.4.10.4}%
+\contentsline {subsection}{\numberline {4.11}Gestione Errori di Validazione}{37}{subsection.4.11}%
+\contentsline {section}{\numberline {5}Esempi di Utilizzo e Casi d'Uso}{38}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Panoramica dei Casi d'Uso}{38}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Caso d'Uso 1: Registrazione e Login Utente}{38}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Passo 1: Verifica Email Disponibilità}{38}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2}Passo 2: Registrazione Nuovo Utente}{38}{subsubsection.5.2.2}%
+\contentsline {subsubsection}{\numberline {5.2.3}Passo 3: Login Utente}{39}{subsubsection.5.2.3}%
+\contentsline {subsection}{\numberline {5.3}Caso d'Uso 2: Ricerca e Prenotazione Spazio}{40}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Passo 1: Ricerca Spazi con Filtri}{40}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Passo 2: Verifica Disponibilità Specifica}{41}{subsubsection.5.3.2}%
+\contentsline {subsubsection}{\numberline {5.3.3}Passo 3: Creazione Prenotazione}{41}{subsubsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.4}Caso d'Uso 3: Gestione Pagamento}{42}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Passo 1: Creazione Pagamento}{42}{subsubsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.5}Caso d'Uso 4: Dashboard Utente}{43}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}Caso d'Uso 5: Workflow Manager}{44}{subsection.5.6}%
+\contentsline {subsubsection}{\numberline {5.6.1}Passo 1: Dashboard Manager}{44}{subsubsection.5.6.1}%
+\contentsline {subsubsection}{\numberline {5.6.2}Passo 2: Visualizza Prenotazioni Location}{45}{subsubsection.5.6.2}%
+\contentsline {subsubsection}{\numberline {5.6.3}Passo 3: Conferma Prenotazione}{45}{subsubsection.5.6.3}%
+\contentsline {subsection}{\numberline {5.7}Caso d'Uso 6: Gestione Notifiche}{45}{subsection.5.7}%
+\contentsline {subsubsection}{\numberline {5.7.1}Salvataggio Token FCM}{45}{subsubsection.5.7.1}%
+\contentsline {subsubsection}{\numberline {5.7.2}Recupero Notifiche}{45}{subsubsection.5.7.2}%
+\contentsline {subsection}{\numberline {5.8}Caso d'Uso 7: Workflow Admin}{45}{subsection.5.8}%
+\contentsline {subsubsection}{\numberline {5.8.1}Dashboard Amministrativa}{45}{subsubsection.5.8.1}%
+\contentsline {subsubsection}{\numberline {5.8.2}Promozione Manager}{46}{subsubsection.5.8.2}%
+\contentsline {subsection}{\numberline {5.9}Gestione Errori Comuni}{46}{subsection.5.9}%
+\contentsline {subsubsection}{\numberline {5.9.1}Errore Autenticazione}{46}{subsubsection.5.9.1}%
+\contentsline {subsubsection}{\numberline {5.9.2}Errore Disponibilità}{46}{subsubsection.5.9.2}%
+\contentsline {subsection}{\numberline {5.10}Best Practices per Integrazione}{47}{subsection.5.10}%
+\contentsline {subsubsection}{\numberline {5.10.1}Autenticazione}{47}{subsubsection.5.10.1}%
+\contentsline {subsubsection}{\numberline {5.10.2}Chiamate API}{47}{subsubsection.5.10.2}%
+\contentsline {subsubsection}{\numberline {5.10.3}Gestione Errori}{47}{subsubsection.5.10.3}%
+\contentsline {subsection}{\numberline {5.11}Esempi SDK/Client}{47}{subsection.5.11}%
+\contentsline {subsubsection}{\numberline {5.11.1}JavaScript/TypeScript Client}{47}{subsubsection.5.11.1}%
+\contentsline {subsection}{\numberline {5.12}Testing API}{48}{subsection.5.12}%
+\contentsline {subsubsection}{\numberline {5.12.1}Test con curl}{48}{subsubsection.5.12.1}%
+\contentsline {subsubsection}{\numberline {5.12.2}Test con Postman}{48}{subsubsection.5.12.2}%

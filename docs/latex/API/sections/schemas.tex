@@ -1,0 +1,452 @@
+\newpage
+
+\section{Schemi Dati e Validazioni}
+
+\subsection{Panoramica degli Schemi}
+L'API utilizza schemi dati strutturati che corrispondono alle entità del database. Ogni schema implementa validazioni rigorose per garantire integrità e sicurezza dei dati.
+
+\subsection{Schema User}
+Rappresenta gli utenti del sistema con i loro ruoli e permessi.
+
+\begin{lstlisting}[caption=Schema User Completo]
+{
+  "user_id": 1,
+  "name": "Mario",
+  "surname": "Rossi", 
+  "email": "mario.rossi@email.com",
+  "role": "user",
+  "is_password_reset_required": false,
+  "fcm_token": "fGH1jK2L3m4N5o6P7q8R9s0T...",
+  "manager_request_pending": false,
+  "manager_request_date": null,
+  "created_at": "2024-01-15T10:30:00Z"
+}
+\end{lstlisting}
+
+\textbf{Validazioni Campo User:}
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{@{}lp{3cm}p{6cm}p{3cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Validazioni} & \textbf{Vincoli} \\
+\midrule
+name & string & Lunghezza 1-100 caratteri & Obbligatorio \\
+surname & string & Lunghezza 1-100 caratteri & Obbligatorio \\
+email & string & Formato email valido, max 255 caratteri & Unico, obbligatorio \\
+password & string & Minimo 8 caratteri, hash bcrypt & Obbligatorio \\
+role & enum & user, manager, admin & Default: user \\
+fcm\_token & string & Max 255 caratteri & Opzionale \\
+\bottomrule
+\end{tabular}
+\caption{Validazioni Schema User}
+\end{table}
+
+\newpage
+
+\subsection{Schema Location}
+Rappresenta le sedi fisiche dei coworking.
+
+\begin{lstlisting}[caption=Schema Location]
+{
+  "location_id": 1,
+  "location_name": "CoWork Milano Centro",
+  "address": "Via Brera 10, Milano",
+  "city": "Milano",
+  "description": "Moderno spazio coworking nel cuore di Milano",
+  "manager_id": 2,
+  "manager": {
+    "user_id": 2,
+    "name": "Luca",
+    "surname": "Manager",
+    "email": "luca.manager@email.com"
+  },
+  "spaces_count": 15,
+  "active_bookings": 8
+}
+\end{lstlisting}
+
+\textbf{Validazioni Campo Location:}
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{@{}lp{3cm}p{6cm}p{3cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Validazioni} & \textbf{Vincoli} \\
+\midrule
+location\_name & string & Max 255 caratteri, non vuoto & Obbligatorio \\
+address & string & Max 255 caratteri, non vuoto & Obbligatorio \\
+city & string & Max 100 caratteri, non vuoto & Obbligatorio \\
+description & text & Testo libero & Opzionale \\
+manager\_id & integer & Riferimento utente con ruolo manager & Opzionale \\
+\bottomrule
+\end{tabular}
+\caption{Validazioni Schema Location}
+\end{table}
+
+\subsection{Schema Space Type}
+Definisce i tipi di spazio disponibili.
+
+\begin{lstlisting}[caption=Schema Space Type]
+{
+  "space_type_id": 1,
+  "type_name": "Ufficio Privato",
+  "description": "Ufficio privato per singola persona o piccoli team",
+  "spaces_count": 25
+}
+\end{lstlisting}
+
+\newpage
+
+\textbf{Tipi Predefiniti del Sistema:}
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Tipo} & \textbf{Descrizione} \\
+\midrule
+Ufficio Privato & Ufficio privato per singola persona o piccoli team \\
+Sala Riunioni & Sala attrezzata per meeting e riunioni di lavoro \\
+Open Space & Spazio aperto condiviso per lavoro collaborativo \\
+Coworking Desk & Singola postazione di lavoro in ambiente condiviso \\
+Phone Booth & Cabina telefonica insonorizzata per chiamate private \\
+Sala Conferenze & Ampia sala per conferenze e presentazioni \\
+Focus Room & Stanza silenziosa per lavoro concentrato \\
+Lounge Area & Area relax informale per incontri casual \\
+Training Room & Aula per formazione e workshop \\
+Event Space & Spazio per eventi e networking \\
+\bottomrule
+\end{tabular}
+\caption{Tipologie di Spazio Predefinite}
+\end{table}
+
+\subsection{Schema Space}
+Rappresenta gli spazi prenotabili all'interno delle location.
+
+\begin{lstlisting}[caption=Schema Space Completo]
+{
+  "space_id": 1,
+  "location_id": 1,
+  "space_type_id": 1,
+  "space_name": "Stanza 101",
+  "description": "Ufficio privato con vista sul cortile",
+  "capacity": 4,
+  "price_per_hour": 15.50,
+  "price_per_day": 120.00,
+  "opening_time": "09:00:00",
+  "closing_time": "18:00:00",
+  "available_days": [1, 2, 3, 4, 5],
+  "booking_advance_days": 30,
+  "status": "active",
+  "location": {
+    "location_name": "CoWork Milano Centro",
+    "city": "Milano",
+    "address": "Via Brera 10, Milano"
+  },
+  "space_type": {
+    "type_name": "Ufficio Privato",
+    "description": "Ufficio privato per singola persona o piccoli team"
+  }
+}
+\end{lstlisting}
+
+\textbf{Validazioni Campo Space:}
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{@{}lp{3cm}p{6cm}p{3cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Validazioni} & \textbf{Vincoli} \\
+\midrule
+space\_name & string & Max 255 caratteri, non vuoto & Obbligatorio \\
+capacity & integer & Maggiore di 0, massimo 100 & Obbligatorio \\
+price\_per\_hour & decimal & Maggiore di 0, max 2 decimali & Obbligatorio \\
+price\_per\_day & decimal & Maggiore di 0, max 2 decimali & Obbligatorio \\
+opening\_time & time & Formato HH:MM:SS & Default: 09:00:00 \\
+closing\_time & time & Formato HH:MM:SS, dopo opening\_time & Default: 18:00:00 \\
+available\_days & array & Numeri 1-7 (1=Lunedì, 7=Domenica) & Default: [1,2,3,4,5,6,7] \\
+status & enum & active, maintenance, inactive & Default: active \\
+\bottomrule
+\end{tabular}
+\caption{Validazioni Schema Space}
+\end{table}
+
+\subsection{Schema Booking}
+Rappresenta le prenotazioni degli spazi.
+
+\begin{lstlisting}[caption=Schema Booking Completo]
+{
+  "booking_id": 1,
+  "user_id": 1,
+  "space_id": 1,
+  "start_date": "2024-01-20",
+  "end_date": "2024-01-22",
+  "total_days": 3,
+  "total_price": 360.00,
+  "status": "confirmed",
+  "payment_status": "completed",
+  "notes": "Riunione team marketing",
+  "created_at": "2024-01-15T10:30:00Z",
+  "user": {
+    "name": "Mario",
+    "surname": "Rossi",
+    "email": "mario.rossi@email.com"
+  },
+  "space": {
+    "space_name": "Stanza 101",
+    "capacity": 4,
+    "price_per_day": 120.00,
+    "location": {
+      "location_name": "CoWork Milano Centro",
+      "city": "Milano"
+    }
+  },
+  "payment": {
+    "payment_id": 1,
+    "amount": 360.00,
+    "payment_method": "credit_card",
+    "status": "completed",
+    "payment_date": "2024-01-15T10:35:00Z"
+  }
+}
+\end{lstlisting}
+
+\textbf{Stati Prenotazione:}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Stato} & \textbf{Descrizione} \\
+\midrule
+pending & Prenotazione creata, in attesa di conferma/pagamento \\
+confirmed & Prenotazione confermata e pagata \\
+completed & Prenotazione utilizzata e completata \\
+cancelled & Prenotazione cancellata dall'utente o sistema \\
+\bottomrule
+\end{tabular}
+\caption{Stati Prenotazione}
+\end{table}
+
+\newpage
+
+\textbf{Validazioni Campo Booking:}
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{@{}lp{3cm}p{6cm}p{3cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Validazioni} & \textbf{Vincoli} \\
+\midrule
+start\_date & date & Formato YYYY-MM-DD, >= data corrente & Obbligatorio \\
+end\_date & date & Formato YYYY-MM-DD, >= start\_date & Obbligatorio \\
+total\_days & integer & Calcolato automaticamente & Auto-generato \\
+total\_price & decimal & Calcolato automaticamente & Auto-generato \\
+status & enum & pending, confirmed, cancelled, completed & Default: pending \\
+notes & text & Max 1000 caratteri & Opzionale \\
+\bottomrule
+\end{tabular}
+\caption{Validazioni Schema Booking}
+\end{table}
+
+\subsection{Schema Payment}
+Gestisce i pagamenti delle prenotazioni.
+
+\begin{lstlisting}[caption=Schema Payment]
+{
+  "payment_id": 1,
+  "booking_id": 1,
+  "amount": 360.00,
+  "payment_date": "2024-01-15T10:35:00Z",
+  "payment_method": "credit_card",
+  "status": "completed",
+  "transaction_id": "txn_1234567890",
+  "booking": {
+    "booking_id": 1,
+    "start_date": "2024-01-20",
+    "end_date": "2024-01-22",
+    "space_name": "Stanza 101"
+  }
+}
+\end{lstlisting}
+
+\textbf{Metodi di Pagamento:}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Metodo} & \textbf{Descrizione} \\
+\midrule
+credit\_card & Pagamento con carta di credito \\
+\bottomrule
+\end{tabular}
+\caption{Metodi di Pagamento Supportati}
+\end{table}
+
+\textbf{Stati Pagamento:}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Stato} & \textbf{Descrizione} \\
+\midrule
+pending & Pagamento in attesa di elaborazione \\
+completed & Pagamento completato con successo \\
+failed & Pagamento fallito \\
+refunded & Pagamento rimborsato \\
+\bottomrule
+\end{tabular}
+\caption{Stati Pagamento}
+\end{table}
+
+\subsection{Schema Notification}
+Sistema completo di notifiche multi-canale.
+
+\begin{lstlisting}[caption=Schema Notification]
+{
+  "notification_id": 1,
+  "user_id": 1,
+  "type": "email",
+  "channel": "booking_confirmation",
+  "recipient": "mario.rossi@email.com",
+  "subject": "Conferma prenotazione #1",
+  "content": "La tua prenotazione è stata confermata",
+  "template_name": "booking_confirmation.html",
+  "template_data": {
+    "userName": "Mario",
+    "spaceName": "Stanza 101",
+    "startDate": "2024-01-20",
+    "endDate": "2024-01-22"
+  },
+  "status": "delivered",
+  "metadata": {
+    "provider": "sendgrid",
+    "messageId": "abc123"
+  },
+  "booking_id": 1,
+  "sent_at": "2024-01-15T10:35:00Z",
+  "delivered_at": "2024-01-15T10:36:00Z",
+  "read_at": null,
+  "retry_count": 0,
+  "created_at": "2024-01-15T10:35:00Z"
+}
+\end{lstlisting}
+
+\textbf{Tipi di Notifica:}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Tipo} & \textbf{Descrizione} \\
+\midrule
+email & Notifica via email \\
+push & Notifica push mobile \\
+sms & Notifica SMS \\
+\bottomrule
+\end{tabular}
+\caption{Tipi di Notifica}
+\end{table}
+
+\newpage
+
+\textbf{Canali di Notifica:}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Canale} & \textbf{Descrizione} \\
+\midrule
+booking\_confirmation & Conferma prenotazione \\
+booking\_cancellation & Cancellazione prenotazione \\
+payment\_success & Pagamento riuscito \\
+payment\_failed & Pagamento fallito \\
+payment\_refund & Rimborso pagamento \\
+booking\_reminder & Promemoria prenotazione \\
+user\_registration & Benvenuto nuovi utenti \\
+password\_reset & Reset password \\
+\bottomrule
+\end{tabular}
+\caption{Canali di Notifica}
+\end{table}
+
+\subsection{Schema Availability}
+Gestisce la disponibilità giornaliera degli spazi.
+
+\begin{lstlisting}[caption=Schema Availability]
+{
+  "availability_id": 1,
+  "space_id": 1,
+  "availability_date": "2024-01-20",
+  "is_available": true,
+  "space": {
+    "space_name": "Stanza 101",
+    "capacity": 4,
+    "price_per_day": 120.00
+  }
+}
+\end{lstlisting}
+
+\subsection{Validazioni Globali del Sistema}
+
+\subsubsection{Validazioni Date}
+\begin{itemize}
+    \item Tutte le date devono essere in formato ISO 8601 (YYYY-MM-DD)
+    \item Le date di prenotazione non possono essere nel passato
+    \item La data fine deve essere maggiore o uguale alla data inizio
+    \item Massimo 90 giorni di anticipo per le prenotazioni
+\end{itemize}
+
+\subsubsection{Validazioni Email}
+\begin{lstlisting}[caption=Regex Validazione Email]
+^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$
+\end{lstlisting}
+
+\subsubsection{Validazioni Password}
+\begin{itemize}
+    \item Lunghezza minima: 8 caratteri
+    \item Deve contenere almeno una lettera maiuscola
+    \item Deve contenere almeno una lettera minuscola  
+    \item Deve contenere almeno un numero
+    \item Caratteri speciali consigliati ma non obbligatori
+\end{itemize}
+
+\subsubsection{Validazioni Numeriche}
+\begin{itemize}
+    \item Prezzi: massimo 2 decimali, maggiori di 0
+    \item Capacità: numeri interi positivi, massimo 100
+    \item ID: numeri interi positivi
+\end{itemize}
+
+\subsection{Gestione Errori di Validazione}
+Il sistema restituisce errori di validazione strutturati:
+
+\begin{lstlisting}[caption=Esempio Errore Validazione Multipla]
+{
+  "success": false,
+  "message": "Dati non validi",
+  "errors": [
+    {
+      "type": "field",
+      "field": "email",
+      "message": "Email deve essere un indirizzo valido",
+      "value": "email-non-valida",
+      "location": "body"
+    },
+    {
+      "type": "field",
+      "field": "start_date", 
+      "message": "Data inizio non può essere nel passato",
+      "value": "2023-01-01",
+      "location": "body"
+    },
+    {
+      "type": "business_rule",
+      "message": "Lo spazio non è disponibile nelle date selezionate",
+      "details": {
+        "space_id": 1,
+        "conflicting_dates": ["2024-01-20", "2024-01-21"]
+      }
+    }
+  ]
+}
+\end{lstlisting}

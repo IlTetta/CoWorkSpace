@@ -381,18 +381,37 @@ class Space {
      * @returns {Promise<boolean>} - true se eliminato
      */
     static async delete(id) {
-        // Verifica se ci sono prenotazioni attive
-        const bookingsQuery = `
-            SELECT COUNT(*) as count 
-            FROM bookings 
-            WHERE space_id = $1 AND status IN ('confirmed', 'pending')
+        // Recupera tutte le prenotazioni attive associate allo spazio
+        const activeBookingsQuery = `
+            SELECT b.booking_id, b.user_id, u.email, u.name, s.space_name
+            FROM bookings b
+            JOIN users u ON b.user_id = u.user_id
+            JOIN spaces s ON b.space_id = s.space_id
+            WHERE b.space_id = $1 AND b.status IN ('confirmed', 'pending')
         `;
-        const bookingsResult = await db.query(bookingsQuery, [id]);
-        
-        if (parseInt(bookingsResult.rows[0].count) > 0) {
-            throw AppError.badRequest('Impossibile eliminare: ci sono prenotazioni attive per questo spazio');
+        const activeBookingsResult = await db.query(activeBookingsQuery, [id]);
+
+        // Elimina ogni prenotazione attiva e invia mail
+        const NotificationService = require('../services/NotificationService');
+        for (const booking of activeBookingsResult.rows) {
+            // Elimina la prenotazione
+            await db.query('DELETE FROM bookings WHERE booking_id = $1', [booking.booking_id]);
+            // Invia mail all'utente
+            await NotificationService.sendEmail({
+                recipient: booking.email,
+                subject: `Prenotazione annullata: spazio "${booking.space_name}" eliminato`,
+                templateName: 'booking_cancellation',
+                templateData: {
+                    userName: booking.name,
+                    spaceName: booking.space_name,
+                    message: `Lo spazio "${booking.space_name}" è stato eliminato dal manager o dall'amministratore. La tua prenotazione è stata cancellata automaticamente.`
+                },
+                user_id: booking.user_id,
+                booking_id: booking.booking_id
+            });
         }
 
+        // Elimina lo spazio
         const query = 'DELETE FROM spaces WHERE space_id = $1 RETURNING space_id';
         const result = await db.query(query, [id]);
 

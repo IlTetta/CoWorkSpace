@@ -1,0 +1,233 @@
+\section{Operazioni CRUD}
+
+Questa sezione descrive le operazioni di Create, Read, Update e Delete (CRUD) implementate nel sistema CoWorkSpace, con esempi pratici tratti direttamente dal codice del progetto.
+
+\subsection{Gestione Utenti}
+
+\subsubsection{Creazione Utente (CREATE)}
+\begin{lstlisting}[caption=Registrazione Nuovo Utente (User.js)]
+-- Query di inserimento utente dal modello User.js
+INSERT INTO users (name, surname, email, password_hash, role, manager_request_pending, manager_request_date)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING user_id, name, surname, email, role, created_at;
+\end{lstlisting}
+
+\subsubsection{Lettura Utenti (READ)}
+\begin{lstlisting}[caption=Query per Login Utente]
+-- Query di autenticazione dal modello User.js
+SELECT * FROM users WHERE email = $1;
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Ricerca Utenti con Paginazione]
+-- Query implementata in UserService per admin
+SELECT 
+    user_id, name, surname, email, role, 
+    manager_request_pending, created_at
+FROM users 
+WHERE 
+    ($1 IS NULL OR role = $1)
+    AND ($2 IS NULL OR LOWER(name || ' ' || surname) LIKE LOWER('%' || $2 || '%'))
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4;
+\end{lstlisting}
+
+\subsubsection{Aggiornamento Utente (UPDATE)}
+\begin{lstlisting}[caption=Aggiornamento Profilo Utente Dinamico]
+-- Query dinamica dal modello User.js per aggiornamento profilo
+UPDATE users 
+SET ${updateFields.join(', ')} 
+WHERE user_id = $1 
+RETURNING user_id, name, surname, email, role, created_at;
+
+-- Esempio con campi: name = $2, surname = $3, fcm_token = $4
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Aggiornamento Token FCM]
+-- Query per notifiche push
+UPDATE users 
+SET fcm_token = $1 
+WHERE user_id = $2 
+RETURNING user_id, fcm_token;
+\end{lstlisting}
+
+\subsection{Gestione Spazi}
+
+\subsubsection{Creazione Spazio (CREATE)}
+\begin{lstlisting}[caption=Creazione Spazio dal Modello Space.js]
+-- Query di inserimento spazio
+INSERT INTO spaces (
+    location_id, space_type_id, space_name, description, 
+    capacity, price_per_hour, price_per_day, opening_time, closing_time
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING *;
+\end{lstlisting}
+
+\newpage
+
+\subsubsection{Ricerca Spazi (READ)}
+\begin{lstlisting}[caption=Query Completa Spazi con JOIN]
+-- Query dal modello Space.js con tutti i dettagli
+SELECT 
+    s.*,
+    l.location_name,
+    l.address as location_address,
+    l.city as location_city,
+    st.type_name,
+    st.description as space_type_description
+FROM spaces s
+INNER JOIN locations l ON s.location_id = l.location_id
+INNER JOIN space_types st ON s.space_type_id = st.space_type_id
+WHERE s.space_id = $1;
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Ricerca Spazi Disponibili con Filtri]
+-- Query per ricerca spazi con controllo disponibilità
+SELECT DISTINCT s.*,
+    l.location_name, l.city, l.address,
+    st.type_name
+FROM spaces s
+INNER JOIN locations l ON s.location_id = l.location_id
+INNER JOIN space_types st ON s.space_type_id = st.space_type_id
+WHERE s.status = 'active'
+    AND ($1 IS NULL OR LOWER(l.city) LIKE LOWER('%' || $1 || '%'))
+    AND ($2 IS NULL OR s.capacity >= $2)
+    AND ($3 IS NULL OR s.space_type_id = $3)
+    AND NOT EXISTS (
+        SELECT 1 FROM bookings b
+        WHERE b.space_id = s.space_id
+        AND b.status IN ('confirmed', 'pending')
+        AND (b.start_date <= $4 AND b.end_date >= $5)
+    )
+ORDER BY s.price_per_day ASC;
+\end{lstlisting}
+
+\subsubsection{Aggiornamento Spazio (UPDATE)}
+\begin{lstlisting}[caption=Aggiornamento Dinamico Spazio]
+-- Query dinamica per aggiornamento spazi
+UPDATE spaces 
+SET ${fieldsToUpdate.join(', ')} 
+WHERE space_id = $1
+RETURNING *;
+
+-- I campi vengono costruiti dinamicamente nel codice
+\end{lstlisting}
+
+\newpage
+
+\subsection{Gestione Prenotazioni}
+
+\subsubsection{Creazione Prenotazione (CREATE)}
+\begin{lstlisting}[caption=Inserimento Prenotazione dal Modello Booking.js]
+-- Query di inserimento prenotazione
+INSERT INTO bookings (
+    user_id, space_id, start_date, end_date,
+    total_price, status, payment_status, notes
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING *;
+\end{lstlisting}
+
+\subsubsection{Ricerca Prenotazioni (READ)}
+\begin{lstlisting}[caption=Query Prenotazione con Dettagli Completi]
+-- Query dal modello Booking.js per ottenere tutti i dettagli
+SELECT 
+    b.*,
+    u.name as user_name,
+    u.surname as user_surname,
+    u.email as user_email,
+    s.space_name,
+    s.capacity as space_capacity,
+    s.price_per_hour,
+    s.price_per_day,
+    l.location_name,
+    l.address as location_address,
+    l.city as location_city
+FROM bookings b
+JOIN users u ON b.user_id = u.user_id
+JOIN spaces s ON b.space_id = s.space_id
+JOIN locations l ON s.location_id = l.location_id
+WHERE b.booking_id = $1;
+\end{lstlisting}
+
+\subsubsection{Controllo Disponibilità}
+\begin{lstlisting}[caption=Verifica Conflitti Prenotazioni]
+-- Query per verificare sovrapposizioni dal BookingService
+SELECT COUNT(*) as conflicts
+FROM bookings
+WHERE space_id = $1
+    AND status IN ('confirmed', 'pending')
+    AND (
+        (start_date <= $2 AND end_date >= $2) OR
+        (start_date <= $3 AND end_date >= $3) OR
+        (start_date >= $2 AND end_date <= $3)
+    );
+\end{lstlisting}
+
+\newpage
+
+\subsubsection{Aggiornamento Prenotazione (UPDATE)}
+\begin{lstlisting}[caption=Aggiornamento Stato Prenotazione]
+-- Query dinamica dal modello Booking.js
+UPDATE bookings 
+SET ${fieldsToUpdate.join(', ')} 
+WHERE booking_id = $1
+RETURNING *;
+
+-- Esempio per conferma: status = 'confirmed', payment_status = 'completed'
+\end{lstlisting}
+
+\subsection{Sistema di Notifiche}
+
+\subsubsection{Creazione Notifica (CREATE)}
+\begin{lstlisting}[caption=Inserimento Notifica dal Modello Notification.js]
+-- Query di inserimento notifica
+INSERT INTO notifications (
+    user_id, type, channel, recipient, subject, content,
+    template_name, template_data, booking_id, payment_id, status
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING *;
+\end{lstlisting}
+
+\subsubsection{Aggiornamento Stato Notifica (UPDATE)}
+\begin{lstlisting}[caption=Aggiornamento Stato Notifica]
+-- Query per aggiornare stato notifica con timestamp
+UPDATE notifications 
+SET status = $1, metadata = $2, error_message = $3, sent_at = CURRENT_TIMESTAMP
+WHERE notification_id = $4 
+RETURNING *;
+\end{lstlisting}
+
+\newpage
+
+\subsection{Gestione Locations e Space Types}
+
+\subsubsection{Location CRUD}
+\begin{lstlisting}[caption=Query Location dal Modello Location.js]
+-- Inserimento location
+INSERT INTO locations (location_name, address, city, description, manager_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING *;
+
+-- Ricerca locations con informazioni manager
+SELECT 
+    l.*,
+    u.name as manager_name,
+    u.surname as manager_surname,
+    u.email as manager_email
+FROM locations l
+LEFT JOIN users u ON l.manager_id = u.user_id
+WHERE ($1 IS NULL OR LOWER(l.city) LIKE LOWER('%' || $1 || '%'))
+ORDER BY l.location_name;
+\end{lstlisting}
+
+\subsubsection{Space Types CRUD}
+\begin{lstlisting}[caption=Query Space Types]
+-- Ricerca tutti i tipi di spazio
+SELECT * FROM space_types ORDER BY type_name;
+
+-- Aggiornamento dinamico space type
+UPDATE space_types 
+SET ${updateFields.join(', ')} 
+WHERE space_type_id = $1 
+RETURNING *;
+\end{lstlisting}

@@ -892,12 +892,7 @@ router.get('/user/:userId/unpaid', BookingController.getUserUnpaidBookings);
  *                           properties:
  *                             credit_card:
  *                               type: number
- *                             paypal:
- *                               type: number
- *                             bank_transfer:
- *                               type: number
- *                             cash:
- *                               type: number
+ *                               description: Totale speso con carta di credito
  *                         monthlySpending:
  *                           type: array
  *                           items:

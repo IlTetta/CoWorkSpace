@@ -40,8 +40,8 @@ router.use(authMiddleware.protect);
  *         name: paymentMethod
  *         schema:
  *           type: string
- *           enum: [credit_card, paypal, bank_transfer, cash]
- *         description: Filtra per metodo di pagamento
+ *           enum: [credit_card]
+ *         description: Filtra per metodo di pagamento (solo carta di credito)
  *       - in: query
  *         name: startDate
  *         schema:
@@ -109,8 +109,8 @@ router.use(authMiddleware.protect);
  *                 example: 124.00
  *               payment_method:
  *                 type: string
- *                 enum: [credit_card, paypal, bank_transfer, cash]
- *                 description: Metodo di pagamento
+ *                 enum: [credit_card]
+ *                 description: Metodo di pagamento (solo carta di credito)
  *                 example: 'credit_card'
  *               transaction_id:
  *                 type: string
@@ -351,15 +351,7 @@ router.get('/check-booking/:bookingId', PaymentController.checkBookingPayment);
  *                             credit_card:
  *                               type: number
  *                               format: decimal
- *                             paypal:
- *                               type: number
- *                               format: decimal
- *                             bank_transfer:
- *                               type: number
- *                               format: decimal
- *                             cash:
- *                               type: number
- *                               format: decimal
+ *                               description: Totale pagamenti con carta di credito
  *                         monthlyRevenue:
  *                           type: array
  *                           items:

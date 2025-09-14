@@ -329,9 +329,9 @@ class Payment {
             throw AppError.badRequest('L\'importo deve essere un numero positivo');
         }
 
-        const validPaymentMethods = ['credit_card', 'paypal', 'bank_transfer', 'cash'];
+        const validPaymentMethods = ['credit_card'];
         if (!validPaymentMethods.includes(payment_method)) {
-            throw AppError.badRequest(`Metodo di pagamento non valido. Valori ammessi: ${validPaymentMethods.join(', ')}`);
+            throw AppError.badRequest(`Metodo di pagamento non valido. Solo pagamenti con carta di credito sono accettati.`);
         }
 
         const validStatuses = ['completed', 'failed', 'refunded'];
