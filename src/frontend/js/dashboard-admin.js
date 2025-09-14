@@ -1455,7 +1455,7 @@ function loadBookingsList() {
     
     // Determina l'URL base
     const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'http://localhost:3000' 
+                    ? 'https://coworkspace-fxyv.onrender.com' 
                     : '';
     const apiUrl = `${baseUrl}/api/admin/bookings`;
     
@@ -1643,7 +1643,7 @@ function deleteBooking(bookingId) {
     }
     
     const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'http://localhost:3000' 
+                    ? 'https://coworkspace-fxyv.onrender.com' 
                     : '';
     
     async function performDelete() {

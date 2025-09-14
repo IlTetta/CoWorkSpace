@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verifica se l'utente è autenticato (permetti accesso in sviluppo)
     const isDevelopment = window.location.protocol === 'file:' || 
                          window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === 'localhost:3000' ||
+                                 window.location.hostname === 'coworkspace-fxyv.onrender.com' ||
                          window.location.port === '5500'; // Live Server porta di default
     
     if (!isDevelopment) {
@@ -468,8 +468,8 @@ async function loadAndPopulateUserInfo() {
             // Se non c'è token, usa i dati di test per lo sviluppo
             const isDevelopment = window.location.protocol === 'file:' || 
                                  window.location.hostname === '127.0.0.1' || 
-                                 window.location.hostname === 'localhost' ||
-                                 window.location.hostname.includes('localhost') ||
+                                 window.location.hostname === 'coworkspace-fxyv.onrender.com' ||
+                                 window.location.hostname.includes('coworkspace-fxyv.onrender.com') ||
                                  ['5500', '5501', '5502', '3000', '8080', '8000'].includes(window.location.port);
             
             if (isDevelopment) {
@@ -562,7 +562,7 @@ async function fetchUserBookings() {
         console.log('Chiamata API per recuperare prenotazioni...');
         
         // URL dell'API backend
-        const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+    const baseUrl = window.location.hostname === 'localhost' ? 'https://coworkspace-fxyv.onrender.com' : '';
         const response = await fetch(`${baseUrl}/api/bookings`, {
             method: 'GET',
             headers: {

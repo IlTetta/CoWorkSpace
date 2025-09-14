@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const changePasswordButton = document.querySelector('.password-button'); // Usiamo la classe dato che non ha un ID
 
     // URL dell'endpoint API per il cambio password
-    const API_URL = 'http://localhost:3000';
+    const API_URL = 'https://coworkspace-fxyv.onrender.com';
 
     // Funzione per creare e mostrare un messaggio di errore sotto un campo specifico
     function showFieldError(input, message) {

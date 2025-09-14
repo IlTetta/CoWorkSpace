@@ -8,7 +8,7 @@ const passwordInput = document.getElementById('password');
 const managerRequestCheckbox = document.getElementById('manager-request');
 
 // URL dell'endpoint API per la registrazione
-const API_ENDPOINT = 'http://localhost:3000/api/users/register';
+const API_ENDPOINT = 'https://coworkspace-fxyv.onrender.com/api/users/register';
 
 // Funzione per creare e mostrare un messaggio di errore sotto un campo specifico
 function showFieldError(input, message) {
