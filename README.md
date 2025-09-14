@@ -3,6 +3,12 @@
 ## 📋 Panoramica
 CoWorkSpace è una piattaforma all-in-one per la gestione di spazi di coworking che integra prenotazioni, pagamenti e gestione delle sedi. Il sistema è progettato per supportare multiple stakeholder: amministratori, manager di spazi e utenti finali.
 
+## 📍 Accesso
+Il sito è accessibile all'indirizzo: [CoWorkSpace](https://coworkspace-1.onrender.com/home.html)
+
+## 🏠 Home del sito
+![Homepage CoWorkSpace](docs/images/image.png)
+
 ## 🎯 Obiettivi del Progetto
 - Semplificare la gestione degli spazi di coworking
 - Automatizzare il processo di prenotazione
@@ -113,11 +119,7 @@ CoWorkSpace è una piattaforma all-in-one per la gestione di spazi di coworking 
 - **Database Scripts**: SQL
 - **Email Templates**: HTML
 
-### 📍 Accesso
-Il sito è accessibile all'indirizzo: [CoWorkSpace](https://coworkspace-1.onrender.com/home.html)
 
-## 🏠 Home del sito
-![Homepage CoWorkSpace](docs/images/image.png)
 
 ## 📁 Architettura del Progetto
 ```
