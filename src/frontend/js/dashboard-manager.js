@@ -51,7 +51,10 @@ function initializeButtons() {
     // Gestore per il pulsante Logout
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        // Rimuovi eventuali listener precedenti
+        logoutBtn.replaceWith(logoutBtn.cloneNode(true));
+        const newLogoutBtn = document.getElementById('logout-btn');
+        newLogoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
             // Conferma logout
             if (confirm('Sei sicuro di voler effettuare il logout?')) {
