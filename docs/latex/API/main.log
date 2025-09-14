@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.3) (preloaded format=xelatex 2025.8.11)  13 SEP 2025 17:08
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.3) (preloaded format=xelatex 2025.8.11)  14 SEP 2025 15:09
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -490,7 +490,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 [2] (main.toc
 
 [3]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 48.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 49.
  (C:\Users\utente\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
@@ -504,12 +504,15 @@ File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 
 
 [6] (sections/overview.tex
-Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 15.
-LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 31.
+File: sections/Schema_architetturale.png Graphic file (type bmp)
+<sections/Schema_architetturale.png>
 
 
 [7]
+Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 24.
+LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 40.
+
 
 [8]
 
@@ -519,9 +522,9 @@ LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
 
 [11]
 
-[12]) (sections/authentication.tex
+[12]
 
-[13]
+[13]) (sections/authentication.tex
 
 [14]
 
@@ -529,23 +532,23 @@ LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
 
 [16]
 
-[17]) (sections/endpoints.tex
+[17]
 
-[18]
+[18]) (sections/endpoints.tex
+
+[19]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
 (Font)              Font shape `T1/lmtt/b/n' tried instead on input line 32.
 
 
-[19]
-
 [20]
+
+[21]
 Overfull \hbox (68.76102pt too wide) in paragraph at lines 134--135
 [][][][][][][][][][][][][][]  
  []
 
 
-
-[21]
 
 [22]
 
@@ -557,9 +560,9 @@ Overfull \hbox (68.76102pt too wide) in paragraph at lines 134--135
 
 [26]
 
-[27]) (sections/schemas.tex
+[27]
 
-[28]
+[28]) (sections/schemas.tex
 
 [29]
 
@@ -573,20 +576,20 @@ Overfull \hbox (68.76102pt too wide) in paragraph at lines 134--135
 
 [34]
 
-[35]) (sections/examples.tex
+[35]
 
-[36]
+[36]) (sections/examples.tex
 
 [37]
 
 [38]
+
+[39]
 Overfull \hbox (56.16089pt too wide) in paragraph at lines 78--79
 [][][][][][][][][][][][][][][][]  
  []
 
 
-
-[39]
 
 [40]
 
@@ -600,23 +603,25 @@ Overfull \hbox (56.16089pt too wide) in paragraph at lines 78--79
 
 [45]
 
-[46])
+[46]
 
-[47] (main.aux)
+[47])
+
+[48] (main.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 8AF5C182A920E9353FD9E4A820CB1701;31881.
+(rerunfilecheck)             Checksum: 2106BEFC8B48AECAE374B4AE3000DF9D;32057.
  ) 
 Here is how much of TeX's memory you used:
- 14500 strings out of 408640
- 219176 string characters out of 5744591
- 750675 words of memory out of 5000000
- 37373 multiletter control sequences out of 15000+600000
+ 14514 strings out of 408640
+ 219607 string characters out of 5744591
+ 750857 words of memory out of 5000000
+ 37385 multiletter control sequences out of 15000+600000
  617989 words of font info for 91 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  72i,12n,82p,510b,1885s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on main.xdv (47 pages, 753184 bytes).
+Output written on main.xdv (48 pages, 755220 bytes).

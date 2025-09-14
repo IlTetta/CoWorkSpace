@@ -1,11 +1,11 @@
-# 🧪 CoWorkSpace Unit Tests
+# 🧪 CoWorkSpace Tests
 
-Guida rapida per eseguire e comprendere i **test unitari** del progetto.
+Guida rapida per eseguire e comprendere i **test** del progetto.
 
 ## 🚀 Quick Start
 
 ```bash
-# Esegui tutti i test unitari
+# Esegui tutti i test 
 npm test
 
 # Test con coverage
@@ -96,7 +96,6 @@ npm test -- --coverage --verbose
 ### Current Status
 - ✅ **Unit Tests**: 8/8 servizi completi
 - ✅ **Business Logic**: Completamente testata
-- 🔄 **Missing**: Model tests, Utils tests (opzionali)
 
 ## 📝 Come Aggiungere Nuovi Test
 
@@ -122,39 +121,3 @@ const mockData = { id: 1, name: 'Test' };
 3. **Realistic Data**: Usa dati realistici
 4. **Clear Names**: Nomi test descrittivi in italiano
 5. **AAA Pattern**: Arrange, Act, Assert
-
-## 📚 Documentazione Completa
-
-Per documentazione dettagliata vedi:
-- 📖 [`docs/Testing_Guide.md`](../docs/Testing_Guide.md) - Guida completa unit test
-- 📖 [`docs/Testing_Coverage_Guide.md`](../docs/Testing_Coverage_Guide.md) - Coverage e metriche
-- 📖 [`docs/Testing_Examples_Guide.md`](../docs/Testing_Examples_Guide.md) - Esempi pratici
-- 📖 [`jest.config.json`](../jest.config.json) - Configurazione Jest
-
-## 🚀 Prossimi Passi
-
-### Test Opzionali da Aggiungere
-- [ ] Model tests (Sequelize)
-- [ ] Utils tests (funzioni utilità)
-- [ ] Validation tests (middleware)
-
-### Miglioramenti Coverage
-- [ ] Edge cases aggiuntivi
-- [ ] Error path completi
-- [ ] Branch coverage > 90%
-
----
-
-**🔧 Quick Fix Commands**
-```bash
-# Test completi con coverage
-npm test -- --coverage
-
-# Test specifico con debug
-npm test AuthService -- --verbose
-
-# Reset mock tra test
-# (automatico con beforeEach in ogni test)
-```
-
-*Happy Unit Testing! 🎉*
