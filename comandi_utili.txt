@@ -35,12 +35,8 @@ Username CacheMeIfYouCan
 Password jzbSs7K?68/j
 
 TODO:
-1 - Pagina location details 
-1.1 - Detail space
-1.2 - Prenotazione space con calendario
-1.3 - Pagina pagamento
-2 - Dashboard utente (dettagli utente, storico prenotazioni, storico pagamenti, pagamenti in pending)
-3 - Pagina Manager
-3.1 - Gestione location/space/servizi (CRUD)
-3.2 - dashboard manager (dettagli manager, storico prenotazioni, storico pagamenti, pagamenti in pending, CRUD location/space/servizi, ...)
-4 - Sezione admin
+1- Notifica prenotazione avvenuta con successo --> ID prenotazione N/A da modificare
+2- Aggiornamento array disponibilità prenotazione sapazio
+3- Campi precompilati dahboard manager per modifica location/sapazi
+4- Salvare i pagamenti nel db
+5- Modifica messaggio notifica pusg quandi admin elimina spazio con prenotazione attiva
