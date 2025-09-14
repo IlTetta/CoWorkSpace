@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs').promises;
 const path = require('path');
 const Notification = require('../models/Notification');
-const admin = require('../config/firebase'); 
+const admin = require('../config/firebase');
 
 /**
  * Service per gestire l'invio di notifiche email e push
@@ -23,7 +23,7 @@ class NotificationService {
                         subject: mailOptions.subject,
                         htmlPreview: mailOptions.html ? mailOptions.html.substring(0, 100) + '...' : 'No HTML'
                     });
-                    return { 
+                    return {
                         messageId: `test-${Date.now()}@coworkspace.test`,
                         accepted: [mailOptions.to]
                     };
@@ -46,7 +46,7 @@ class NotificationService {
     static async renderTemplate(templateName, templateData) {
         try {
             const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.html`);
-            try { await fs.access(templatePath); } 
+            try { await fs.access(templatePath); }
             catch { return this.getDefaultTemplate(templateData); }
 
             let template = await fs.readFile(templatePath, 'utf-8');
@@ -124,7 +124,7 @@ class NotificationService {
             });
 
             console.log('📧 Email inviata con successo:', info.messageId);
-            
+
             return {
                 success: true,
                 messageId: info.messageId,
@@ -155,32 +155,32 @@ class NotificationService {
     /**
      * Invia notifica push tramite Firebase
      */
-    static async sendPushNotification({fcmToken, title, body, data = {}, user_id, booking_id, payment_id}) {
+    static async sendPushNotification({ fcmToken, title, body, data = {}, user_id, booking_id, payment_id }) {
         if (!fcmToken) {
             console.warn('[FCM] Token FCM mancante, notifica saltata');
-            return {success: false, reason: 'missing_fcm_token'};
+            return { success: false, reason: 'missing_fcm_token' };
         }
 
         let notification = null;
         try {
             notification = await Notification.create({
                 user_id,
-                type:'push',
+                type: 'push',
                 channel: 'push',
                 recipient: fcmToken,
                 subject: title,
-                content: JSON.stringify({title, body, data}),
+                content: JSON.stringify({ title, body, data }),
                 template_name: 'push',
-                template_data: {title, body, ...data},
+                template_data: { title, body, ...data },
                 status: 'pending',
                 booking_id,
                 payment_id
             });
 
-            const message = {token: fcmToken, notification: {title, body }, data};
+            const message = { token: fcmToken, notification: { title, body }, data };
             const response = await admin.messaging().send(message);
 
-            await Notification.updateStatus(notification.notification_id, 'sent', {fcmResponse: response});
+            await Notification.updateStatus(notification.notification_id, 'sent', { fcmResponse: response });
             console.log('[FCM] Notifica inviata con successo:', response);
 
             return {
@@ -190,8 +190,8 @@ class NotificationService {
             };
         } catch (error) {
             console.error('[FCM] Errore invio notifica:', error);
-            if(notification?.notification_id) {
-                await Notification.updateStatus(notification.notification_id, 'failed', {error: error.message});
+            if (notification?.notification_id) {
+                await Notification.updateStatus(notification.notification_id, 'failed', { error: error.message });
             }
             return {
                 success: false,
@@ -205,30 +205,32 @@ class NotificationService {
      */
     static async sendBookingConfirmation(booking, user, space) {
         const templateData = {
-            userName: `${user.name} ${user.surname}`,
-            bookingId: booking.booking_id,
-            spaceName: space.name || booking.space_name,
-            locationName: space.location_name || booking.location_name,
-            startDate: new Date(booking.start_date).toLocaleDateString('it-IT'),
-            endDate: new Date(booking.end_date).toLocaleDateString('it-IT'),
-            totalAmount: `€${booking.total_amount}`,
-            subject: `Conferma Prenotazione #${booking.booking_id}`
+            NumeroPrenotazione: booking.booking_id,
+            NomeCliente: `${user.name} ${user.surname}`,
+            ServizioPrenotato: space.name || booking.space_name,
+            DataInizio: new Date(booking.start_date).toLocaleDateString('it-IT'),
+            DataFine: new Date(booking.end_date).toLocaleDateString('it-IT'),
+            Orario: `${new Date(booking.start_date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${new Date(booking.end_date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`,
+            NumeroPersone: booking.guests || '1',
+            Importo: `€${booking.total_amount}`,
+            companyName: 'CoWorkSpace'
         };
 
-        return this.sendEmail({
-            recipient: user.email,
-            subject: templateData.subject,
-            templateName: 'booking_confirmation',
-            templateData,
-            user_id: user.user_id,
-            booking_id: booking.booking_id
-        });
 
-        if(user.fcm_token){
+return this.sendEmail({
+    recipient: user.email,
+    subject: `Conferma Prenotazione #${booking.booking_id}`,
+    templateName: 'booking_confirmation',
+    templateData,
+    user_id: user.user_id,
+    booking_id: booking.booking_id
+});
+
+        if (user.fcm_token) {
             await this.sendPushNotification({
                 fcmToken: user.fcm_token,
                 title: templateData.subject,
-                body: `Prenotazione confermata dal ${templateData.startDate} al ${templateData.endDate}`,
+                body: `Prenotazione confermata dal ${templateData.DataInizio} al ${templateData.DataFine}`,
                 user_id: user.user_id,
                 booking_id: booking.booking_id
             });
@@ -238,136 +240,157 @@ class NotificationService {
     /**
      * Invia cancellazione prenotazione
      */
-    static async sendBookingCancellation(booking, user, space) {
-        const templateData = {
-            userName: `${user.name} ${user.surname}`,
-            bookingId: booking.booking_id,
-            spaceName: space.name || booking.space_name,
-            locationName: space.location_name || booking.location_name,
-            subject: `Cancellazione Prenotazione #${booking.booking_id}`
-        };
+static async sendBookingCancellation(booking, user, space) {
+    const templateData = {
+        NumeroPrenotazione: booking.booking_id,
+        NomeCliente: `${user.name} ${user.surname}`,
+        Servizio: space.name || booking.space_name,
+        DataPrenotazione: new Date(booking.start_date).toLocaleDateString('it-IT'),
+        Orario: `${new Date(booking.start_date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })} - ${new Date(booking.end_date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`,
+        NumeroPersone: booking.guests || '1',
+        NomeAzienda: 'CoWorkSpace',
+        companyName: 'CoWorkSpace',
+        subject: `Cancellazione Prenotazione #${booking.booking_id}`
+    };
 
-        return this.sendEmail({
-            recipient: user.email,
-            subject: templateData.subject,
-            templateName: 'booking_cancellation',
-            templateData,
+    const emailResult = await this.sendEmail({
+        recipient: user.email,
+        subject: templateData.subject,
+        templateName: 'booking_cancellation',
+        templateData,
+        user_id: user.user_id,
+        booking_id: booking.booking_id
+    });
+
+    if (user.fcm_token) {
+        await this.sendPushNotification({
+            fcmToken: user.fcm_token,
+            title: templateData.subject,
+            body: `Prenotazione cancellata per il ${templateData.DataPrenotazione} alle ${templateData.Orario}`,
             user_id: user.user_id,
             booking_id: booking.booking_id
         });
-
-        if(user.fcm_token){
-            await this.sendPushNotification({
-                fcmToken: user.fcm_token,
-                title: templateData.subject,
-                body: `Prenotazione cancellata dal ${templateData.startDate} al ${templateData.endDate}`,
-                user_id: user.user_id,
-                booking_id: booking.booking_id
-            });
-        }
     }
+
+    return emailResult;
+}
+
 
     /**
      * Invia conferma pagamento
      */
-    static async sendPaymentSuccess(payment, booking, user, space) {
-        const templateData = {
-            userName: `${user.name} ${user.surname}`,
-            paymentId: payment.payment_id,
-            bookingId: booking.booking_id,
-            amount: `€${payment.amount}`,
-            paymentMethod: payment.payment_method,
-            spaceName: space.name || booking.space_name,
-            subject: `Pagamento Confermato #${payment.payment_id}`
-        };
+static async sendPaymentSuccess(payment, booking, user, space) {
+    const templateData = {
+        NomeCliente: `${user.name} ${user.surname}`,
+        NumeroTransazione: payment.payment_id,
+        NumeroPrenotazione: booking.booking_id, // se vuoi aggiungerlo extra
+        Importo: `€${payment.amount}`,
+        MetodoPagamento: payment.payment_method,
+        ServizioPagato: space.name || booking.space_name,
+        DataPagamento: new Date(payment.created_at).toLocaleDateString('it-IT'), // assicurati che la colonna esista
+        NomeAzienda: 'CoWorkSpace',
+        companyName: 'CoWorkSpace',
+        OggettoEmail: `Pagamento Confermato #${payment.payment_id}`
+    };
 
-        return this.sendEmail({
-            recipient: user.email,
-            subject: templateData.subject,
-            templateName: 'payment_success',
-            templateData,
+    const emailResult = await this.sendEmail({
+        recipient: user.email,
+        subject: templateData.OggettoEmail,
+        templateName: 'payment_success',
+        templateData,
+        user_id: user.user_id,
+        booking_id: booking.booking_id,
+        payment_id: payment.payment_id
+    });
+
+    if (user.fcm_token) {
+        await this.sendPushNotification({
+            fcmToken: user.fcm_token,
+            title: templateData.OggettoEmail,
+            body: `Pagamento confermato per la prenotazione #${booking.booking_id}`,
             user_id: user.user_id,
-            booking_id: booking.booking_id,
-            payment_id: payment.payment_id
+            booking_id: booking.booking_id
         });
-
-        if(user.fcm_token){
-            await this.sendPushNotification({
-                fcmToken: user.fcm_token,
-                title: templateData.subject,
-                body: `Pagamento confermato per la prenotazione #${booking.booking_id}`,
-                user_id: user.user_id,
-                booking_id: booking.booking_id
-            });
-        }
     }
+
+    return emailResult;
+}
+
 
     /**
      * Invia benvenuto registrazione
      */
-    static async sendUserRegistration(user) {
-        const templateData = {
-            userName: `${user.name} ${user.surname}`,
-            email: user.email,
-            companyName: 'CoWorkSpace',
-            subject: `Benvenuto in CoWorkSpace, ${user.name}!`
-        };
+static async sendUserRegistration(user) {
+    const templateData = {
+        userName: `${user.name} ${user.surname}`,
+        email: user.email,
+        companyName: 'CoWorkSpace',
+        dashboardLink: 'https://my-frontend-1em1.onrender.com/dashboard', // aggiunto per il pulsante
+        subject: `Benvenuto in CoWorkSpace, ${user.name}!`
+    };
 
-        return this.sendEmail({
-            recipient: user.email,
-            subject: templateData.subject,
-            templateName: 'user_registration',
-            templateData,
+    const emailResult = await this.sendEmail({
+        recipient: user.email,
+        subject: templateData.subject,
+        templateName: 'user_registration',
+        templateData,
+        user_id: user.id || user.user_id
+    });
+
+    if (user.fcm_token) {
+        await this.sendPushNotification({
+            fcmToken: user.fcm_token,
+            title: templateData.subject,
+            body: `Benvenuto in CoWorkSpace, ${user.name}!`,
             user_id: user.id || user.user_id
         });
-
-        if(user.fcm_token){
-            await this.sendPushNotification({
-                fcmToken: user.fcm_token,
-                title: templateData.subject,
-                body: `Benvenuto in CoWorkSpace, ${user.name}!`,
-                user_id: user.id || user.user_id
-            });
-        }
     }
+
+    return emailResult;
+}
+
 
     /**
      * Invia email reset password con password temporanea
      */
-    static async sendPasswordReset(user, tempPassword) {
-        const templateData = {
-            userName: `${user.name} ${user.surname}`,
-            email: user.email,
-            tempPassword: tempPassword,
-            companyName: 'CoWorkSpace',
-            loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
-            subject: `Reset Password - CoWorkSpace`
-        };
+static async sendPasswordReset(user, tempPassword) {
+    const templateData = {
+        userName: `${user.name} ${user.surname}`,
+        email: user.email,
+        tempPassword: tempPassword,
+        companyName: 'CoWorkSpace',
+        EmailAzienda: 'coworkspace.webdev@gmail.com', // aggiunto per il placeholder
+        loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/login` : '#',
+        OggettoEmail: `Reset Password - CoWorkSpace` // rinominato per match con il template
+    };
 
-        return this.sendEmail({
-            recipient: user.email,
-            subject: templateData.subject,
-            templateName: 'password_reset',
-            templateData,
+    const emailResult = await this.sendEmail({
+        recipient: user.email,
+        subject: templateData.OggettoEmail, // usa lo stesso
+        templateName: 'password_reset',
+        templateData,
+        user_id: user.id || user.user_id
+    });
+
+    if (user.fcm_token) {
+        await this.sendPushNotification({
+            fcmToken: user.fcm_token,
+            title: templateData.OggettoEmail,
+            body: `Una password temporanea è stata inviata alla tua email.`,
             user_id: user.id || user.user_id
         });
-
-        if(user.fcm_token){
-            await this.sendPushNotification({
-                fcmToken: user.fcm_token,
-                title: templateData.subject,
-                body: `Una password temporanea è stata inviata alla tua email.`,
-                user_id: user.id || user.user_id
-            });
-        }
     }
+
+    return emailResult;
+}
+
 
     /**
      * Invia notifica all'admin per richiesta manager
      */
     static async sendManagerRequestNotification(user) {
         const adminEmail = process.env.ADMIN_EMAIL || 'admin@coworkspace.com';
-        
+
         const templateData = {
             userName: `${user.name} ${user.surname}`,
             userEmail: user.email,
@@ -407,7 +430,7 @@ class NotificationService {
             user_id: user.id || user.user_id
         });
 
-        if(user.fcm_token){
+        if (user.fcm_token) {
             await this.sendPushNotification({
                 fcmToken: user.fcm_token,
                 title: templateData.subject,
@@ -437,7 +460,7 @@ class NotificationService {
             user_id: user.id || user.user_id
         });
 
-        if(user.fcm_token){
+        if (user.fcm_token) {
             await this.sendPushNotification({
                 fcmToken: user.fcm_token,
                 title: templateData.subject,
