@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node src/backend/server.js",
     "dev": "nodemon src/backend/server.js",
+    "migrate": "node src/backend/migrate.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
