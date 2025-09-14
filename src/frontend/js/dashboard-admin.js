@@ -116,7 +116,7 @@ function loadManagerRequests() {
     const container = document.getElementById('manager-requests-list');
     container.innerHTML = '<p>🔄 Caricamento richieste...</p>';
     
-    fetch('/api/admin/users/manager-requests/pending', {
+    fetch('https://coworkspace-fxyv.onrender.com/api/admin/users/manager-requests/pending', {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -174,7 +174,7 @@ function loadManagerRequests() {
 }
 
 function acceptManager(userId) {
-    fetch(`/api/admin/users/${userId}/approve-manager`, { 
+    fetch(`https://coworkspace-fxyv.onrender.com/api/admin/users/${userId}/approve-manager`, { 
         method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -198,7 +198,7 @@ function acceptManager(userId) {
 }
 
 function rejectManager(userId) {
-    fetch(`/api/admin/users/${userId}/reject-manager`, { 
+    fetch(`https://coworkspace-fxyv.onrender.com/api/admin/users/${userId}/reject-manager`, { 
         method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -226,7 +226,7 @@ function loadUsersList() {
     const container = document.getElementById('users-list');
     container.innerHTML = '<p>🔄 Caricamento utenti...</p>';
     
-    fetch('/api/admin/users?role=user', {
+    fetch('https://coworkspace-fxyv.onrender.com/api/admin/users?role=user', {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -268,7 +268,7 @@ function loadManagersList() {
     
     container.innerHTML = '<p>🔄 Caricamento manager...</p>';
     
-    fetch('/api/admin/managers', {
+    fetch('https://coworkspace-fxyv.onrender.com/api/admin/managers', {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -373,7 +373,7 @@ async function loadLocationsList() {
     locationsGrid.innerHTML = '<div class="loading">Caricamento location...</div>';
 
     try {
-        const response = await fetch('/api/admin/locations', {
+    const response = await fetch('https://coworkspace-fxyv.onrender.com/api/admin/locations', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -560,7 +560,7 @@ function openCreateLocationModal() {
  */
 async function editLocation(locationId) {
     try {
-        const response = await fetch(`/api/admin/locations/${locationId}`, {
+    const response = await fetch(`https://coworkspace-fxyv.onrender.com/api/admin/locations/${locationId}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -623,7 +623,7 @@ async function deleteLocation(locationId) {
     }
 
     try {
-        const response = await fetch(`/api/admin/locations/${locationId}`, {
+    const response = await fetch(`https://coworkspace-fxyv.onrender.com/api/admin/locations/${locationId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -676,7 +676,7 @@ async function handleLocationFormSubmit(event) {
         if (form.dataset.mode === 'edit') {
             // Modifica location esistente
             const locationId = parseInt(form.dataset.locationId);
-            response = await fetch(`/api/admin/locations/${locationId}`, {
+            response = await fetch(`https://coworkspace-fxyv.onrender.com/api/admin/locations/${locationId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -686,7 +686,7 @@ async function handleLocationFormSubmit(event) {
             });
         } else {
             // Crea nuova location (solo admin può creare location)
-            response = await fetch('/api/admin/locations', {
+            response = await fetch('https://coworkspace-fxyv.onrender.com/api/admin/locations', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -809,7 +809,7 @@ function initializeDayCheckboxes() {
  */
 async function loadLocations() {
     try {
-        const response = await fetch('/api/admin/locations', {
+    const response = await fetch('https://coworkspace-fxyv.onrender.com/api/admin/locations', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -1454,12 +1454,7 @@ function loadBookingsList() {
     }
     
     // Determina l'URL base
-    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'https://coworkspace-fxyv.onrender.com' 
-                    : '';
-    const apiUrl = `${baseUrl}/api/admin/bookings`;
-    
-    fetch(apiUrl, {
+    fetch('https://coworkspace-fxyv.onrender.com/api/admin/bookings', {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -1642,13 +1637,9 @@ function deleteBooking(bookingId) {
         return;
     }
     
-    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'https://coworkspace-fxyv.onrender.com' 
-                    : '';
-    
     async function performDelete() {
         try {
-            const response = await fetch(`${baseUrl}/api/bookings/${bookingId}`, {
+            const response = await fetch(`https://coworkspace-fxyv.onrender.com/api/bookings/${bookingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -1684,7 +1675,7 @@ function deleteBooking(bookingId) {
 async function loadLocationsAndTypesForEdit(space) {
     try {
         // Carica le location
-        const locationsResponse = await fetch('/api/admin/locations', {
+    const locationsResponse = await fetch('https://coworkspace-fxyv.onrender.com/api/admin/locations', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
             }
@@ -1692,7 +1683,7 @@ async function loadLocationsAndTypesForEdit(space) {
         const locationsData = await locationsResponse.json();
         
         // Carica i tipi di spazio
-        const typesResponse = await fetch('/api/space-types', {
+    const typesResponse = await fetch('https://coworkspace-fxyv.onrender.com/api/space-types', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
             }
@@ -1778,7 +1769,7 @@ async function loadLocationsAndTypesForEdit(space) {
 }
 
 function loadLocationsForSelect() {
-    fetch('/api/admin/locations', {
+    fetch('https://coworkspace-fxyv.onrender.com/api/admin/locations', {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
         }
@@ -1798,7 +1789,7 @@ function loadLocationsForSelect() {
 }
 
 function loadSpaceTypesForSelect() {
-    fetch('/api/admin/space-types', {
+    fetch('https://coworkspace-fxyv.onrender.com/api/admin/space-types', {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`
         }
