@@ -42,6 +42,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
+            connectSrc: ["'self'", "https://coworkspace-fxyv.onrender.com", "http://localhost:3000"],
             fontSrc: ["'self'", 'https://fonts.gstatic.com'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
             // Permetti script inline solo in sviluppo per Live Server

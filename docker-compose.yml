@@ -1,47 +1,54 @@
-
 services:
-  # Servizio Frontend
-  # Gestisce i tuoi file statici (HTML/CSS) con un server web leggero.
-  frontend:
-    build:
-      context: .
-      dockerfile: src/frontend/Dockerfile
+  app:
+    build: . 
+    container_name: coworking_app
     ports:
-      - "3000:80"             # Mappa la porta 3000 della tua macchina alla porta 80 di Nginx
-       
-  # Servizio Backend
-  # Avvia il tuo server Node.js che espone le API.
-  backend:
-    build:
-      context: .                  # root del progetto
-      dockerfile: src/backend/Dockerfile
-    ports:
-      - "5000:5000"           # Mappa la porta 5000
-    depends_on:
-      - db                      # Assicura che il database sia avviato prima del backend
-    #environment:
-      # Variabile d'ambiente per la connessione al database
-      #DATABASE_URL: postgres://coworkspace_user:cachemeifyoucan@db:5432/coworkspace_db
-    env_file:
-      - .env
+      - "3000:3000"
     volumes:
-    #  - ./firebase-service-account.json:/usr/src/firebase-service-account.json:ro
+      # Mount source code for development hot reload
+      - ./src:/usr/src/app/src
+      - ./firebase-service-account.json:/usr/src/app/src/firebase-service-account.json
     environment:
-      - FIREBASE_SERVICE_ACCOUNT_PATH=/usr/src/firebase-service-account.json
-  # Servizio Database (PostgreSQL)
-  # Un database relazionale per i dati della tua applicazione.
+      # Variabili per la connessione al database
+      DATABASE_URL: postgres://coworkspace_user:cachemeifyoucan@db:5432/coworkspace_db
+      
+      # Variabili per l'ambiente
+      NODE_ENV: development
+      
+      # Altre variabili dell'applicazione
+      PORT: 3000
+      JWT_SECRET: c7a5M0RarP+bX4LsdyGgcOjAAe32hRUHoqxDoHJlhUkujIFZAR4m/q8TJdfHRijI
+      JWT_EXPIRES_IN: 24h
+      JWT_REFRESH_SECRET: c7a5M0RarP+bX4LsdyGgcOjAAe32hRUHoqxDoHJlhUkujIFZAR4m/q8TJdfHRijI_REFRESH
+      # Remove FRONTEND_URL to let the CORS logic handle multiple origins in development
+      EMAIL_USER: coworkspace.webdev@gmail.com
+      EMAIL_PASS: vknf nbmg oaoh ryww
+      EMAIL_FROM: CoWorkSpace <coworkspace.webdev@gmail.com>
+      FIREBASE_SERVICE_ACCOUNT_PATH: /usr/src/app/src/firebase-service-account.json
+
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:15
-    restart: always
+    container_name: coworking_db
     environment:
       POSTGRES_DB: coworkspace_db
       POSTGRES_USER: coworkspace_user
       POSTGRES_PASSWORD: cachemeifyoucan
     volumes:
-      - db-data:/var/lib/postgresql/data          # Volume per la persistenza dei dati
-      - ./src/init.sql:/docker-entrypoint-initdb.d/init.sql # Esegue script di inizializzazione
+      - db-data:/var/lib/postgresql/data
+      - ./src/backend/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./src/backend/seed_data.sql:/docker-entrypoint-initdb.d/02-seed_data.sql
     ports:
       - "5432:5432"
-      
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coworkspace_user -d coworkspace_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   db-data:

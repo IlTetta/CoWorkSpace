@@ -16,7 +16,7 @@
             }
             // 2. Se siamo in locale (Live Server o Node su localhost:3000)
             else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                this.baseURL = 'https://coworkspace-fxyv.onrender.com/api';
+                this.baseURL = 'http://localhost:3000/api';
             }
             // 3. Default: URL pubblico del backend su Render
             else {
