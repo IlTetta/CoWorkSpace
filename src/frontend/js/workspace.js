@@ -719,7 +719,7 @@ async function createBooking(bookingData) {
         };
         
         // Effettua la chiamata al backend
-        const response = await fetch('/api/bookings', {
+    const response = await fetch('https://coworkspace-fxyv.onrender.com/api/bookings', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -770,7 +770,7 @@ async function createPayment(paymentData) {
         console.log('Invio dati pagamento:', payload);
         
         // Effettua la chiamata al backend
-        const response = await fetch('/api/payments', {
+    const response = await fetch('https://coworkspace-fxyv.onrender.com/api/payments', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -982,7 +982,7 @@ async function getSpaceBookedDates(spaceId) {
         
         // Usa l'endpoint pubblico per ottenere TUTTE le prenotazioni di questo spazio
         // indipendentemente dall'utente corrente (per controllo disponibilità calendario)
-        const response = await fetch(`/api/bookings/public/space/${spaceId}/booked-dates?date_from=${startDateStr}&date_to=${endDateStr}`, {
+    const response = await fetch(`https://coworkspace-fxyv.onrender.com/api/bookings/public/space/${spaceId}/booked-dates?date_from=${startDateStr}&date_to=${endDateStr}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -1059,7 +1059,7 @@ async function getSpaceBookedDatesAlternative(spaceId, startDate, endDate) {
     try {
         // PRIMA prova con endpoint pubblico semplificato se disponibile
         try {
-            const publicResponse = await fetch(`/api/bookings/public/space/${spaceId}/booked-dates?date_from=${startDate}&date_to=${endDate}`, {
+            const publicResponse = await fetch(`https://coworkspace-fxyv.onrender.com/api/bookings/public/space/${spaceId}/booked-dates?date_from=${startDate}&date_to=${endDate}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1080,7 +1080,7 @@ async function getSpaceBookedDatesAlternative(spaceId, startDate, endDate) {
         const token = window.authService?.getToken();
         
         // Prova a usare l'endpoint generale delle prenotazioni con filtro per spazio
-        const url = new URL('/api/bookings', window.location.origin);
+    const url = new URL('https://coworkspace-fxyv.onrender.com/api/bookings');
         if (spaceId) url.searchParams.set('space_id', parseInt(spaceId)); // Assicurati che sia un numero
         if (startDate) url.searchParams.set('date_from', startDate);
         if (endDate) url.searchParams.set('date_to', endDate);

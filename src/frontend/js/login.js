@@ -13,7 +13,7 @@ const loginButton = document.querySelector('.login-button');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const rememberMeCheckbox = document.getElementById('remember-me');
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://coworkspace-fxyv.onrender.com';
 
 // Carica username salvato se presente
 window.addEventListener('DOMContentLoaded', () => {
