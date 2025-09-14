@@ -856,7 +856,7 @@ async function loadLocations() {
  */
 async function loadSpaceTypes() {
     try {
-        const response = await fetch('/api/space-types', {
+    const response = await fetch('https://coworkspace-fxyv.onrender.com/api/space-types', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,
@@ -926,7 +926,7 @@ async function loadSpaces() {
     spacesGrid.innerHTML = '<div class="loading">Caricamento spazi...</div>';
 
     try {
-        const response = await fetch('/api/admin/spaces', {
+    const response = await fetch('https://coworkspace-fxyv.onrender.com/api/admin/spaces', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('coworkspace_token')}`,

@@ -562,7 +562,7 @@ async function fetchUserBookings() {
         console.log('Chiamata API per recuperare prenotazioni...');
         
         // URL dell'API backend
-    const baseUrl = window.location.hostname === 'localhost' ? 'https://coworkspace-fxyv.onrender.com' : '';
+    const baseUrl = 'https://coworkspace-fxyv.onrender.com';
         const response = await fetch(`${baseUrl}/api/bookings`, {
             method: 'GET',
             headers: {
