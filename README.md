@@ -1,177 +1,192 @@
 # CoWorkSpace
 
-Piattaforma di gestione spazi di coworking con sistema di prenotazioni, pagamenti e gestione location.
+## 📋 Descrizione
+Piattaforma completa per la gestione di spazi di coworking con sistema di prenotazioni, pagamenti e gestione location.
 
-## 📚 Documentazione
+## 🚀 Caratteristiche Principali
 
-### 🧪 Testing
-- **[📖 Guida Unit Test](docs/Testing_Guide.md)** - Documentazione completa test unitari
-- **[🚀 Quick Start Testing](tests/README.md)** - Guida rapida per eseguire unit test
-- **[📊 Coverage e Metriche](docs/Testing_Coverage_Guide.md)** - Come interpretare e migliorare il coverage
-- **[📝 Esempi Pratici](docs/Testing_Examples_Guide.md)** - Template e esempi per scrivere unit test
+### 👥 Gestione Utenti e Ruoli
+- Amministratori (gestione completa piattaforma)
+- Manager (gestione spazi)
+- Utenti (prenotazioni e utilizzo servizi)
 
-### 🔧 Backend
-- **[🌐 Backend Overview](docs/Backend_Overview_per_Frontend.md)** - Guida API per il frontend
-- **[🔄 Sistema Ruoli](ROLE_SYSTEM_REFACTORING.md)** - Documentazione sistema utenti e ruoli
-- **[🔒 Reset Password](docs/Password_Reset_Documentation.md)** - Implementazione reset password
+### 🏢 Gestione Spazi
+- Múltiple location
+- Diversi tipi di spazi (uffici, sale riunioni, postazioni)
+- Gestione disponibilità in tempo reale
+- Servizi aggiuntivi configurabili
 
-### 🏗️ Setup e Deploy
-- **[📋 Traccia Progetto](docs/traccia.txt)** - Requisiti e specifiche del progetto
+### 🔐 Sistema di Autenticazione
 
-## 🚀 Quick Start
+#### Login
+1. Accesso via email/password o OAuth (Google, Facebook)
+2. Validazione credenziali tramite Firebase
+3. Generazione JWT token
+4. Reindirizzamento al dashboard specifico
+
+#### Reset Password
+1. Richiesta reset da `reset-password.html`
+2. Email con link temporaneo (1 ora validità)
+3. Inserimento nuova password
+4. Notifica email di conferma
+5. Log per sicurezza
+
+### 📅 Sistema Prenotazioni
+
+#### Flusso Booking
+1. **Ricerca Spazi**:
+   - Filtri (location, data, capienza)
+   - Calendario disponibilità
+   - Visualizzazione prezzi
+
+2. **Processo Prenotazione**:
+   - Selezione data/ora
+   - Servizi aggiuntivi
+   - Numero partecipanti
+   - Verifica disponibilità real-time
+
+3. **Gestione**:
+   - Conferma automatica/manuale
+   - Notifiche email
+   - Politiche cancellazione
+
+### 💳 Pagamenti
+
+#### Metodi Supportati
+- Carte credito/debito
+- PayPal
+- Bonifico bancario
+- Wallet interno
+
+#### Processo
+1. Scelta metodo
+2. Verifica importo
+3. Processamento sicuro
+4. Fatturazione automatica
+5. Notifica conferma
+
+#### Rimborsi
+- Automatici secondo policy
+- Rimborsi parziali
+- Crediti su wallet
+- Notifiche stato
+
+## 🛠️ Tecnologie
+
+### Backend
+- Node.js/Express
+- PostgreSQL
+- Firebase Auth
+- JWT
+- Docker
+
+### Frontend
+- HTML5/CSS3
+- JavaScript
+- Design Responsive
+
+## 📁 Struttura Progetto
+```
+CoWorkSpace/
+├── src/
+│   ├── backend/           # API Node.js/Express
+│   │   ├── controllers/   # Logica endpoints
+│   │   ├── services/      # Business logic
+│   │   ├── models/        # Modelli database
+│   │   ├── routes/        # Route API
+│   │   └── middleware/    # Auth, validazioni
+│   └── frontend/          # Interface web
+├── tests/                 # Test
+│   ├── unit/             # Test unitari
+│   ├── integration/      # Test API
+│   └── helpers/          # Utility test
+├── docs/                 # Documentazione
+└── scripts/              # Script utility
+```
+
+## 🚀 Setup
 
 ### Prerequisiti
 - Node.js (v16+)
 - Docker Desktop
-- PostgreSQL (opzionale, si può usare Docker)
+- PostgreSQL (opzionale, disponibile via Docker)
 
 ### Installazione
 ```bash
-# Clona il repository
+# Clone repository
 git clone https://github.com/IlTetta/CoWorkSpace.git
 cd CoWorkSpace
 
-# Installa dipendenze
+# Installazione dipendenze
 npm install
 
-# Setup database (Docker)
+# Avvio database (Docker)
 docker-compose up -d
 
-# Avvia il server
+# Avvio server
 npm run dev
 ```
 
-### Testing
+## 🧪 Testing
+
+### Comandi
 ```bash
-# Esegui tutti i unit test
+# Tutti i test
 npm test
 
 # Test con coverage
 npm test -- --coverage
 
-# Test specifico servizio
+# Test specifico
 npm test AuthService
+
+# Modalità watch
+npm test -- --watch
 ```
 
-## 📁 Struttura Progetto
+### Coverage
+- **Unit Tests**: 85%+ coverage
+- **Business Logic**: Test completi
+- **Mock System**: DB, Firebase, Email
+- **Performance**: ~10s esecuzione
 
+## 📊 Metriche Qualità
 ```
-CoWorkSpace/
-├── src/
-│   ├── backend/           # API Node.js/Express
-│   │   ├── controllers/   # Logic HTTP endpoints
-│   │   ├── services/      # Business logic
-│   │   ├── models/        # Database models
-│   │   ├── routes/        # API routes
-│   │   └── middleware/    # Auth, validation, etc.
-│   └── frontend/          # Interface web
-├── tests/                 # Test unitari e di integrazione
-│   ├── unit/             # Test business logic
-│   ├── integration/      # Test API endpoints
-│   └── helpers/          # Utilities test
-├── docs/                 # Documentazione completa
-└── scripts/              # Script utilità e deploy
+Coverage:   85%+ statements
+           80%+ branches  
+           90%+ functions
+           85%+ lines
 ```
 
-## 🧪 Sistema di Unit Testing
+## 🗄️ Database
 
-### ✅ Coverage Attuale
-- **Unit Tests**: 8 servizi completi (85%+ coverage)
-- **Business Logic**: Completamente testata
-- **Mock System**: Database, Firebase, Email isolati
-- **Performance**: ~10 secondi esecuzione completa
+### Configurazione Produzione
+- **Host:** localhost
+- **Porta:** 5432
+- **Database:** coworkspace_db
 
-### 🔧 Strumenti Test
-- **Framework**: Jest
-- **Mock System**: Completo per dipendenze esterne
-- **Coverage**: Report integrato con soglie di qualità
-- **Focus**: Business logic dei servizi
+### File Necessari
+- `docker-compose.yml`
+- `init.sql` (schema)
+- `seed_data.sql` (dati iniziali)
 
-### 📊 Metriche Qualità
-```
-Overall Coverage:    85%+ statements
-                    80%+ branches  
-                    90%+ functions
-                    85%+ lines
-```
 
-## 🏗️ Sezione Database
 
-### Setup Database Produzione
+### Frontend
+1. 🔄 Design Responsive
+2. 🔄 Integrazione API
 
-#### 1. Requisiti:
-* **Docker Desktop**: Assicurati di avere Docker Desktop installato sul tuo sistema.
 
-#### 2. Configurazione e Avvio:
-Il database viene avviato tramite Docker Compose, che gestirà un container PostgreSQL.
 
-* **File necessari**: 
-    *  `docker-compose.yml`
-    * `init.sql` (schema database)
-    * `seed_data.sql` (dati iniziali)
+## 🆘 Supporto
+- **API**: [Swagger docs](http://localhost:3000/api-docs)
+- **Testing**: [Guida Test](docs/Testing_Guide.md)
+- **Coverage**: [Guida Coverage](docs/Testing_Coverage_Guide.md)
 
-* **Avvio iniziale**:
-    ```bash
-    # Naviga alla directory progetto
-    cd CoWorkSpace
-    
-    # Rimuovi container precedenti (se esistenti)
-    docker-compose down -v
-    
-    # Avvia database
-    docker-compose up -d
-    ```
+## 🔐 Sicurezza
+- SSL/TLS
+- Tokenizzazione dati pagamento
+- Conformità PCI DSS
+- Log operazioni
+- Monitoraggio attività
 
-* **Connessione Database**:
-    * **Host:** `localhost`
-    * **Porta:** `5432`
-    * **Database:** `coworkspace_db`
-    * **User:** `coworkspace_user`
-    * **Password:** `a_strong_password`
-
-### Setup Database Test
-Vedi [documentazione completa](docs/Test-Database-Setup.md) per setup database di test isolato.
-
-## 🔧 Scripts Disponibili
-
-### Development
-```bash
-npm run dev          # Server con auto-reload
-npm start           # Server produzione
-```
-
-### Testing
-```bash
-npm test                 # Tutti i unit test
-npm test AuthService     # Test specifico servizio
-npm test -- --coverage  # Test con coverage report
-npm test -- --watch     # Watch mode per development
-```
-
-## 📊 TODO Backend
-
-1. ✅ **Test unitari** - Andrea (Completato - 8 servizi)
-2. 🔄 **Notifiche E-mail** - Lore (In corso)
-3. 🔄 **Notifiche push** - Lore (Pianificato)
-4. 🔄 **Backup e gestione cloud DB** - Andrea (Pianificato)
-
-## 📱 TODO Frontend
-
-1. 🔄 **Adattabilità dispositivi** (Responsive design)
-2. 🔄 **Comunicazione backend** (API integration)
-
-## 🤝 Team
-
-- **Backend & Testing**: Andrea
-- **Frontend & Notifiche**: Lore
-- **Database & DevOps**: Andrea
-
-## 📞 Supporto
-
-- **API Issues**: Controlla [Swagger docs](http://localhost:3000/api-docs)
-- **Unit Test Issues**: Vedi [Testing Guide](docs/Testing_Guide.md)
-- **Coverage Issues**: Controlla [Coverage Guide](docs/Testing_Coverage_Guide.md)
-
----
-
-*Ultimo aggiornamento: Settembre 2025*
