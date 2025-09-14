@@ -72,8 +72,10 @@ const renderCalendar = (month, year) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // Formato della data per confronto con le date prenotate (YYYY-MM-DD)
-        const dateStr = fullDate.toISOString().split('T')[0];
+    // Formato della data per confronto con le date prenotate (YYYY-MM-DD)
+    const fullDateAdjusted = new Date(fullDate);
+    fullDateAdjusted.setDate(fullDateAdjusted.getDate() +1);
+    const dateStr = fullDateAdjusted.toISOString().split('T')[0];
 
         if (fullDate.getTime() === today.getTime()) {
             dayEl.classList.add('calendar__day-number--current');
