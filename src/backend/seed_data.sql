@@ -44,19 +44,6 @@ INSERT INTO locations (location_name, address, city, description, manager_id) VA
 ('CoWorkSpace Catania Etnea', 'Via Etnea 200', 'Catania', 'Sulla storica Via Etnea con vista sull''Etna.', 9),
 ('CoWorkSpace Verona Arena', 'Via Mazzini 40', 'Verona', 'A pochi passi dall''Arena di Verona.', 13);
 
--- INSERIMENTO TIPI SPAZIO (10 tipi)
-INSERT INTO space_types (type_name, description) VALUES
-('Stanza Privata', 'Ufficio privato e isolato, ideale per chiamate e lavoro concentrato.'),
-('Postazione Flessibile', 'Postazione in area open space, prenotabile all''ora o al giorno.'),
-('Sala Riunioni Piccola', 'Sala per 4-6 persone, con schermo e lavagna.'),
-('Sala Riunioni Grande', 'Sala per 8-12 persone, completamente attrezzata per presentazioni.'),
-('Sala Conferenze', 'Ampio spazio per eventi e conferenze fino a 50 persone.'),
-('Postazione Hot Desk', 'Scrivania condivisa in ambiente dinamico e collaborativo.'),
-('Ufficio Team', 'Spazio dedicato per team di 3-5 persone.'),
-('Phone Booth', 'Cabina telefonica insonorizzata per chiamate private.'),
-('Sala Relax', 'Area comune per pause e networking informale.'),
-('Studio Creativo', 'Spazio attrezzato per attività creative e brainstorming.');
-
 -- INSERIMENTO SPAZI (20 spazi)
 INSERT INTO spaces (location_id, space_type_id, space_name, description, capacity, price_per_hour, price_per_day) VALUES
 (1, 1, 'Stanza Milano 1', 'Stanza privata silenziosa con vista città.', 1, 15.00, 80.00),
@@ -133,16 +120,16 @@ INSERT INTO bookings (user_id, space_id, start_date, end_date, total_price, stat
 -- INSERIMENTO PAGAMENTI (12 pagamenti - solo per prenotazioni confermate/completate)
 INSERT INTO payments (booking_id, amount, payment_method, status, transaction_id) VALUES
 (1, 45.00, 'credit_card', 'completed', 'TXN_001_CC_20250905'),
-(2, 50.00, 'paypal', 'completed', 'TXN_002_PP_20250905'),
+(2, 50.00, 'credit_card', 'completed', 'TXN_002_PP_20250905'),
 (4, 60.00, 'credit_card', 'completed', 'TXN_004_CC_20250905'),
-(5, 72.00, 'bank_transfer', 'completed', 'TXN_005_BT_20250905'),
+(5, 72.00, 'credit_card', 'completed', 'TXN_005_BT_20250905'),
 (6, 150.00, 'credit_card', 'completed', 'TXN_006_CC_20250905'),
-(7, 15.00, 'cash', 'completed', 'TXN_007_CASH_20250905'),
-(8, 72.00, 'paypal', 'completed', 'TXN_008_PP_20250905'),
+(7, 15.00, 'credit_card', 'completed', 'TXN_007_CASH_20250905'),
+(8, 72.00, 'credit_card', 'completed', 'TXN_008_PP_20250905'),
 (9, 56.00, 'credit_card', 'completed', 'TXN_009_CC_20250905'),
 (11, 196.00, 'credit_card', 'completed', 'TXN_011_CC_20250905'),
-(12, 180.00, 'bank_transfer', 'completed', 'TXN_012_BT_20250905'),
-(13, 36.00, 'paypal', 'completed', 'TXN_013_PP_20250905'),
+(12, 180.00, 'credit_card', 'completed', 'TXN_012_BT_20250905'),
+(13, 36.00, 'credit_card', 'completed', 'TXN_013_PP_20250905'),
 (15, 80.00, 'credit_card', 'refunded', 'TXN_015_CC_20250905');
 
 -- INSERIMENTO NOTIFICHE (15 notifiche)

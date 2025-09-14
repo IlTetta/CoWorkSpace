@@ -155,7 +155,6 @@ INSERT INTO space_types (type_name, description) VALUES
 ON CONFLICT (type_name) DO NOTHING;
 
 -- Inserimento utente admin di default
--- Password: CoWorkSpace2025!
 -- Hash generato con bcrypt rounds=12
 INSERT INTO users (name, surname, email, password_hash, role) 
 VALUES (
