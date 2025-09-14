@@ -630,10 +630,10 @@ function createLocationCard(location) {
         <div class="location-name" style="--random-color: ${randomColor}">
             ${location.name || location.location_name || 'Nome non disponibile'}
             <div class="location-actions">
-                <button class="action-button edit-btn" onclick="editLocation(${location.location_id || location.id})" title="Modifica">
+                <button class="action-button edit-btn" title="Modifica">
                     <span class="material-symbols-outlined">edit</span>
                 </button>
-                <button class="action-button delete-btn" onclick="deleteLocation(${location.location_id || location.id})" title="Elimina">
+                <button class="action-button delete-btn" title="Elimina">
                     <span class="material-symbols-outlined">delete</span>
                 </button>
             </div>
@@ -646,6 +646,21 @@ function createLocationCard(location) {
             <div class="location-description">${location.description || 'Nessuna descrizione disponibile'}</div>
         </div>
     `;
+
+    // Event listener JS per i pulsanti
+    const editBtn = card.querySelector('.edit-btn');
+    const deleteBtn = card.querySelector('.delete-btn');
+    const locationId = location.location_id || location.id;
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            editLocation(locationId);
+        });
+    }
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            deleteLocation(locationId);
+        });
+    }
     
     return card;
 }
@@ -1107,10 +1122,10 @@ function createSpaceCard(space) {
         <div class="space-name" style="--random-color: ${randomColor}">
             ${space.name || space.space_name || 'Nome non disponibile'}
             <div class="space-actions">
-                <button class="action-button edit-btn" onclick="editSpace(${space.space_id || space.id})" title="Modifica">
+                <button class="action-button edit-btn" title="Modifica">
                     <span class="material-symbols-outlined">edit</span>
                 </button>
-                <button class="action-button delete-btn" onclick="deleteSpace(${space.space_id || space.id})" title="Elimina">
+                <button class="action-button delete-btn" title="Elimina">
                     <span class="material-symbols-outlined">delete</span>
                 </button>
             </div>
@@ -1127,6 +1142,21 @@ function createSpaceCard(space) {
         ${scheduleHtml}
         <div class="space-location">${space.location?.name || 'Location non specificata'}</div>
     `;
+
+    // Event listener JS per i pulsanti
+    const editBtn = card.querySelector('.edit-btn');
+    const deleteBtn = card.querySelector('.delete-btn');
+    const spaceId = space.space_id || space.id;
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            editSpace(spaceId);
+        });
+    }
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            deleteSpace(spaceId);
+        });
+    }
     
     return card;
 }
