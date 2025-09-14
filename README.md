@@ -1,7 +1,7 @@
 # CoWorkSpace - Piattaforma di Gestione Spazi di Coworking
 
 ## 📋 Panoramica
-CoWorkSpace è una piattaforma all-in-one per la gestione di spazi di coworking che integra prenotazioni, pagamenti e gestione delle location. Il sistema è progettato per supportare múltiple stakeholder: amministratori, manager di spazi e utenti finali.
+CoWorkSpace è una piattaforma all-in-one per la gestione di spazi di coworking che integra prenotazioni, pagamenti e gestione delle sedi. Il sistema è progettato per supportare multiple stakeholder: amministratori, manager di spazi e utenti finali.
 
 ## 🎯 Obiettivi del Progetto
 - Semplificare la gestione degli spazi di coworking
@@ -220,16 +220,15 @@ CoWorkSpace/
 ### Prerequisiti
 - Node.js (v16+)
 - Docker Desktop
-- PostgreSQL (opzionale, disponibile via Docker)
 
-### Installazione
+### Installazione locale
 ```bash
 # Clone repository
 git clone https://github.com/IlTetta/CoWorkSpace.git
 cd CoWorkSpace
 
 # Setup ambiente
-cp .env.example .env
+Richiedere all admin file .env
 
 # Installazione dipendenze
 npm install
@@ -237,8 +236,14 @@ npm install
 # Avvio servizi Docker
 docker-compose up -d
 
-# Avvio sviluppo
-npm run dev
+# Avvio production
+npm run start
+```
+
+### Terminare il server locale
+```bash
+# Arresto server
+docker-compose down
 ```
 
 ## 📊 Database
