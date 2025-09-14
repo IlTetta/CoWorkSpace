@@ -654,7 +654,7 @@ async function createBooking(bookingData) {
         const result = await response.json();
         
         if (response.ok) {
-            return { success: true, bookingId: result.id, message: result.message };
+            return { success: true, bookingId: result.data.booking.booking_id, message: result.message };
         } else {
             // Gestisci errori specifici
             if (response.status === 401) {
