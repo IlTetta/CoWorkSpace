@@ -1,4 +1,3 @@
 node_modules/
 backend_explain.txt
 .env
-firebase-service-account.json
