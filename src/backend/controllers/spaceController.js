@@ -25,8 +25,8 @@ const getSpaces = catchAsync(async (req, res) => {
  * GET /api/spaces/:id - Dettagli di uno spazio specifico (pubblico)
  */
 const getSpaceById = catchAsync(async (req, res) => {
-  const { space_id } = req.params;
-  const space = await SpaceService.getSpaceDetails(space_id, null);
+  const { id } = req.params;
+  const space = await SpaceService.getSpaceDetails(id, null);
   
   return ApiResponse.success(res, 200, 'Spazio recuperato con successo', { space });
 });

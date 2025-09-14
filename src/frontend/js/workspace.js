@@ -1,5 +1,22 @@
 // Gestione della pagina di prenotazione workspace: caricamento dettagli, servizi, form, pagamento
 
+// Gestione errori estensioni browser
+window.addEventListener('error', (event) => {
+    if (event.message && event.message.includes('message channel closed')) {
+        console.warn('🔕 Errore estensione browser ignorato:', event.message);
+        event.preventDefault();
+        return true;
+    }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    if (event.reason && event.reason.message && event.reason.message.includes('message channel closed')) {
+        console.warn('🔕 Promise rejection estensione browser ignorata:', event.reason.message);
+        event.preventDefault();
+        return true;
+    }
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Aspetta che authService sia disponibile
     let authRetries = 0;
@@ -561,53 +578,81 @@ async function processPayment() {
         confirmButton.textContent = 'Elaborazione...';
         confirmButton.disabled = true;
         
-        // Raccogli tutti i dati della prenotazione
+        // Raccogli i dati di pagamento dal form
+        const paymentFormData = {
+            cardNumber: document.getElementById('card-number').value,
+            expiryDate: document.getElementById('expiry-date').value,
+            securityCode: document.getElementById('security-code').value
+        };
+        
+        // Valida i dati di pagamento
+        if (!paymentFormData.cardNumber || !paymentFormData.expiryDate || !paymentFormData.securityCode) {
+            throw new Error('Tutti i campi di pagamento sono obbligatori');
+        }
+        
+        // Raccogli i dati della prenotazione
         const bookingData = {
             spaceId: document.getElementById('space-select').value,
             dateStart: document.getElementById('date-start').value,
             dateEnd: document.getElementById('date-end').value,
             totalPrice: document.getElementById('total-price').textContent,
-            paymentData: {
-                cardNumber: document.getElementById('card-number').value,
-                expiryDate: document.getElementById('expiry-date').value,
-                securityCode: document.getElementById('security-code').value
-            }
+            status: 'pending', // Prenotazione in attesa fino al pagamento
+            payment_status: 'pending'
         };
         
-        // Chiama il backend per creare la prenotazione
-        const result = await createBooking(bookingData);
+        // Passo 1: Crea la prenotazione con stato pending
+        console.log('Creazione prenotazione con stato pending...');
+        const bookingResult = await createBooking(bookingData);
         
-        if (result.success) {
-            // Successo - chiudi modal e mostra notifica
-            document.getElementById('payment-modal').style.display = 'none';
-            clearPaymentForm();
-            
-            // Mostra notifica di successo
-            showSuccessNotification(result.bookingId);
-            
-            // Mostra anche il messaggio nel contenuto principale
-            document.getElementById('booking-message').innerHTML = `
-                <div style="color: green; text-align: center; padding: 20px; background: #f0f9f0; border-radius: 10px; margin: 20px; border-left: 5px solid #10b981;">
-                    <h3>✅ Prenotazione Completata!</h3>
-                    <p>La tua prenotazione è stata confermata e il pagamento è stato elaborato con successo.</p>
-                    <p><strong>ID Prenotazione:</strong> ${result.bookingId || 'N/A'}</p>
-                    <p style="margin-top: 15px;"><em>Riceverai una email di conferma a breve.</em></p>
-                </div>
-            `;
-            
-            // Nascondi il form di prenotazione
-            document.querySelector('.workspace-card').style.opacity = '0.7';
-            document.querySelector('.workspace-card').style.pointerEvents = 'none';
-            
-            // Scroll verso il messaggio di successo
-            document.getElementById('booking-message').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
-            
-        } else {
-            throw new Error(result.message || 'Errore durante la prenotazione');
+        if (!bookingResult.success) {
+            throw new Error(bookingResult.message || 'Errore durante la creazione della prenotazione');
         }
+        
+        const bookingId = bookingResult.bookingId;
+        console.log('Prenotazione creata con ID:', bookingId);
+        
+        // Passo 2: Processa il pagamento
+        console.log('Processando il pagamento...');
+        const paymentResult = await createPayment({
+            booking_id: bookingId,
+            amount: parseFloat(bookingData.totalPrice),
+            payment_method: 'credit_card',
+            payment_details: paymentFormData
+        });
+        
+        if (!paymentResult.success) {
+            throw new Error(paymentResult.message || 'Errore durante il pagamento');
+        }
+        
+        console.log('Pagamento completato con successo');
+        
+        // Successo - chiudi modal e mostra notifica
+        document.getElementById('payment-modal').style.display = 'none';
+        clearPaymentForm();
+        
+        // Mostra notifica di successo
+        showSuccessNotification(bookingId);
+        
+        // Mostra anche il messaggio nel contenuto principale
+        document.getElementById('booking-message').innerHTML = `
+            <div style="color: green; text-align: center; padding: 20px; background: #f0f9f0; border-radius: 10px; margin: 20px; border-left: 5px solid #10b981;">
+                <h3>✅ Prenotazione Completata!</h3>
+                <p>La tua prenotazione è stata confermata e il pagamento è stato elaborato con successo.</p>
+                <p><strong>ID Prenotazione:</strong> ${bookingId}</p>
+                <p><strong>ID Pagamento:</strong> ${paymentResult.paymentId}</p>
+                <p style="margin-top: 15px;"><em>Riceverai una email di conferma a breve.</em></p>
+            </div>
+        `;
+        
+        // Nascondi il form di prenotazione
+        document.querySelector('.workspace-card').style.opacity = '0.7';
+        document.querySelector('.workspace-card').style.pointerEvents = 'none';
+        
+        // Scroll verso il messaggio di successo
+        document.getElementById('booking-message').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
         
     } catch (error) {
         console.error('Errore nel pagamento:', error);
@@ -638,7 +683,8 @@ async function createBooking(bookingData) {
             start_date: convertDateFormat(bookingData.dateStart),
             end_date: convertDateFormat(bookingData.dateEnd),
             total_price: parseFloat(bookingData.totalPrice),
-            status: 'confirmed'
+            status: bookingData.status || 'pending',
+            payment_status: bookingData.payment_status || 'pending'
         };
         
         // Effettua la chiamata al backend
@@ -654,7 +700,7 @@ async function createBooking(bookingData) {
         const result = await response.json();
         
         if (response.ok) {
-            return { success: true, bookingId: result.id, message: result.message };
+            return { success: true, bookingId: result.data.booking.booking_id, message: result.message };
         } else {
             // Gestisci errori specifici
             if (response.status === 401) {
@@ -665,6 +711,62 @@ async function createBooking(bookingData) {
         
     } catch (error) {
         console.error('Errore nella chiamata API:', error);
+        return { success: false, message: error.message || 'Errore di connessione al server' };
+    }
+}
+
+// Funzione per creare un pagamento tramite API
+async function createPayment(paymentData) {
+    try {
+        // Verifica se l'utente è autenticato
+        if (!window.authService || !window.authService.isAuthenticated()) {
+            throw new Error('Devi essere autenticato per effettuare un pagamento');
+        }
+        
+        const token = window.authService.getToken();
+        if (!token) {
+            throw new Error('Token di autenticazione non trovato');
+        }
+        
+        // Prepara i dati per il backend
+        const payload = {
+            booking_id: parseInt(paymentData.booking_id),
+            amount: parseFloat(paymentData.amount),
+            payment_method: paymentData.payment_method,
+            transaction_id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Genera transaction_id simulato
+        };
+        
+        console.log('Invio dati pagamento:', payload);
+        
+        // Effettua la chiamata al backend
+        const response = await fetch('/api/payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        console.log('Risposta pagamento:', result);
+        
+        if (response.ok) {
+            return { 
+                success: true, 
+                paymentId: result.data.payment.payment_id, 
+                message: result.message || 'Pagamento completato con successo'
+            };
+        } else {
+            // Gestisci errori specifici
+            if (response.status === 401) {
+                throw new Error('Token di accesso non valido');
+            }
+            return { success: false, message: result.message || 'Errore durante il pagamento' };
+        }
+        
+    } catch (error) {
+        console.error('Errore nella chiamata API pagamento:', error);
         return { success: false, message: error.message || 'Errore di connessione al server' };
     }
 }
