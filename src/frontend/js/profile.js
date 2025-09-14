@@ -667,7 +667,7 @@ function displayTestPaymentHistory() {
             end_date: "2024-12-15",
             total_price: 75.00,
             status: "completed",
-            payment_status: "paid",
+            payment_status: "completed",
             created_at: "2024-12-10T10:30:00Z"
         },
         {
@@ -678,7 +678,7 @@ function displayTestPaymentHistory() {
             end_date: "2024-12-10",
             total_price: 150.00,
             status: "completed",
-            payment_status: "paid",
+            payment_status: "completed",
             created_at: "2024-12-05T14:15:00Z"
         },
         {
@@ -689,7 +689,7 @@ function displayTestPaymentHistory() {
             end_date: "2024-11-25",
             total_price: 120.00,
             status: "completed",
-            payment_status: "paid",
+            payment_status: "completed",
             created_at: "2024-11-20T09:45:00Z"
         }
     ];
@@ -747,7 +747,8 @@ function displayPaymentHistory(bookings) {
         
         const getPaymentStatusClass = (paymentStatus) => {
             switch(paymentStatus) {
-                case 'paid': return 'status-completed';
+                case 'completed': return 'status-completed';
+                case 'paid': return 'status-completed'; // Supporto legacy
                 case 'pending': return 'status-pending';
                 case 'failed': return 'status-cancelled';
                 case 'refunded': return 'status-cancelled';
@@ -757,7 +758,8 @@ function displayPaymentHistory(bookings) {
         
         const getPaymentStatusText = (paymentStatus) => {
             switch(paymentStatus) {
-                case 'paid': return 'Pagato';
+                case 'completed': return 'Pagato';
+                case 'paid': return 'Pagato'; // Supporto legacy
                 case 'pending': return 'In Attesa';
                 case 'failed': return 'Fallito';
                 case 'refunded': return 'Rimborsato';
