@@ -37,5 +37,3 @@ Password jzbSs7K?68/j
 TODO:
 2- Aggiornamento array disponibilità prenotazione sapazio
 3- Campi precompilati dahboard manager per modifica location/sapazi
-4- Salvare i pagamenti nel db
-5- Modifica messaggio notifica pusg quandi admin elimina spazio con prenotazione attiva

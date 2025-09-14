@@ -687,10 +687,16 @@ function openCreateLocationModal() {
  * Apre il modal per modificare una location esistente
  */
 async function editLocation(locationId) {
+    console.log('editLocation chiamata con ID:', locationId);
     try {
-        if (!window.apiService) return;
+        if (!window.apiService) {
+            console.error('apiService non disponibile');
+            return;
+        }
         
+        console.log('Chiamata API per recuperare location con ID:', locationId);
         const location = await window.apiService.getLocationById(locationId);
+        
         const modal = document.getElementById('location-modal');
         const modalTitle = document.getElementById('location-modal-title');
         const form = document.getElementById('location-form');
@@ -698,19 +704,29 @@ async function editLocation(locationId) {
         if (modal && modalTitle && form && location) {
             modalTitle.textContent = 'Modifica Location';
             
+            // I dati della location sono dentro location.location quando usiamo l'endpoint /complete
+            const locationData = location.location || location;
+            
             // Popola il form con i dati esistenti
-            document.getElementById('location-name').value = location.name || location.location_name || '';
-            document.getElementById('location-description').value = location.description || '';
-            document.getElementById('location-address').value = location.address || '';
-            document.getElementById('location-city').value = location.city || '';
+            document.getElementById('location-name').value = locationData.name || locationData.location_name || '';
+            document.getElementById('location-description').value = locationData.description || '';
+            document.getElementById('location-address').value = locationData.address || '';
+            document.getElementById('location-city').value = locationData.city || '';
             
             form.dataset.mode = 'edit';
             form.dataset.locationId = locationId;
             modal.style.display = 'block';
+        } else {
+            console.error('Elementi DOM non trovati o dati location vuoti:', {
+                modal: !!modal,
+                modalTitle: !!modalTitle,
+                form: !!form,
+                location: !!location
+            });
         }
     } catch (error) {
         console.error('Errore nel caricamento della location:', error);
-        alert('Errore nel caricamento dei dati della location');
+        alert('Errore nel caricamento dei dati della location: ' + error.message);
     }
 }
 
@@ -1203,10 +1219,16 @@ function openCreateSpaceModal() {
  * Apre il modal per modificare uno spazio esistente
  */
 async function editSpace(spaceId) {
+    console.log('editSpace chiamata con ID:', spaceId);
     try {
-        if (!window.apiService) return;
+        if (!window.apiService) {
+            console.error('apiService non disponibile');
+            return;
+        }
         
+        console.log('Chiamata API per recuperare spazio con ID:', spaceId);
         const space = await window.apiService.getSpaceById(spaceId);
+        
         const modal = document.getElementById('space-modal');
         const modalTitle = document.getElementById('modal-title');
         const form = document.getElementById('space-form');
@@ -1214,17 +1236,20 @@ async function editSpace(spaceId) {
         if (modal && modalTitle && form && space) {
             modalTitle.textContent = 'Modifica Spazio';
             
+            // I dati dello spazio sono in space.space.space (struttura nidificata dell'API)
+            const spaceData = space.space?.space || space.space || space;
+            
             // Popola il form con i dati esistenti
-            document.getElementById('space-name').value = space.name || space.space_name || '';
-            document.getElementById('space-description').value = space.description || '';
-            document.getElementById('space-location').value = space.location_id || space.locationId || '';
-            document.getElementById('space-type').value = space.space_type_id || space.spaceTypeId || '';
-            document.getElementById('space-capacity').value = space.capacity || '';
-            document.getElementById('space-hourly-rate').value = space.hourly_rate || space.pricePerHour || space.price_per_hour || '';
+            document.getElementById('space-name').value = spaceData.name || spaceData.space_name || '';
+            document.getElementById('space-description').value = spaceData.description || '';
+            document.getElementById('space-location').value = spaceData.location_id || spaceData.locationId || '';
+            document.getElementById('space-type').value = spaceData.space_type_id || spaceData.spaceTypeId || '';
+            document.getElementById('space-capacity').value = spaceData.capacity || '';
+            document.getElementById('space-hourly-rate').value = spaceData.hourly_rate || spaceData.pricePerHour || spaceData.price_per_hour || '';
             
             // Popola gli orari di apertura/chiusura
-            document.getElementById('space-opening-time').value = space.opening_time || space.openingTime || '09:00';
-            document.getElementById('space-closing-time').value = space.closing_time || space.closingTime || '18:00';
+            document.getElementById('space-opening-time').value = spaceData.opening_time || spaceData.openingTime || '09:00';
+            document.getElementById('space-closing-time').value = spaceData.closing_time || spaceData.closingTime || '18:00';
             
             // Popola i giorni disponibili
             const dayCheckboxes = form.querySelectorAll('input[name="available_days"]');
@@ -1236,7 +1261,8 @@ async function editSpace(spaceId) {
                 }
             });
             
-            const availableDays = space.available_days || space.availableDays || [1, 2, 3, 4, 5];
+            const availableDays = spaceData.available_days || spaceData.availableDays || [1, 2, 3, 4, 5];
+            
             if (Array.isArray(availableDays)) {
                 availableDays.forEach(day => {
                     const checkbox = form.querySelector(`input[name="available_days"][value="${day}"]`);
@@ -1265,10 +1291,17 @@ async function editSpace(spaceId) {
             form.dataset.mode = 'edit';
             form.dataset.spaceId = spaceId;
             modal.style.display = 'block';
+        } else {
+            console.error('Elementi DOM non trovati o dati spazio vuoti:', {
+                modal: !!modal,
+                modalTitle: !!modalTitle,
+                form: !!form,
+                space: !!space
+            });
         }
     } catch (error) {
         console.error('Errore nel caricamento dello spazio:', error);
-        alert('Errore nel caricamento dei dati dello spazio');
+        alert('Errore nel caricamento dei dati dello spazio: ' + error.message);
     }
 }
 

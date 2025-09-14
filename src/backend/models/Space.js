@@ -77,9 +77,9 @@ class Space {
         const query = `
             INSERT INTO spaces (
                 location_id, space_type_id, space_name, description, 
-                capacity, price_per_hour, price_per_day, opening_time, closing_time
+                capacity, price_per_hour, price_per_day, opening_time, closing_time, available_days
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *
         `;
 
@@ -93,7 +93,8 @@ class Space {
                 price_per_hour,
                 price_per_day,
                 opening_time,
-                closing_time
+                closing_time,
+                spaceData.available_days || [1, 2, 3, 4, 5] // Default to weekdays if not provided
             ]);
 
             return new Space(result.rows[0]);
